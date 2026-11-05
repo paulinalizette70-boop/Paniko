@@ -2,7 +2,7 @@
 
 Aplicación web académica de **Seminario de Integración: Desarrollo**, Universidad de Guadalajara, Centro Universitario de Tlaquepaque.
 
-**Versión:** 0.3.0 (noviembre de 2026). El MVP incorpora inventario en MySQL e importador local a tablas de preparación. Las fórmulas reales **no están publicadas ni cargadas en el MySQL de la panadería**; su importación y validación operativa continúan pendientes.
+**Versión:** 0.4.0 (noviembre de 2026). El MVP incorpora inventario en MySQL e importador local a tablas de preparación. Las fórmulas reales **no están publicadas ni cargadas en el MySQL de la panadería**; su importación y validación operativa continúan pendientes.
 
 ## Qué permite hacer esta versión
 
@@ -12,8 +12,9 @@ Aplicación web académica de **Seminario de Integración: Desarrollo**, Univers
 4. Calcular una **vista previa** de escalado de cantidades y costos, sin descontar existencias.
 5. **Confirmar una producción**: comprobar si hay ingredientes suficientes y descontarlos **en una transacción MySQL**, guardando el movimiento de salida y un registro de producción.
 6. Consultar las últimas entradas/salidas y las producciones confirmadas.
+7. Convertir g↔kg y ml↔l al capturar recetas y entradas, conservando las existencias en la unidad del ingrediente.
 
-**Límites importantes:** no hay autenticación ni permisos, todavía no se registran mermas ni se cierran lotes, no existe dashboard y no se convierten automáticamente unidades (g↔kg o ml↔l). El costo es estimado a partir de insumos, no incluye mano de obra, energía ni venta. **No desplegar de manera pública** antes de agregar autenticación y autorización.
+**Límites importantes:** no hay autenticación ni permisos, todavía no se registran mermas ni se cierran lotes, no existe dashboard ni conversiones entre dimensiones incompatibles (peso, volumen y pieza). El costo es estimado a partir de insumos, no incluye mano de obra, energía ni venta. **No desplegar de manera pública** antes de agregar autenticación y autorización.
 
 ## Arquitectura
 
@@ -32,7 +33,7 @@ Aplicación web académica de **Seminario de Integración: Desarrollo**, Univers
 
 1. Crear *Harina de trigo* con unidad kg, costo por kg y existencia inicial (o 0).
 2. Registrar entrada de inventario por compra, por ejemplo 2 kg. El sistema genera un movimiento de tipo `entrada`.
-3. Registrar una ficha técnica con las cantidades expresadas en las **mismas unidades** del catálogo.
+3. Registrar una ficha técnica indicando gramos o kilogramos, mililitros o litros; el sistema guarda cada cantidad en la unidad del ingrediente.
 4. Escalar de 10 a 20 piezas y comprobar el inventario.
 5. Pulsar **Confirmar producción**. Si existe stock suficiente, el sistema registra la producción y movimientos de `salida`, y descuenta cantidades. Si falta algún ingrediente, responde HTTP 409 y **no cambia el inventario**.
 
@@ -52,7 +53,7 @@ Las producciones se confirman como registros de consumo de insumos; aún no exis
 
 ## Pruebas y evidencias
 
-Ejecuta `npm test`. La última ejecución verificada en GitHub Actions terminó con **21 pruebas aprobadas, 0 fallidas y 0 omitidas**, incluyendo MySQL temporal con datos ficticios.
+Ejecuta `npm test`. La ejecución verificada de v0.3.0 terminó con **21 pruebas aprobadas, 0 fallidas y 0 omitidas**. La versión v0.4.0 incorpora nuevos casos de conversión; consultar GitHub Actions para conocer su resultado más reciente.
 
 - [Última ejecución aprobada de GitHub Actions (21/21)](https://github.com/paulinalizette70-boop/Paniko/actions/runs/41965295559).
 - [Índice de evidencias para entregar](docs/entrega-github.md).
@@ -74,6 +75,7 @@ Ejecuta `npm test`. La última ejecución verificada en GitHub Actions terminó 
 - [ADR-003: JSON como solución inicial, ya superada](docs/adr/ADR-003-json-provisional.md).
 - [ADR-004: MySQL y transacciones](docs/adr/ADR-004-mysql-transacciones-inventario.md).
 - [ADR-005: importación privada de recetas](docs/adr/ADR-005-catalogo-privado.md).
+- [ADR-006: normalización de unidades](docs/adr/ADR-006-conversion-unidades.md).
 - [Bloqueos](docs/seguimiento/bloqueos.md), [deudas técnicas](docs/seguimiento/deuda-tecnica.md), [Issues](https://github.com/paulinalizette70-boop/Paniko/issues).
 
 ## Equipo
