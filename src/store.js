@@ -51,10 +51,10 @@ function createStore(filePath) {
       return scaleRecipe(recipe, data.ingredients, desiredYield);
     },
     stockIn(id, raw) {
-      const {quantity, reason} = stockEntry(raw);
       const data = read();
       const ingredient = data.ingredients.find(i => i.id === id);
       if (!ingredient) throw new ValidationError('Ingrediente no encontrado', 404);
+      const {quantity, reason} = stockEntry(raw, ingredient.unit);
       const stockBefore = ingredient.stock;
       ingredient.stock = safeStockSum(stockBefore, quantity);
       const movement = {id:crypto.randomUUID(), ingredientId:id, name:ingredient.name, type:'entrada', quantity, stockBefore, stockAfter:ingredient.stock, reason, createdAt:new Date().toISOString()};
