@@ -4,8 +4,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const {ValidationError} = require('./domain');
 const {createStore} = require('./store');
+const {getCookieToken,cookieForToken,expiredCookie}=require('./auth');
 
-function createApp({store, dataFile = path.join(__dirname, '..', 'data', 'paniko.json')} = {}) {
+function createApp({store, auth = null, dataFile = path.join(__dirname, '..', 'data', 'paniko.json')} = {}) {
   store = store || createStore(dataFile);
   const assets = {
     '/': ['index.html', 'text/html; charset=utf-8'],
@@ -22,8 +23,8 @@ function createApp({store, dataFile = path.join(__dirname, '..', 'data', 'paniko
     try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); }
     catch { throw new ValidationError('JSON inválido'); }
   }
-  const send = (res, status, data) => {
-    res.writeHead(status, {'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options':'nosniff'});
+  const send = (res, status, data, extraHeaders={}) => {
+    res.writeHead(status, {'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options':'nosniff',...extraHeaders});
     res.end(JSON.stringify(data));
   };
   return http.createServer(async (req, res) => {
@@ -37,6 +38,43 @@ function createApp({store, dataFile = path.join(__dirname, '..', 'data', 'paniko
         return;
       }
       if (req.method === 'GET' && pathname === '/api/health') return send(res, 200, {status: 'ok'});
+      if (req.method === 'GET' && pathname === '/api/auth/config')
+        return send(res,200,{required: Boolean(auth)});
+      if (auth) {
+        // SameSite=Strict + comprobación Origin en peticiones con cambios.
+        if (req.method === 'POST' && req.headers.origin) {
+          let from;
+          try { from=new URL(req.headers.origin); } catch { return send(res,403,{error:'Origen no permitido'}); }
+          if (from.host!==req.headers.host) return send(res,403,{error:'Origen no permitido'});
+        }
+        const token=getCookieToken(req.headers.cookie);
+        if (pathname === '/api/auth/login' && req.method === 'POST') {
+          const credentials=await bodyAsJson(req);
+          const result=await auth.login(credentials?.username,credentials?.password);
+          if (!result) return send(res,401,{error:'Usuario o contraseña incorrectos'});
+          return send(res,200,{user:result.user},{'Set-Cookie':cookieForToken(result.token,Boolean(req.socket.encrypted))});
+        }
+        if (pathname === '/api/auth/logout' && req.method === 'POST') {
+          await auth.logout(token);
+          return send(res,200,{ok:true},{'Set-Cookie':expiredCookie(Boolean(req.socket.encrypted))});
+        }
+        if (req.method === 'GET' && pathname === '/api/auth/me') {
+          const user=await auth.userForToken(token);
+          return user?send(res,200,{user}):send(res,401,{error:'Sesión no iniciada'});
+        }
+        // Es obligatorio autenticar ANTES de consultar cualquier ruta de datos.
+        if (pathname.startsWith('/api/')) {
+          const user=await auth.userForToken(token);
+          if (!user) return send(res,401,{error:'Inicia sesión para continuar'});
+          if (pathname==='/api/private/catalog' && req.method==='GET') {
+            if (user.role!=='admin') return send(res,403,{error:'Acceso reservado a administración'});
+            return send(res,200,await auth.privateCatalog());
+          }
+          const adminOnly=req.method!=='GET' &&
+            (pathname==='/api/ingredients' || pathname==='/api/recipes');
+          if (adminOnly && user.role!=='admin') return send(res,403,{error:'Se requiere permiso de administrador'});
+        }
+      }
       if (req.method === 'GET' && pathname === '/api/ingredients') return send(res, 200, await store.listIngredients());
       if (req.method === 'POST' && pathname === '/api/ingredients') return send(res, 201, await store.addIngredient(await bodyAsJson(req)));
       if (req.method === 'GET' && pathname === '/api/recipes') return send(res, 200, await store.listRecipes());
