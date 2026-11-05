@@ -1,4 +1,4 @@
-# Casos de prueba — Paniko v0.3.0
+# Casos de prueba — Paniko v0.4.0
 
 Los ingredientes de las pruebas son **ficticios**, no recetas reales. Los resultados deben verificarse en la [bitácora](registro-ejecuciones.md).
 
@@ -34,3 +34,13 @@ Las pruebas técnicas **no equivalen a la importación real** del catálogo priv
 ## Evidencia de ejecución
 
 Última ejecución de GitHub Actions: **21 pruebas aprobadas, 0 fallidas y 0 omitidas**. Incluye pruebas de integración MySQL con datos ficticios. [Ver ejecución y registro de pruebas](https://github.com/paulinalizette70-boop/Paniko/actions/runs/41965295559).
+
+## Nuevos casos: unidades (v0.4.0)
+
+| ID | Tipo | Descripción | Resultado esperado | Ubicación |
+| --- | --- | --- | --- | --- |
+| CP-22 | Unitario | Receta con harina expresada en g e ingrediente en kg, agua en l y stock en ml; rechazo de peso/volumen mezclados | Cantidades normalizadas, errores de incompatibilidad y precisión | `tests/domain.test.js` |
+| CP-23 | Inventario JSON | Entrada de 250 g en stock por kg, receta de prueba de 500 g; producción y rechazo de unidad inválida | Stock y movimientos en kg, sin modificaciones ante error | `tests/inventory.test.js` |
+| CP-24 | Integración MySQL | Entrada, ficha técnica y producción ficticias expresadas en g con inventario en kg | Consumos consistentes en kg, sin modificar stock cuando una unidad es incompatible | `tests/mysql.test.js` |
+
+Las pruebas de v0.4.0 se ejecutan automáticamente con la configuración GitHub Actions existente; verificar el registro antes de afirmar un resultado.
