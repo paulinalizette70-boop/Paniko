@@ -6,6 +6,8 @@
 
 ## Evidencia
 
+- [GitHub Actions: ejecución remota satisfactoria](https://github.com/paulinalizette70-boop/Paniko/actions/runs/41957663860) — workflow `Pruebas Paniko`, concluido con estado **success**.
+
 - [Registro íntegro de consola](evidencia-ejecucion-2026-11-04.txt)
 - [Código de pruebas unitarias](../../tests/domain.test.js)
 - [Código de pruebas de integración](../../tests/integration.test.js)
