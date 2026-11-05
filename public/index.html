@@ -5,6 +5,27 @@
 </head><body>
 <header><div class="brand">Paniko<span> · MVP 0.4.0</span></div><p>Fichas técnicas e inventario de producción artesanal.</p></header>
 <main>
+<section id="auth-panel" class="panel auth-panel" hidden>
+  <h2>Acceso a Paniko</h2>
+  <p class="muted">Inicia sesión con una cuenta autorizada.</p>
+  <form id="login-form">
+    <label>Usuario <input name="username" autocomplete="username" required maxlength="50"/></label>
+    <label>Contraseña <input name="password" type="password" autocomplete="current-password" required/></label>
+    <button type="submit">Iniciar sesión</button>
+  </form>
+  <p id="auth-message" role="status" aria-live="polite"></p>
+</section>
+<section id="auth-bar" class="auth-bar" hidden>
+  <span id="auth-user"></span>
+  <button id="logout-button" type="button" class="secondary">Cerrar sesión</button>
+</section>
+<section id="private-recipes-panel" class="panel" hidden>
+  <h2>Catálogo privado (administración)</h2>
+  <p class="muted tiny">Estas recetas aún son de preparación; no descuentan inventario y pueden tener datos pendientes de validar.</p>
+  <button id="load-private-button" type="button" class="secondary">Consultar catálogo privado</button>
+  <div id="private-recipes-list"></div>
+</section>
+<div id="workspace">
 <section class="notice">Prototipo académico: almacenamiento en MySQL y movimientos de inventario. No incluye usuarios ni permisos; úsalo solo en un entorno de prueba, no con datos confidenciales.</section>
 <section class="columns">
   <article class="panel"><h2>1. Registrar ingrediente</h2>
@@ -53,6 +74,7 @@
   </article>
 </section>
 <p id="notification" role="status" aria-live="polite"></p>
+</div>
 </main><footer>Proyecto académico · Universidad de Guadalajara · Versión 0.4.0</footer>
 <script src="/app.js" defer></script>
 </body></html>
