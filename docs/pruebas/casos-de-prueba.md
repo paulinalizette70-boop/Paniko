@@ -43,4 +43,4 @@ Las pruebas técnicas **no equivalen a la importación real** del catálogo priv
 | CP-23 | Inventario JSON | Entrada de 250 g en stock por kg, receta de prueba de 500 g; producción y rechazo de unidad inválida | Stock y movimientos en kg, sin modificaciones ante error | `tests/inventory.test.js` |
 | CP-24 | Integración MySQL | Entrada, ficha técnica y producción ficticias expresadas en g con inventario en kg | Consumos consistentes en kg, sin modificar stock cuando una unidad es incompatible | `tests/mysql.test.js` |
 
-Las pruebas de v0.4.0 se ejecutan automáticamente con la configuración GitHub Actions existente; verificar el registro antes de afirmar un resultado.
+La ejecución [v0.4.0 en GitHub Actions](https://github.com/paulinalizette70-boop/Paniko/actions/runs/41968225354) confirma **24 aprobadas, 0 fallidas y 0 omitidas**, incluidas las tres nuevas subpruebas de conversión y MySQL con datos ficticios.
