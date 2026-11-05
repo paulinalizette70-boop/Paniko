@@ -1,4 +1,4 @@
-# Casos de prueba — Paniko v0.2.0
+# Casos de prueba — Paniko v0.3.0
 
 Los ingredientes de las pruebas son **ficticios**, no recetas reales. Los resultados deben verificarse en la [bitácora](registro-ejecuciones.md).
 
@@ -30,3 +30,7 @@ Pruebas con **datos sintéticos**, nunca fórmulas de la panadería:
 | CP-21 | MySQL integración | Importación duplicada, datos JSON y aislamiento de HTTP | Importación idempotente; ningún endpoint público | `tests/private-catalog-mysql.test.js` |
 
 Las pruebas técnicas **no equivalen a la importación real** del catálogo privado en la base de la usuaria.
+
+## Evidencia de ejecución
+
+Última ejecución de GitHub Actions: **21 pruebas aprobadas, 0 fallidas y 0 omitidas**. Incluye pruebas de integración MySQL con datos ficticios. [Ver ejecución y registro de pruebas](https://github.com/paulinalizette70-boop/Paniko/actions/runs/41965295559).
