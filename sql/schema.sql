@@ -1,5 +1,5 @@
--- Paniko v0.2.0 — MySQL 8.0.16+; crea la base de datos con scripts/init-db.js.
--- Unidades almacenadas como se registraron: NO se realizan conversiones g/kg ni ml/l.
+-- Paniko v0.4.0 — MySQL 8.0.16+; crea la base de datos con scripts/init-db.js.
+-- La API normaliza g/kg y ml/l antes de almacenar cantidades en la unidad del ingrediente.
 CREATE TABLE IF NOT EXISTS ingredients (
   id CHAR(36) NOT NULL PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
