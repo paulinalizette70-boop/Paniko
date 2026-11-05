@@ -3,7 +3,7 @@
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Paniko | Producción artesanal</title><link rel="stylesheet" href="/styles.css"/>
 </head><body>
-<header><div class="brand">Paniko<span> · MVP 0.2.0</span></div><p>Fichas técnicas e inventario de producción artesanal.</p></header>
+<header><div class="brand">Paniko<span> · MVP 0.4.0</span></div><p>Fichas técnicas e inventario de producción artesanal.</p></header>
 <main>
 <section class="notice">Prototipo académico: almacenamiento en MySQL y movimientos de inventario. No incluye usuarios ni permisos; úsalo solo en un entorno de prueba, no con datos confidenciales.</section>
 <section class="columns">
@@ -24,7 +24,7 @@
       <button type="button" id="add-item" class="secondary">Añadir ingrediente</button>
       <button>Guardar ficha técnica</button>
     </form>
-    <p class="muted tiny">Las cantidades de la receta usan la unidad registrada para cada ingrediente; todavía no se convierten g↔kg ni ml↔l.</p>
+    <p class="muted tiny">Selecciona g o kg, y ml o l, según el ingrediente. Paniko convierte a la unidad registrada en inventario.</p>
   </article>
 </section>
 <section class="columns">
@@ -34,6 +34,7 @@
     <form id="stock-in-form">
       <label>Ingrediente <select name="ingredient" required></select></label>
       <label>Cantidad recibida <input name="quantity" type="number" min="0.000001" step="0.000001" required placeholder="2"/></label>
+      <label>Unidad recibida <select name="unit" required></select></label>
       <label>Motivo <input name="reason" maxlength="150" value="Reposición de inventario" required/></label>
       <button>Registrar entrada</button>
     </form>
@@ -52,6 +53,6 @@
   </article>
 </section>
 <p id="notification" role="status" aria-live="polite"></p>
-</main><footer>Proyecto académico · Universidad de Guadalajara · Versión 0.2.0</footer>
+</main><footer>Proyecto académico · Universidad de Guadalajara · Versión 0.4.0</footer>
 <script src="/app.js" defer></script>
 </body></html>
