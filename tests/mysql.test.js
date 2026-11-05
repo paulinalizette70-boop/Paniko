@@ -33,3 +33,22 @@ test('CP-15 MySQL: entrada, descuento transaccional, rechazo por stock y bitáco
     assert.equal((await store.listProduction()).filter(x=>x.id===batch.id).length,1);
   } finally {await pool.end();}
 });
+
+test('CP-24 MySQL registra conversiones de unidades y preserva inventario', {skip:process.env.MYSQL_TEST!=='1'?'Requiere MySQL de pruebas':false},async()=>{
+ if(!/_test$/.test(process.env.DB_NAME||''))throw Error('Se requiere base _test');
+ const pool=poolFromEnv();
+ try{
+  const store=createMysqlStore(pool);
+  const ing=await store.addIngredient({name:'Unidades prueba '+Date.now(),unit:'kg',costPerUnit:20,stock:2});
+  const entry=await store.stockIn(ing.id,{quantity:250,unit:'g',reason:'Recepción ficticia'});
+  assert.equal(entry.ingredient.stock,2.25);
+  const recipe=await store.addRecipe({name:'Conversión ficticia',baseYield:10,items:[{ingredientId:ing.id,quantity:500,unit:'g'}]});
+  assert.equal(recipe.items[0].quantity,0.5);
+  const batch=await store.confirmProduction(recipe.id,20);
+  assert.equal(batch.lines[0].required,1);
+  const stock=(await store.listIngredients()).find(i=>i.id===ing.id);
+  assert.equal(stock.stock,1.25);
+  await assert.rejects(()=>store.stockIn(ing.id,{quantity:5,unit:'ml',reason:'Incompatible'}),/incompatibles/);
+  assert.equal((await store.listIngredients()).find(i=>i.id===ing.id).stock,1.25);
+ }finally{await pool.end();}
+});
