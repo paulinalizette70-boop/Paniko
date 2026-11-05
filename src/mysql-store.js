@@ -88,11 +88,11 @@ function createMysqlStore(pool) {
     return rows.map(r=>({id:r.id,recipeId:r.recipe_id,recipeName:r.recipe_name,desiredYield:r.desired_yield,estimatedTotalCost:Number(r.estimated_total_cost),createdAt:r.created_at}));
   }
   async function stockIn(id,raw) {
-    const {quantity,reason}=stockEntry(raw);
     return inTransaction(pool,async c=>{
       const [rows]=await c.execute('SELECT id,name,unit,cost_per_unit,stock FROM ingredients WHERE id=? FOR UPDATE',[id]);
       if(!rows.length) throw new ValidationError('Ingrediente no encontrado',404);
       const ingredient=ingredientFromRow(rows[0]);
+      const {quantity,reason}=stockEntry(raw,ingredient.unit);
       const stockBefore=ingredient.stock;
       ingredient.stock=safeStockSum(stockBefore,quantity);
       const movementId=crypto.randomUUID();
