@@ -79,7 +79,7 @@ Ejecuta `npm test`.
 - [Workflow de GitHub Actions](.github/workflows/tests.yml), que instala `mysql2`, levanta MySQL 8, inicializa las tablas y ejecuta las pruebas.
 - [Evidencia histórica de v0.1.0](docs/pruebas/evidencia-ejecucion-2026-11-04.txt).
 
-> Resultados de MySQL y enlace de ejecución en GitHub Actions: consultar [bitácora](docs/pruebas/registro-ejecuciones.md). No se atribuyen pruebas de aceptación reales sin evidencia.
+> [Ejecución de GitHub Actions con MySQL: completada satisfactoriamente](https://github.com/paulinalizette70-boop/Paniko/actions/runs/41960369156). Ver resultados también en la [bitácora](docs/pruebas/registro-ejecuciones.md). No se atribuyen pruebas de aceptación reales sin evidencia.
 
 ## Documentación del proyecto
 
