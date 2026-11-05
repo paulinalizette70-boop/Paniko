@@ -40,3 +40,17 @@ test('detecta inventario suficiente y no modifica existencias', ()=>{
 test('rechaza ingrediente inexistente en una ficha', ()=>{
   assert.throws(()=>validateRecipe({name:'Conchas',baseYield:10,items:[{ingredientId:'fantasma',quantity:1}]},ingredients),/no existe/);
 });
+
+test('CP-22 normaliza g/kg, ml/l y evita conversiones incompatibles',()=>{
+  const set=[...ingredients,{id:'agua',name:'Agua',unit:'ml',stock:2000,costPerUnit:0.02}];
+  const r=validateRecipe({name:'Fórmula de ejemplo',baseYield:10,items:[
+    {ingredientId:'harina',quantity:500,unit:'g'},
+    {ingredientId:'agua',quantity:1.5,unit:'l'}
+  ]},set);
+  assert.equal(r.items[0].quantity,0.5);
+  assert.equal(r.items[1].quantity,1500);
+  assert.throws(()=>validateRecipe({name:'Error',baseYield:1,items:[
+    {ingredientId:'harina',quantity:3,unit:'ml'}]},set),/incompatibles/);
+  assert.throws(()=>validateRecipe({name:'Error de precisión',baseYield:1,items:[
+    {ingredientId:'harina',quantity:0.0005,unit:'g'}]},set),/precisión/);
+});
