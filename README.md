@@ -42,8 +42,8 @@ Estos componentes corresponden a la **planificación**; deben verificarse cuando
 ## Pruebas
 - [Catálogo de casos diseñados](docs/pruebas/casos-de-prueba.md), con escenarios, datos y resultados esperados.
 - [Bitácora de ejecución](docs/pruebas/registro-ejecuciones.md), todavía **sin resultados verificados**.
-- [Bloqueo para ejecutar pruebas y publicar el código](../../issues/1).
-- [Deuda de pruebas reproducibles](../../issues/2).
+- [Bloqueo para ejecutar pruebas y publicar el código](https://github.com/paulinalizette70-boop/Paniko/issues/1).
+- [Deuda de pruebas reproducibles](https://github.com/paulinalizette70-boop/Paniko/issues/2).
 
 **Los casos diseñados no equivalen a pruebas realizadas.** Se documentarán fecha, resultado real, evidencia y responsable al ejecutarlos sobre Paniko.
 
@@ -52,7 +52,7 @@ Estos componentes corresponden a la **planificación**; deben verificarse cuando
 - [ADR-002: stack y base de datos previstos](docs/adr/ADR-002-stack-y-persistencia.md).
 - [Registro de bloqueos](docs/seguimiento/bloqueos.md).
 - [Registro de deuda técnica](docs/seguimiento/deuda-tecnica.md).
-- [Issue de escalado en desarrollo](../../issues/3).
+- [Issue de escalado en desarrollo](https://github.com/paulinalizette70-boop/Paniko/issues/3).
 - [Todos los Issues](../../issues).
 
 ## Sprint Review
