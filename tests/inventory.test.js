@@ -85,3 +85,19 @@ test('CP-14 API HTTP confirma entrada, producción y 409 cuando falta stock',asy
   const ledger=await(await fetch(base+'/api/inventory/movements')).json();
   assert.equal(ledger.filter(x=>x.type==='salida').length,1);
 });
+
+test('CP-23 convierte entradas de gramos a kilogramos antes de consumir',()=>{
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'paniko-units-'));
+  try{
+    const store=createStore(path.join(dir,'test.json'));
+    const flour=store.addIngredient({name:'Insumo ficticio',unit:'kg',costPerUnit:20,stock:2});
+    const added=store.stockIn(flour.id,{quantity:250,unit:'g',reason:'Prueba'});
+    assert.equal(added.ingredient.stock,2.25);
+    const recipe=store.addRecipe({name:'Lote sintético',baseYield:10,items:[{ingredientId:flour.id,quantity:500,unit:'g'}]});
+    assert.equal(recipe.items[0].quantity,0.5);
+    store.confirmProduction(recipe.id,20);
+    assert.equal(store.listIngredients()[0].stock,1.25);
+    assert.throws(()=>store.stockIn(flour.id,{quantity:5,unit:'ml',reason:'Error'}),/incompatibles/);
+    assert.equal(store.listIngredients()[0].stock,1.25);
+  }finally{fs.rmSync(dir,{recursive:true,force:true});}
+});
