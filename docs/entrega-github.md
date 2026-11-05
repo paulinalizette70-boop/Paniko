@@ -7,7 +7,7 @@
 - [Repositorio Paniko](https://github.com/paulinalizette70-boop/Paniko)
 - [README documentado](https://github.com/paulinalizette70-boop/Paniko/blob/main/README.md)
 
-El README describe objetivos, funcionalidades implementadas, límites del MVP, arquitectura, preparación de MySQL, instalación, pruebas y enlaces de seguimiento.
+El README describe objetivos, funcionalidades implementadas, límites del MVP, arquitectura, pruebas y enlaces de seguimiento. Las instrucciones de instalación están documentadas por separado y no forman parte de los requisitos de esta entrega.
 
 ## 2. Casos de prueba y evidencia
 - [Catálogo de casos CP-01 a CP-21](https://github.com/paulinalizette70-boop/Paniko/blob/main/docs/pruebas/casos-de-prueba.md).
