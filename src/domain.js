@@ -25,6 +25,24 @@ function numberField(value, label, {positive = false, integer = false} = {}) {
   return value;
 }
 
+
+const UNIT_FACTORS = Object.freeze({g:1,kg:1000,ml:1,l:1000,pieza:1});
+function convertQuantity(quantity, sourceUnit, targetUnit) {
+  numberField(quantity,'Cantidad',{positive:true});
+  if (!UNITS.includes(sourceUnit) || !UNITS.includes(targetUnit)) throw new ValidationError('Unidad no permitida');
+  const compatible=(sourceUnit===targetUnit) ||
+    (['g','kg'].includes(sourceUnit) && ['g','kg'].includes(targetUnit)) ||
+    (['ml','l'].includes(sourceUnit) && ['ml','l'].includes(targetUnit));
+  if (!compatible) throw new ValidationError('Unidades incompatibles');
+  const value=quantity * UNIT_FACTORS[sourceUnit] / UNIT_FACTORS[targetUnit];
+  const rounded=Math.round(value*1e6)/1e6;
+  if (!Number.isFinite(value) || rounded<=0 || value>1e9 ||
+      Math.abs(value-rounded)>1e-10 ||
+      Math.abs(quantity-Math.round(quantity*1e6)/1e6)>1e-10)
+    throw new ValidationError('Cantidad fuera de precisión máxima de 6 decimales');
+  return rounded;
+}
+
 function validateIngredient(raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new ValidationError('Ingrediente inválido');
   const name = textField(raw.name, 'Nombre');
@@ -49,13 +67,10 @@ function validateRecipe(raw, ingredients) {
     if (!item || typeof item.ingredientId !== 'string') throw new ValidationError('Ingrediente de receta inválido');
     if (seen.has(item.ingredientId)) throw new ValidationError('No repitas un ingrediente en la receta');
     seen.add(item.ingredientId);
-    if (!ingredients.some((i) => i.id === item.ingredientId)) {
-      throw new ValidationError('La receta contiene un ingrediente que no existe');
-    }
-    const quantity = numberField(item.quantity, 'Cantidad', {positive: true});
-    if (Math.abs(quantity - Math.round(quantity * 1e6) / 1e6) > 1e-10 || Math.round(quantity * 1e6) === 0)
-      throw new ValidationError('Cantidad: máximo 6 decimales y mayor que cero');
-    return {ingredientId: item.ingredientId, quantity};
+    const ingredient=ingredients.find(i=>i.id===item.ingredientId);
+    if(!ingredient)throw new ValidationError('La receta contiene un ingrediente que no existe');
+    const quantity=convertQuantity(item.quantity,item.unit ?? ingredient.unit,ingredient.unit);
+    return {ingredientId:item.ingredientId,quantity};
   });
   return {name, baseYield, items};
 }
@@ -91,4 +106,4 @@ function scaleRecipe(recipe, ingredients, desiredYield) {
   };
 }
 
-module.exports = {ValidationError, validateIngredient, validateRecipe, scaleRecipe, UNITS};
+module.exports = {ValidationError, validateIngredient, validateRecipe, scaleRecipe, convertQuantity, UNITS};
