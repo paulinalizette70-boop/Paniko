@@ -24,3 +24,11 @@ Las pruebas de v0.2 documentan entradas, salidas, rechazo por inventario insufic
 - [Instrucciones de importación local privada](../recetas/importacion-privada.md).
 
 > Este registro no implica que se haya importado el catálogo real en el servidor MySQL de la panadería. Esa operación solo puede efectuarse con las credenciales locales de la Product Owner.
+
+## v0.4.0 — Conversión de unidades (CI verificada)
+
+- [Ejecución exitosa en GitHub Actions](https://github.com/paulinalizette70-boop/Paniko/actions/runs/41968225354): **24 pruebas aprobadas, 0 fallidas y 0 omitidas**.
+- CP-22 verifica normalización g/kg y ml/l, incompatibilidad y precisión.
+- CP-23 verifica movimientos y existencias en la unidad del ingrediente mediante adaptador JSON de pruebas.
+- CP-24 verifica importes y consumos normalizados con transacciones MySQL en una base de prueba aislada.
+- Todas las recetas en estas pruebas son ficticias; no son pruebas de aceptación con usuarios reales.
