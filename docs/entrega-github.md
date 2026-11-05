@@ -10,7 +10,7 @@
 El README describe objetivos, funcionalidades implementadas, límites del MVP, arquitectura, pruebas y enlaces de seguimiento. Las instrucciones de instalación están documentadas por separado y no forman parte de los requisitos de esta entrega.
 
 ## 2. Casos de prueba y evidencia
-- [Catálogo de casos CP-01 a CP-21](https://github.com/paulinalizette70-boop/Paniko/blob/main/docs/pruebas/casos-de-prueba.md).
+- [Catálogo de casos CP-01 a CP-24](https://github.com/paulinalizette70-boop/Paniko/blob/main/docs/pruebas/casos-de-prueba.md).
 - [Bitácora de ejecuciones](https://github.com/paulinalizette70-boop/Paniko/blob/main/docs/pruebas/registro-ejecuciones.md).
 - [GitHub Actions: ejecución verificada con 21 pruebas aprobadas, 0 fallidas y 0 omitidas](https://github.com/paulinalizette70-boop/Paniko/actions/runs/41965295559).
 
@@ -39,6 +39,7 @@ El README describe objetivos, funcionalidades implementadas, límites del MVP, a
 - [ADR-003 — JSON temporal](https://github.com/paulinalizette70-boop/Paniko/blob/main/docs/adr/ADR-003-json-provisional.md).
 - [ADR-004 — MySQL y transacciones de inventario](https://github.com/paulinalizette70-boop/Paniko/blob/main/docs/adr/ADR-004-mysql-transacciones-inventario.md).
 - [ADR-005 — Catálogo privado y staging](https://github.com/paulinalizette70-boop/Paniko/blob/main/docs/adr/ADR-005-catalogo-privado.md).
+- [ADR-006 — Conversión de unidades](https://github.com/paulinalizette70-boop/Paniko/blob/main/docs/adr/ADR-006-conversion-unidades.md).
 
 ## 5. Deudas técnicas
 - [Registro de deuda técnica](https://github.com/paulinalizette70-boop/Paniko/blob/main/docs/seguimiento/deuda-tecnica.md).
