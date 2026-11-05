@@ -12,7 +12,7 @@ El README describe objetivos, funcionalidades implementadas, límites del MVP, a
 ## 2. Casos de prueba y evidencia
 - [Catálogo de casos CP-01 a CP-24](https://github.com/paulinalizette70-boop/Paniko/blob/main/docs/pruebas/casos-de-prueba.md).
 - [Bitácora de ejecuciones](https://github.com/paulinalizette70-boop/Paniko/blob/main/docs/pruebas/registro-ejecuciones.md).
-- [GitHub Actions: ejecución verificada con 21 pruebas aprobadas, 0 fallidas y 0 omitidas](https://github.com/paulinalizette70-boop/Paniko/actions/runs/41965295559).
+- [GitHub Actions: ejecución v0.4.0 con 24 pruebas aprobadas, 0 fallidas y 0 omitidas](https://github.com/paulinalizette70-boop/Paniko/actions/runs/41968225354).
 
 | Tipo | Ubicación | Qué verifica |
 | --- | --- | --- |
