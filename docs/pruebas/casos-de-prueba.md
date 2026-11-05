@@ -22,6 +22,7 @@ Los datos son **ficticios**; las pruebas operan sobre funciones de negocio y un 
 
 - [Bitácora](registro-ejecuciones.md).
 - [Salida de terminal](evidencia-ejecucion-2026-11-04.txt).
+- [Ejecución satisfactoria en GitHub Actions](https://github.com/paulinalizette70-boop/Paniko/actions/runs/41957663860).
 - [Pruebas unitarias](../../tests/domain.test.js).
 - [Prueba de integración](../../tests/integration.test.js).
 
