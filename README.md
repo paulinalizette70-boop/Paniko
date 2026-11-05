@@ -4,7 +4,7 @@ Aplicación web académica de **Seminario de Integración: Desarrollo**, Univers
 
 **Versión:** 0.3.0 (noviembre de 2026). El MVP incorpora inventario en MySQL e importador local a tablas de preparación. Las fórmulas reales **no están publicadas ni cargadas en el MySQL de la panadería**; su importación y validación operativa continúan pendientes.
 
-## Qué permite hacer esta versión
+## Qué permite hacer esta versión:
 
 1. Registrar ingredientes con unidad (g, kg, ml, l o pieza), costo unitario y existencia inicial.
 2. Registrar fichas técnicas de recetas con ingredientes, cantidades y número de piezas por preparación.
@@ -15,7 +15,7 @@ Aplicación web académica de **Seminario de Integración: Desarrollo**, Univers
 
 **Límites importantes:** no hay autenticación ni permisos, todavía no se registran mermas ni se cierran lotes, no existe dashboard y no se convierten automáticamente unidades (g↔kg o ml↔l). El costo es estimado a partir de insumos, no incluye mano de obra, energía ni venta. **No desplegar de manera pública** antes de agregar autenticación y autorización.
 
-## Arquitectura
+## Arquitectura:
 
 - Frontend: HTML, CSS, JavaScript.
 - Servidor API: Node.js 20 o superior, HTTP nativo.
@@ -24,11 +24,11 @@ Aplicación web académica de **Seminario de Integración: Desarrollo**, Univers
 - Componentes: `src/domain.js` (validación/escalado), `src/mysql-store.js` (persistencia y transacciones), `src/app.js` (API), `sql/schema.sql` (esquema), `public/` (interfaz).
 - Adaptador JSON `src/store.js`: se conserva **solo para pruebas y desarrollo local**. El servidor normal utiliza MySQL, nunca cambia a JSON silenciosamente.
 
-### Tablas principales
+### Tablas principales:
 
 `ingredients`, `recipes`, `recipe_items`, `inventory_movements`, `production_batches` y `production_batch_items`.
 
-## Flujo de inventario
+## Flujo de inventario:
 
 1. Crear *Harina de trigo* con unidad kg, costo por kg y existencia inicial (o 0).
 2. Registrar entrada de inventario por compra, por ejemplo 2 kg. El sistema genera un movimiento de tipo `entrada`.
@@ -38,7 +38,7 @@ Aplicación web académica de **Seminario de Integración: Desarrollo**, Univers
 
 Las producciones se confirman como registros de consumo de insumos; aún no existe flujo de estados de lote, cierre ni merma. La validación final por Ale Sánchez sigue pendiente.
 
-## API principal
+## API principal:
 
 | Método | Ruta | Uso |
 |---|---|---|
@@ -50,7 +50,7 @@ Las producciones se confirman como registros de consumo de insumos; aún no exis
 | POST | `/api/recipes/:id/produce` | Confirmar consumo y descontar stock `{ "desiredYield": 20 }` |
 | GET | `/api/production` | Producciones recientes |
 
-## Pruebas y evidencias
+## Pruebas y evidencias:
 
 Ejecuta `npm test`. La última ejecución verificada en GitHub Actions terminó con **21 pruebas aprobadas, 0 fallidas y 0 omitidas**, incluyendo MySQL temporal con datos ficticios.
 
@@ -66,7 +66,7 @@ Ejecuta `npm test`. La última ejecución verificada en GitHub Actions terminó 
 
 > MySQL se comprobó en el entorno aislado de GitHub Actions; **no** se ha probado en la computadora de la panadería ni realizado una aceptación formal con Ale Sánchez. Ver la [bitácora](docs/pruebas/registro-ejecuciones.md).
 
-## Documentación del proyecto
+## Documentación del proyecto:
 
 - [Formato para incorporar recetas auténticas](docs/recetas/formato-recetas-reales.md).
 - [ADR-001: aplicación web](docs/adr/ADR-001-aplicacion-web.md).
@@ -76,7 +76,7 @@ Ejecuta `npm test`. La última ejecución verificada en GitHub Actions terminó 
 - [ADR-005: importación privada de recetas](docs/adr/ADR-005-catalogo-privado.md).
 - [Bloqueos](docs/seguimiento/bloqueos.md), [deudas técnicas](docs/seguimiento/deuda-tecnica.md), [Issues](https://github.com/paulinalizette70-boop/Paniko/issues).
 
-## Equipo
+## Equipo:
 
 - Paulina Lizette Villalpando Guizar — Product Owner.
 - Saúl Emiliano Mora Famoso — Scrum Master.
@@ -84,7 +84,7 @@ Ejecuta `npm test`. La última ejecución verificada en GitHub Actions terminó 
 
 **Uso:** prototipo universitario para pruebas y demostración. No cargues recetas confidenciales, datos reales de clientes ni secretos a un repositorio público sin autorización.
 
-## Fórmulas privadas (v0.3.0)
+## Fórmulas privadas. (v0.3.0)
 
 El equipo decidió **no publicar recetas completas en GitHub**. El código incluye un importador a MySQL para el catálogo privado, con validaciones y pruebas sintéticas, pero **ninguna fórmula privada ni respaldo de la base**.
 
