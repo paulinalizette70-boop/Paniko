@@ -2,7 +2,7 @@
 
 Proyecto universitario de **Seminario de Integración: Desarrollo** — Universidad de Guadalajara, Centro Universitario de Tlaquepaque.
 
-> **Estado:** MVP académico **v0.1.0** construido el 4 de noviembre de 2026. Incluye operaciones básicas y no representa todavía todo el alcance del acta de proyecto.
+> **Estado:** Incluye operaciones básicas y no representa todavía todo el alcance del acta de proyecto.
 
 ## Propósito
 
