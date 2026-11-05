@@ -2,7 +2,7 @@
 
 Aplicación web académica de **Seminario de Integración: Desarrollo**, Universidad de Guadalajara, Centro Universitario de Tlaquepaque.
 
-**Versión:** 0.2.0 (noviembre de 2026). Se priorizó la **gestión de inventario en MySQL** y el uso de **recetas reales aportadas por el equipo**. Todavía no se han incorporado esas recetas: se esperan los ingredientes y rendimientos auténticos.
+**Versión:** 0.3.0 (noviembre de 2026). El MVP incorpora inventario en MySQL e importador local a tablas de preparación. Las fórmulas reales **no están publicadas ni cargadas en el MySQL de la panadería**; su importación y validación operativa continúan pendientes.
 
 ## Qué permite hacer esta versión
 
@@ -70,7 +70,10 @@ Las producciones se confirman como registros de consumo de insumos; aún no exis
 
 ## Pruebas y evidencias
 
-Ejecuta `npm test`.
+Ejecuta `npm test`. La última ejecución verificada en GitHub Actions terminó con **21 pruebas aprobadas, 0 fallidas y 0 omitidas**, incluyendo MySQL temporal con datos ficticios.
+
+- [Última ejecución aprobada de GitHub Actions (21/21)](https://github.com/paulinalizette70-boop/Paniko/actions/runs/41965295559).
+- [Índice de evidencias para entregar](docs/entrega-github.md).
 
 - [Casos de prueba](docs/pruebas/casos-de-prueba.md).
 - [Bitácora de pruebas](docs/pruebas/registro-ejecuciones.md).
@@ -79,7 +82,7 @@ Ejecuta `npm test`.
 - [Workflow de GitHub Actions](.github/workflows/tests.yml), que instala `mysql2`, levanta MySQL 8, inicializa las tablas y ejecuta las pruebas.
 - [Evidencia histórica de v0.1.0](docs/pruebas/evidencia-ejecucion-2026-11-04.txt).
 
-> Resultados de MySQL y enlace de ejecución en GitHub Actions: consultar [bitácora](docs/pruebas/registro-ejecuciones.md). No se atribuyen pruebas de aceptación reales sin evidencia.
+> MySQL se comprobó en el entorno aislado de GitHub Actions; **no** se ha probado en la computadora de la panadería ni realizado una aceptación formal con Ale Sánchez. Ver la [bitácora](docs/pruebas/registro-ejecuciones.md).
 
 ## Documentación del proyecto
 
@@ -88,6 +91,7 @@ Ejecuta `npm test`.
 - [ADR-002: stack previsto](docs/adr/ADR-002-stack-y-persistencia.md).
 - [ADR-003: JSON como solución inicial, ya superada](docs/adr/ADR-003-json-provisional.md).
 - [ADR-004: MySQL y transacciones](docs/adr/ADR-004-mysql-transacciones-inventario.md).
+- [ADR-005: importación privada de recetas](docs/adr/ADR-005-catalogo-privado.md).
 - [Bloqueos](docs/seguimiento/bloqueos.md), [deudas técnicas](docs/seguimiento/deuda-tecnica.md), [Issues](https://github.com/paulinalizette70-boop/Paniko/issues).
 
 ## Equipo
