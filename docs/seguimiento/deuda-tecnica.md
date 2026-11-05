@@ -1,9 +1,8 @@
-# Registro de deuda técnica y validación — Paniko
+# Deudas técnicas comprobadas
 
-| Issue | Situación confirmada | Riesgo | Acción | Estado |
-| --- | --- | --- | --- | --- |
-| [#2 — Pruebas reproducibles](https://github.com/paulinalizette70-boop/Paniko/issues/2) | En GitHub aún no existe suite de pruebas ejecutable ni evidencia de tests | No se pueden detectar regresiones de forma reproducible | Incorporar código y suite, ejecutar pruebas y conservar resultados | Abierto |
+| Issue | Evidencia | Impacto | Acción |
+| --- | --- | --- | --- |
+| [#2 — Pruebas reproducibles](https://github.com/paulinalizette70-boop/Paniko/issues/2) | Al comienzo no había suite de pruebas; ahora hay 9 pruebas automatizadas | Reducir regresiones | Registrar como resuelta la base inicial; ampliar cobertura |
+| ADR-003 / Issue pendiente | La implementación usa JSON local síncrono, no MySQL | Concurrencia y consistencia limitadas | Migrar a MySQL con transacciones y pruebas de integridad |
 
-**Alcance del hallazgo:** se verificó exclusivamente el estado del repositorio. No se ha revisado la implementación local, por lo que no se atribuyen errores de diseño ni malas prácticas a código no visto.
-
-Otras posibilidades para investigar (no confirmadas): validaciones duplicadas, conversiones de unidades inconsistentes, lógica de costos repetida.
+La autenticación, lotes, mermas y dashboard se encuentran **fuera del MVP v0.1.0**, pero siguen pendientes del alcance del acta. No se declaran terminados.

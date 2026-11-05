@@ -1,16 +1,20 @@
-# Bitácora de ejecución de pruebas
+# Bitácora de pruebas ejecutadas
 
-**No hay ejecuciones verificadas en GitHub al 4 de noviembre de 2026.** Registrar aquí resultados después de cada ejecución real.
+**Fecha:** 4 de noviembre de 2026 (México). **Comando:** `npm test`. **Entorno verificado:** Node.js v22.16.0, npm 10.9.2, equipo de pruebas local.
 
-| ID | Fecha | Responsable | Versión / entorno | Resultado observado | Estado | Evidencia | Issue |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| CP-01 | Pendiente | Pendiente | Pendiente | Sin ejecutar | No ejecutado | Pendiente | [#1](https://github.com/paulinalizette70-boop/Paniko/issues/1) |
-| CP-02 | Pendiente | Pendiente | Pendiente | Sin ejecutar | No ejecutado | Pendiente | [#1](https://github.com/paulinalizette70-boop/Paniko/issues/1) |
-| CP-03 | Pendiente | Pendiente | Pendiente | Sin ejecutar | No ejecutado | Pendiente | [#1](https://github.com/paulinalizette70-boop/Paniko/issues/1) |
-| CP-04 | Pendiente | Pendiente | Pendiente | Sin ejecutar | No ejecutado | Pendiente | [#1](https://github.com/paulinalizette70-boop/Paniko/issues/1) |
-| CP-05 | Pendiente | Pendiente | Pendiente | Sin ejecutar | No ejecutado | Pendiente | [#1](https://github.com/paulinalizette70-boop/Paniko/issues/1) |
-| CP-06 | Pendiente | Pendiente | Pendiente | Sin ejecutar | No ejecutado | Pendiente | [#3](https://github.com/paulinalizette70-boop/Paniko/issues/3) |
-| CP-07 | Pendiente | Pendiente | Pendiente | Sin ejecutar | No ejecutado | Pendiente | [#3](https://github.com/paulinalizette70-boop/Paniko/issues/3) |
+**Resultado real del comando:** 9 subpruebas, **9 aprobadas, 0 fallidas, 0 omitidas**.
 
-## Evidencia requerida
-Fecha y hora, navegador o comando ejecutado, versión de la aplicación, pasos seguidos, resultado esperado, resultado observado, captura o log, y vínculo al Issue cuando exista.
+## Evidencia
+
+- [Registro íntegro de consola](evidencia-ejecucion-2026-11-04.txt)
+- [Código de pruebas unitarias](../../tests/domain.test.js)
+- [Código de pruebas de integración](../../tests/integration.test.js)
+
+| Grupo | Prueba | Estado | Observación |
+| --- | --- | --- | --- |
+| Unitario | CP-01, CP-02, CP-03 | Aprobado | Validaciones de ingrediente |
+| Unitario | CP-04, CP-06, CP-07 | Aprobado | Fichas y escalado |
+| Unitario | CP-08, CP-09 | Aprobado | Referencias y stock |
+| Integración HTTP | CP-01, CP-02, CP-04, CP-05, CP-06, CP-07, CP-09 | Aprobado | API, persistencia temporal y vista previa |
+
+> Estos resultados corresponden a **pruebas técnicas ejecutadas**, no a aceptación por stakeholders ni a pruebas de módulos todavía pendientes.

@@ -1,23 +1,32 @@
-# Casos de prueba — Paniko
+# Casos de prueba — Paniko v0.1.0
 
-**Estado al 4 de noviembre de 2026: diseñados; sin ejecución comprobada.** Los datos son ficticios y se deben adaptar a los campos reales de la aplicación.
+**Fecha de ejecución local:** 4 de noviembre de 2026 (zona horaria de México). **Entorno:** Node.js 22.16.0, `npm test`. **Resultado:** 9 pruebas aprobadas, 0 fallidas.
 
-| ID | Módulo | Tipo | Descripción | Datos de prueba | Resultado esperado | Estado |
-| --- | --- | --- | --- | --- | --- | --- |
-| CP-01 | Ingredientes | Aceptación | Registrar ingrediente válido | Harina de trigo, kg, $25 por kg | Se guarda y aparece en el listado | No ejecutado |
-| CP-02 | Ingredientes | Aceptación | Validación de nombre vacío | Nombre vacío, kg, $25 por kg | Rechaza el registro e informa el error | No ejecutado |
-| CP-03 | Ingredientes | Aceptación | Validación de costo negativo | Azúcar, kg, -$10 por kg | Rechaza un costo inválido | No ejecutado |
-| CP-04 | Fichas técnicas | Aceptación | Crear una receta | Conchas de prueba, 10 piezas; harina 1 kg, azúcar 250 g | Se guarda con ingredientes y unidades correctas | No ejecutado |
-| CP-05 | Fichas técnicas | Aceptación | Consultar ficha existente | Buscar 'Conchas de prueba' | Recupera las cantidades registradas | No ejecutado |
-| CP-06 | Escalado | Aceptación futura | Escalar producción | Receta para 10 piezas; solicitar 20 | Multiplica cantidades por 2 | No ejecutado: en desarrollo |
-| CP-07 | Escalado | Aceptación futura | Producción inválida | Solicitar 0 piezas | No permite producción de cantidad cero | No ejecutado: en desarrollo |
+Los datos son **ficticios**; las pruebas operan sobre funciones de negocio y un archivo temporal en la integración. No hay pruebas de aceptación de Ale Sánchez todavía.
 
-## Procedimiento para ejecutar cada caso
-1. Abrir una versión identificable de la aplicación y preparar los datos.
-2. Registrar responsable, fecha, entorno y estado inicial.
-3. Realizar la acción detallada en el caso y observar la respuesta.
-4. Comparar el resultado observado con el esperado.
-5. Registrar aprobado, fallido, bloqueado o no ejecutado en la [bitácora](registro-ejecuciones.md).
-6. Adjuntar enlace a captura, video, salida de consola o prueba automatizada, y registrar Issue si corresponde.
+| ID | Tipo | Caso / entradas | Resultado esperado | Estado | Archivo |
+| --- | --- | --- | --- | --- | --- |
+| CP-01 | Unitario e integración | Ingrediente Harina, kg, costo $25, stock 5 | Registro válido, respuesta 201 | Aprobado | `tests/domain.test.js`, `tests/integration.test.js` |
+| CP-02 | Unitario e integración | Ingrediente sin nombre | Error de validación, HTTP 400 | Aprobado | `tests/domain.test.js`, `tests/integration.test.js` |
+| CP-03 | Unitario | Ingrediente con costo -$2 | Rechazar costo negativo | Aprobado | `tests/domain.test.js` |
+| CP-04 | Unitario e integración | Conchas, 10 piezas, harina y azúcar | Crear ficha ligada a ingredientes existentes, 201 | Aprobado | `tests/domain.test.js`, `tests/integration.test.js` |
+| CP-05 | Integración | Consultar recetas luego de crear una | Obtener receta guardada en API | Aprobado | `tests/integration.test.js` |
+| CP-06 | Unitario e integración | Escalar receta de 10 a 20 conchas | 2 kg harina, 0.5 kg azúcar, costo $65 | Aprobado | `tests/domain.test.js`, `tests/integration.test.js` |
+| CP-07 | Unitario e integración | Escalar con producción 0 | Rechazar, HTTP 400 | Aprobado | `tests/domain.test.js`, `tests/integration.test.js` |
+| CP-08 | Unitario | Ficha con ingrediente inexistente | Rechazar y explicar error | Aprobado | `tests/domain.test.js` |
+| CP-09 | Unitario e integración | Vista previa de stock | Detectar suficiencia y no modificar existencia | Aprobado | `tests/domain.test.js`, `tests/integration.test.js` |
 
-> Para la entrega de **tests realizados** todavía falta ejecutar estos casos en el software real. No se atribuyen éxitos sin evidencia.
+**Interpretación del conteo:** `npm test` muestra nueve subpruebas; varios casos CP se verifican dentro de la misma subprueba de integración. Esto no significa nueve pruebas de aceptación independientes.
+
+## Dónde comprobar los resultados
+
+- [Bitácora](registro-ejecuciones.md).
+- [Salida de terminal](evidencia-ejecucion-2026-11-04.txt).
+- [Pruebas unitarias](../../tests/domain.test.js).
+- [Prueba de integración](../../tests/integration.test.js).
+
+## Pendiente
+
+1. Ejecutar validaciones de interfaz manuales con capturas en navegador.
+2. Evaluar el sistema con Ale Sánchez en una sesión real y documentar aceptación.
+3. Migrar a MySQL y agregar pruebas de transacciones de inventario; estas funcionalidades todavía no existen en el MVP.

@@ -1,0 +1,68 @@
+
+> paniko@0.1.0 test
+> node --test tests/*.test.js
+
+TAP version 13
+# Subtest: CP-01 valida ingrediente correcto
+ok 1 - CP-01 valida ingrediente correcto
+  ---
+  duration_ms: 1.956201
+  type: 'test'
+  ...
+# Subtest: CP-02 rechaza ingrediente sin nombre
+ok 2 - CP-02 rechaza ingrediente sin nombre
+  ---
+  duration_ms: 0.970431
+  type: 'test'
+  ...
+# Subtest: CP-03 rechaza costos negativos
+ok 3 - CP-03 rechaza costos negativos
+  ---
+  duration_ms: 0.322876
+  type: 'test'
+  ...
+# Subtest: CP-04 valida ficha con ingredientes existentes
+ok 4 - CP-04 valida ficha con ingredientes existentes
+  ---
+  duration_ms: 0.928423
+  type: 'test'
+  ...
+# Subtest: CP-06 duplica cantidades y costo para 20 piezas
+ok 5 - CP-06 duplica cantidades y costo para 20 piezas
+  ---
+  duration_ms: 2.321832
+  type: 'test'
+  ...
+# Subtest: CP-07 rechaza producción cero
+ok 6 - CP-07 rechaza producción cero
+  ---
+  duration_ms: 0.909931
+  type: 'test'
+  ...
+# Subtest: detecta inventario suficiente y no modifica existencias
+ok 7 - detecta inventario suficiente y no modifica existencias
+  ---
+  duration_ms: 2.010268
+  type: 'test'
+  ...
+# Subtest: rechaza ingrediente inexistente en una ficha
+ok 8 - rechaza ingrediente inexistente en una ficha
+  ---
+  duration_ms: 0.254914
+  type: 'test'
+  ...
+# Subtest: CP-01, CP-04, CP-05 y CP-06: API de ingredientes, recetas, consulta y escalado
+ok 9 - CP-01, CP-04, CP-05 y CP-06: API de ingredientes, recetas, consulta y escalado
+  ---
+  duration_ms: 149.359691
+  type: 'test'
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 374.794916

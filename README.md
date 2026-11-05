@@ -1,66 +1,83 @@
-# Paniko
+# Paniko · Gestión de producción para panaderías artesanales
 
-**Sistema de trazabilidad y control de producción para panaderías artesanales**
+Proyecto universitario de **Seminario de Integración: Desarrollo** — Universidad de Guadalajara, Centro Universitario de Tlaquepaque.
 
-Proyecto de Seminario de Integración: Desarrollo — Universidad de Guadalajara, Centro Universitario de Tlaquepaque.
+> **Estado:** MVP académico **v0.1.0** construido el 4 de noviembre de 2026. Incluye operaciones básicas y no representa todavía todo el alcance del acta de proyecto.
 
-## Objetivo
-Facilitar el registro de insumos, la creación de fichas técnicas de recetas y, progresivamente, el escalado de producción, la comprobación de inventario, el cálculo de costos por lote y el registro de mermas.
+## Propósito
+
+Evitar errores en el registro manual de insumos y recetas, facilitar el cálculo de cantidades de producción y ofrecer un primer estimado de costos y disponibilidad de inventario.
+
+## Funcionalidades implementadas en este MVP
+
+- **Registro de ingredientes:** nombre, unidad (g, kg, ml, l, pieza), costo por unidad y existencia, con validaciones.
+- **Fichas técnicas:** recetas con rendimiento base y lista de ingredientes y cantidades.
+- **Consulta:** listados de ingredientes y recetas registradas.
+- **Escalado de vista previa:** calcula cantidades, costo estimado y alerta de inventario insuficiente. **No descuenta stock** ni inicia/cierra lotes.
+- Persistencia local provisional en un archivo JSON (se crea al ejecutar), excluido de Git.
+
+## Pendiente del alcance original
+
+Migración a MySQL, autenticación y roles, transacciones de inventario, lotes y mermas, dashboard, despliegue público y validación con la dueña. **Nada de ello está declarado como implementado.**
+
+## Requisitos
+
+- [Node.js](https://nodejs.org/) versión **20 o superior**.
+- Navegador web moderno.
+- **No requiere `npm install`**: esta versión usa módulos integrados de Node.js.
+
+## Ejecutar localmente
+
+1. Descargar/clonar el repositorio.
+2. Abrir una terminal dentro de la carpeta `Paniko`.
+3. Ejecutar `npm start`.
+4. Abrir **http://localhost:3000**.
+5. Registrar ingredientes y crear una ficha técnica, o ejecutar `npm run seed` en otra terminal para cargar el ejemplo de conchas. La carga de ejemplo no modifica un archivo que ya tenga registros.
+
+**Opcional:** configurar `PORT` o `DATA_FILE` como variables de entorno. La aplicación guarda datos en `data/paniko.json`, ignorado por Git.
+
+## Datos para demostrar
+
+`npm run seed` carga dos ingredientes ficticios: harina de trigo 5 kg a $25/kg y azúcar 2 kg a $30/kg, y una receta de 10 conchas con 1 kg de harina y 0.25 kg de azúcar. Al escalar a 20 piezas se requieren 2 kg y 0.5 kg, con costo estimado de **$65 MXN**. Son **datos de demostración, no de Casa Dely**.
+
+## Ejecutar pruebas realizadas
+
+```bash
+npm test
+```
+
+Se ejecutaron **9 pruebas automatizadas** (8 unitarias y una prueba de integración de API con varios escenarios) en Node.js 22.16.0, con **9 aprobadas y 0 fallidas** en el entorno local de desarrollo.
+
+- [Catálogo y resultados](docs/pruebas/casos-de-prueba.md).
+- [Bitácora de ejecución](docs/pruebas/registro-ejecuciones.md).
+- [Salida de la ejecución](docs/pruebas/evidencia-ejecucion-2026-11-04.txt).
+- [Código de pruebas unitarias](tests/domain.test.js).
+- [Código de prueba de integración](tests/integration.test.js).
+- [GitHub Actions](.github/workflows/tests.yml) (ejecución en remoto sujeta a verificar).
+
+## Arquitectura
+
+- Frontend: HTML, CSS y JavaScript, servido por Node.js.
+- Backend: Node.js y API HTTP nativa, sin dependencias externas.
+- Persistencia: JSON local provisional, **no MySQL aún** (consultar ADR-003).
+- Entradas: `server.js`; negocio: `src/domain.js`; datos: `src/store.js`; API: `src/app.js`.
+
+### Decisiones (ADR)
+
+- [ADR-001: aplicación web](docs/adr/ADR-001-aplicacion-web.md).
+- [ADR-002: tecnologías previstas en el acta](docs/adr/ADR-002-stack-y-persistencia.md).
+- [ADR-003: almacenamiento JSON temporal](docs/adr/ADR-003-json-provisional.md).
+
+## Seguimiento de riesgos y tareas
+
+- [Bloqueos](docs/seguimiento/bloqueos.md).
+- [Deudas técnicas](docs/seguimiento/deuda-tecnica.md).
+- [Issues de GitHub](https://github.com/paulinalizette70-boop/Paniko/issues).
 
 ## Equipo
-- **Paulina Lizette Villalpando Guizar:** Product Owner.
-- **Saúl Emiliano Mora Famoso:** Scrum Master.
-- **Gael Iosef Ramírez Marmolejo:** equipo de desarrollo.
 
-## Estado reportado (4 de noviembre de 2026)
-| Función | Estado |
-| --- | --- |
-| Registro de ingredientes | Desarrollado por el equipo; código aún no publicado |
-| Fichas técnicas de recetas | Desarrolladas por el equipo; código aún no publicado |
-| Escalado automático de ingredientes | En desarrollo |
-| Validación de inventario | Implementación por verificar |
-| Cálculo de costos por lote | Implementación por verificar |
-| Registro de producción y mermas | Implementación por verificar |
-| Inicio de sesión y roles | Implementación por verificar |
-| Dashboard de indicadores | Implementación por verificar |
+- Paulina Lizette Villalpando Guizar — Product Owner.
+- Saúl Emiliano Mora Famoso — Scrum Master.
+- Gael Iosef Ramírez Marmolejo — Development Team.
 
-**Importante:** el repositorio aún no contiene el código fuente de la aplicación; el estado funcional anterior fue comunicado por el equipo, no verificado mediante ejecución.
-
-## Tecnologías previstas en el acta
-- Frontend: HTML, CSS y JavaScript.
-- Backend: Node.js.
-- Base de datos: MySQL.
-- Autenticación: JWT.
-- Despliegue previsto: Vercel.
-- Control de versiones y gestión: GitHub y GitHub Projects.
-
-Estos componentes corresponden a la **planificación**; deben verificarse cuando se incorpore el código real.
-
-## Instalación y ejecución
-**Pendiente:** faltan el código fuente, las dependencias y las instrucciones específicas de instalación. No se proporcionan comandos de ejecución inventados. Al subir la aplicación se documentarán los requisitos, variables de entorno de ejemplo, configuración de MySQL y forma de iniciarla. **No subir contraseñas, secretos ni archivos .env reales.**
-
-## Pruebas
-- [Catálogo de casos diseñados](docs/pruebas/casos-de-prueba.md), con escenarios, datos y resultados esperados.
-- [Bitácora de ejecución](docs/pruebas/registro-ejecuciones.md), todavía **sin resultados verificados**.
-- [Bloqueo para ejecutar pruebas y publicar el código](https://github.com/paulinalizette70-boop/Paniko/issues/1).
-- [Deuda de pruebas reproducibles](https://github.com/paulinalizette70-boop/Paniko/issues/2).
-
-**Los casos diseñados no equivalen a pruebas realizadas.** Se documentarán fecha, resultado real, evidencia y responsable al ejecutarlos sobre Paniko.
-
-## Arquitectura y seguimiento
-- [ADR-001: elección de aplicación web](docs/adr/ADR-001-aplicacion-web.md).
-- [ADR-002: stack y base de datos previstos](docs/adr/ADR-002-stack-y-persistencia.md).
-- [Registro de bloqueos](docs/seguimiento/bloqueos.md).
-- [Registro de deuda técnica](docs/seguimiento/deuda-tecnica.md).
-- [Issue de escalado en desarrollo](https://github.com/paulinalizette70-boop/Paniko/issues/3).
-- [Todos los Issues](../../issues).
-
-## Sprint Review
-Se organizó una revisión presencial con **Ale Sánchez**, dueña de Casa Dely, para el **4 de noviembre de 2026 en Tlaquepaque**. La documentación del Sprint Review debe incorporar la confirmación real y la evidencia de contacto.
-
-## Siguientes pasos
-1. Publicar el código existente de ingredientes y fichas técnicas.
-2. Documentar instalación y arranque.
-3. Ejecutar CP-01 a CP-05 y subir evidencia real.
-4. Terminar escalado y ejecutar CP-06 y CP-07.
-5. Actualizar bloqueos, deuda técnica y decisiones según la implementación.
+> Este repositorio contiene un prototipo académico inicial y pruebas técnicas. La aceptación por stakeholders reales aún está pendiente. No se almacenan credenciales reales ni datos personales de clientes.
