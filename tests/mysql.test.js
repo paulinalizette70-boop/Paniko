@@ -45,7 +45,7 @@ test('CP-24 MySQL registra conversiones de unidades y preserva inventario', {ski
   const recipe=await store.addRecipe({name:'Conversión ficticia',baseYield:10,items:[{ingredientId:ing.id,quantity:500,unit:'g'}]});
   assert.equal(recipe.items[0].quantity,0.5);
   const batch=await store.confirmProduction(recipe.id,20);
-  assert.equal(batch.lines[0].required,1);
+  assert.equal(batch.lines[0].quantity,1);
   const stock=(await store.listIngredients()).find(i=>i.id===ing.id);
   assert.equal(stock.stock,1.25);
   await assert.rejects(()=>store.stockIn(ing.id,{quantity:5,unit:'ml',reason:'Incompatible'}),/incompatibles/);
