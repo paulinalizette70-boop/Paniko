@@ -53,9 +53,9 @@ Las producciones se confirman como registros de consumo de insumos; aún no exis
 
 ## Pruebas y evidencias
 
-Ejecuta `npm test`. La ejecución verificada de v0.3.0 terminó con **21 pruebas aprobadas, 0 fallidas y 0 omitidas**. La versión v0.4.0 incorpora nuevos casos de conversión; consultar GitHub Actions para conocer su resultado más reciente.
+Ejecuta `npm test`. La versión 0.4.0 tiene **24 pruebas aprobadas, 0 fallidas y 0 omitidas**, verificadas en GitHub Actions con MySQL temporal y datos ficticios. [Ver ejecución v0.4.0](https://github.com/paulinalizette70-boop/Paniko/actions/runs/41968225354).
 
-- [Última ejecución aprobada de GitHub Actions (21/21)](https://github.com/paulinalizette70-boop/Paniko/actions/runs/41965295559).
+- [Ejecución aprobada de GitHub Actions v0.4.0 (24/24)](https://github.com/paulinalizette70-boop/Paniko/actions/runs/41968225354).
 - [Índice de evidencias para entregar](docs/entrega-github.md).
 
 - [Casos de prueba](docs/pruebas/casos-de-prueba.md).
