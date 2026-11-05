@@ -28,24 +28,6 @@ Aplicación web académica de **Seminario de Integración: Desarrollo**, Univers
 
 `ingredients`, `recipes`, `recipe_items`, `inventory_movements`, `production_batches` y `production_batch_items`.
 
-## Instalación local con MySQL
-
-Requisitos: Node.js >=20, MySQL 8.0.16+, permisos para crear tablas en una base de datos de desarrollo.
-
-1. Clona o descarga el repositorio y abre la carpeta en una terminal.
-2. Ejecuta `npm install`.
-3. Copia `.env.example` como `.env` y rellena `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`. Usa **credenciales de desarrollo** y nunca publiques `.env`.
-4. Crea el esquema y las tablas con `node --env-file=.env scripts/init-db.js`. Si tu usuario de MySQL no tiene permiso para crear bases de datos, créala previamente desde MySQL Workbench y concede permisos para tablas.
-5. Inicia con `node --env-file=.env server.js`.
-6. Abre <http://localhost:3000>.
-
-Comandos equivalentes con variables de entorno ya definidas: `npm run db:init`, `npm start`.
-
-**Windows/PowerShell:** `Copy-Item .env.example .env` para crear `.env`.
-**Linux/macOS:** `cp .env.example .env`.
-
-> Importante: el archivo `.env.example` es únicamente un ejemplo. Cambia la contraseña ficticia. Ni la base de datos ni las credenciales se incluyen en GitHub. Los datos JSON de la versión anterior **no se migran automáticamente** a MySQL.
-
 ## Flujo de inventario
 
 1. Crear *Harina de trigo* con unidad kg, costo por kg y existencia inicial (o 0).
@@ -111,16 +93,3 @@ El equipo decidió **no publicar recetas completas en GitHub**. El código inclu
 - [SQL de las tablas privadas vacías](sql/private-catalog.sql).
 - [Tests unitarios del importador](tests/private-catalog.test.js).
 - [Test de integración MySQL con datos falsos](tests/private-catalog-mysql.test.js).
-
-### Pasos mínimos
-
-```powershell
-npm install
-# Configura .env a partir de .env.example (archivo privado, nunca subirlo)
-node --env-file=.env scripts/init-db.js
-# Copia el archivo privado en private/catalogo_recetas.json (ignorado por Git)
-npm run recipes:check -- --file private/catalogo_recetas.json
-node --env-file=.env scripts/import-private-recipes.js --file private/catalogo_recetas.json --apply
-```
-
-**Importante:** las fórmulas importadas quedan en tablas separadas, todavía no se muestran en la aplicación y no se pueden usar para descontar inventario hasta validarlas. No desplegar la API pública sin autenticación.
