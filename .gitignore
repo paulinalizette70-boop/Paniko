@@ -5,3 +5,9 @@ data/*.json
 !.env.example
 coverage/
 .DS_Store
+
+# Nunca subir fórmulas de la panadería ni archivos importados
+private/
+recetas_privadas/
+**/catalogo_recetas.json
+**/formulas_ingredientes.csv

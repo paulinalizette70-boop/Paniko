@@ -15,3 +15,18 @@ Los ingredientes de las pruebas son **ficticios**, no recetas reales. Los result
 | CP-15 | Integración MySQL | Entrada, transacción de producción, rollback por insuficiencia | Datos relacionales consistentes | `tests/mysql.test.js` |
 
 La integración real con MySQL se ejecuta **solo** si `MYSQL_TEST=1` y `DB_NAME` termina en `_test`; la CI configura una base temporal `paniko_test`. No se atribuyen pruebas de usuario o recetas reales todavía.
+
+## Casos añadidos: importador de recetas privadas (v0.3.0)
+
+Pruebas con **datos sintéticos**, nunca fórmulas de la panadería:
+
+| ID | Tipo | Caso | Resultado esperado | Archivo |
+| --- | --- | --- | --- | --- |
+| CP-16 | Unitario | Validar catálogo JSON y sus referencias | Datos válidos y conteos correctos | `tests/private-catalog.test.js` |
+| CP-17 | Unitario | Admitir datos incompletos y unidades por revisar | Advertencias sin inventar cantidades | `tests/private-catalog.test.js` |
+| CP-18 | Unitario | Rechazar referencias a subrecetas inexistentes | Error antes de importación | `tests/private-catalog.test.js` |
+| CP-19 | Unitario | Rechazar producto con referencia inválida y IDs duplicados | Error de validación | `tests/private-catalog.test.js` |
+| CP-20 | Unitario | Evitar un catálogo vacío o rellenos de referencia inválida | Error de validación | `tests/private-catalog.test.js` |
+| CP-21 | MySQL integración | Importación duplicada, datos JSON y aislamiento de HTTP | Importación idempotente; ningún endpoint público | `tests/private-catalog-mysql.test.js` |
+
+Las pruebas técnicas **no equivalen a la importación real** del catálogo privado en la base de la usuaria.

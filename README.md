@@ -79,7 +79,7 @@ Ejecuta `npm test`.
 - [Workflow de GitHub Actions](.github/workflows/tests.yml), que instala `mysql2`, levanta MySQL 8, inicializa las tablas y ejecuta las pruebas.
 - [Evidencia histórica de v0.1.0](docs/pruebas/evidencia-ejecucion-2026-11-04.txt).
 
-> [Ejecución de GitHub Actions con MySQL: completada satisfactoriamente](https://github.com/paulinalizette70-boop/Paniko/actions/runs/41960369156). Ver resultados también en la [bitácora](docs/pruebas/registro-ejecuciones.md). No se atribuyen pruebas de aceptación reales sin evidencia.
+> Resultados de MySQL y enlace de ejecución en GitHub Actions: consultar [bitácora](docs/pruebas/registro-ejecuciones.md). No se atribuyen pruebas de aceptación reales sin evidencia.
 
 ## Documentación del proyecto
 
@@ -97,3 +97,26 @@ Ejecuta `npm test`.
 - Gael Iosef Ramírez Marmolejo — Development Team.
 
 **Uso:** prototipo universitario para pruebas y demostración. No cargues recetas confidenciales, datos reales de clientes ni secretos a un repositorio público sin autorización.
+
+## Fórmulas privadas (v0.3.0)
+
+El equipo decidió **no publicar recetas completas en GitHub**. El código incluye un importador a MySQL para el catálogo privado, con validaciones y pruebas sintéticas, pero **ninguna fórmula privada ni respaldo de la base**.
+
+- [Instrucciones para importar desde un archivo local ignorado por Git](docs/recetas/importacion-privada.md).
+- [ADR-005: decisión de privacidad y staging](docs/adr/ADR-005-catalogo-privado.md).
+- [SQL de las tablas privadas vacías](sql/private-catalog.sql).
+- [Tests unitarios del importador](tests/private-catalog.test.js).
+- [Test de integración MySQL con datos falsos](tests/private-catalog-mysql.test.js).
+
+### Pasos mínimos
+
+```powershell
+npm install
+# Configura .env a partir de .env.example (archivo privado, nunca subirlo)
+node --env-file=.env scripts/init-db.js
+# Copia el archivo privado en private/catalogo_recetas.json (ignorado por Git)
+npm run recipes:check -- --file private/catalogo_recetas.json
+node --env-file=.env scripts/import-private-recipes.js --file private/catalogo_recetas.json --apply
+```
+
+**Importante:** las fórmulas importadas quedan en tablas separadas, todavía no se muestran en la aplicación y no se pueden usar para descontar inventario hasta validarlas. No desplegar la API pública sin autenticación.

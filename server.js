@@ -8,7 +8,8 @@ async function main() {
     await pool.query('SELECT 1');
     const app=createApp({store:createMysqlStore(pool)});
     const port=Number(process.env.PORT || 3000);
-    app.listen(port, () => console.log(`Paniko (MySQL) disponible en http://localhost:${port}`));
+    const host=process.env.HOST || '127.0.0.1';
+    app.listen(port, host, () => console.log(`Paniko (MySQL) disponible en http://${host}:${port}`));
     async function close() {app.close();await pool.end();}
     process.on('SIGINT',close);
     process.on('SIGTERM',close);
