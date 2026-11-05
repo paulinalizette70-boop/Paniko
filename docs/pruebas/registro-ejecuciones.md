@@ -1,22 +1,16 @@
-# Bitácora de pruebas ejecutadas
+# Bitácora de pruebas — Paniko
 
-**Fecha:** 4 de noviembre de 2026 (México). **Comando:** `npm test`. **Entorno verificado:** Node.js v22.16.0, npm 10.9.2, equipo de pruebas local.
+## Histórico verificado v0.1.0
 
-**Resultado real del comando:** 9 subpruebas, **9 aprobadas, 0 fallidas, 0 omitidas**.
+- **4 de noviembre de 2026:** 9 pruebas automatizadas aprobadas, 0 fallidas.
+- [Evidencia original de consola](evidencia-ejecucion-2026-11-04.txt).
+- [Ejecución anterior en GitHub Actions](https://github.com/paulinalizette70-boop/Paniko/actions/runs/41957663860) — completada correctamente.
 
-## Evidencia
+## Versión 0.2.0: inventario y MySQL
 
-- [GitHub Actions: ejecución remota satisfactoria](https://github.com/paulinalizette70-boop/Paniko/actions/runs/41957663860) — workflow `Pruebas Paniko`, concluido con estado **success**.
+- **Pruebas locales:** 14 aprobadas, 0 fallidas, 1 omitida (la que requiere servidor MySQL).
+- **Método local:** `node --test tests/*.test.js` en Node.js 22.16.0, con adaptador JSON para las pruebas que requieren persistencia.
+- **MySQL:** implementación y prueba `CP-15` disponibles; resultado en GitHub Actions **pendiente de verificación**.
+- **Aceptación con Ale Sánchez:** no realizada ni afirmada.
 
-- [Registro íntegro de consola](evidencia-ejecucion-2026-11-04.txt)
-- [Código de pruebas unitarias](../../tests/domain.test.js)
-- [Código de pruebas de integración](../../tests/integration.test.js)
-
-| Grupo | Prueba | Estado | Observación |
-| --- | --- | --- | --- |
-| Unitario | CP-01, CP-02, CP-03 | Aprobado | Validaciones de ingrediente |
-| Unitario | CP-04, CP-06, CP-07 | Aprobado | Fichas y escalado |
-| Unitario | CP-08, CP-09 | Aprobado | Referencias y stock |
-| Integración HTTP | CP-01, CP-02, CP-04, CP-05, CP-06, CP-07, CP-09 | Aprobado | API, persistencia temporal y vista previa |
-
-> Estos resultados corresponden a **pruebas técnicas ejecutadas**, no a aceptación por stakeholders ni a pruebas de módulos todavía pendientes.
+Las pruebas de v0.2 documentan entradas, salidas, rechazo por inventario insuficiente y ausencia de consumos parciales en la simulación local. La garantía transaccional del adaptador MySQL debe verificarse en la ejecución remota.

@@ -3,42 +3,55 @@
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Paniko | Producción artesanal</title><link rel="stylesheet" href="/styles.css"/>
 </head><body>
-<header><div class="brand">Paniko<span> · MVP</span></div><p>Gestión de ingredientes, fichas técnicas y vista previa de escalado.</p></header>
+<header><div class="brand">Paniko<span> · MVP 0.2.0</span></div><p>Fichas técnicas e inventario de producción artesanal.</p></header>
 <main>
-<section class="notice">Versión inicial para pruebas. Las operaciones se guardan en un archivo JSON local; no hay inicio de sesión ni descuentos automáticos de inventario.</section>
+<section class="notice">Prototipo académico: almacenamiento en MySQL y movimientos de inventario. No incluye usuarios ni permisos; úsalo solo en un entorno de prueba, no con datos confidenciales.</section>
 <section class="columns">
   <article class="panel"><h2>1. Registrar ingrediente</h2>
     <form id="ingredient-form">
       <label>Nombre <input name="name" required maxlength="100" placeholder="Harina de trigo"/></label>
       <label>Unidad <select name="unit"><option>kg</option><option>g</option><option>l</option><option>ml</option><option>pieza</option></select></label>
-      <label>Costo por unidad ($) <input name="cost" type="number" min="0" step="any" required placeholder="25"/></label>
-      <label>Existencia (en la misma unidad) <input name="stock" type="number" min="0" step="any" required placeholder="5"/></label>
+      <label>Costo por unidad (MXN) <input name="cost" type="number" min="0" step="0.0001" required placeholder="25"/></label>
+      <label>Existencia inicial (en la misma unidad) <input name="stock" type="number" min="0" step="0.000001" required value="0"/></label>
       <button>Guardar ingrediente</button>
     </form>
   </article>
   <article class="panel"><h2>2. Crear ficha técnica</h2>
     <form id="recipe-form">
-      <label>Nombre de receta <input name="name" maxlength="100" required placeholder="Conchas"/></label>
+      <label>Nombre de receta <input name="name" maxlength="100" required placeholder="Nombre de receta"/></label>
       <label>Rendimiento base (piezas) <input name="yield" type="number" min="1" step="1" required value="10"/></label>
       <div id="recipe-items"></div>
       <button type="button" id="add-item" class="secondary">Añadir ingrediente</button>
       <button>Guardar ficha técnica</button>
     </form>
+    <p class="muted tiny">Las cantidades de la receta usan la unidad registrada para cada ingrediente; todavía no se convierten g↔kg ni ml↔l.</p>
   </article>
 </section>
 <section class="columns">
-  <article class="panel"><h2>Ingredientes registrados</h2><div id="ingredient-list">Sin registros.</div></article>
-  <article class="panel"><h2>3. Escalado y costos (vista previa)</h2>
+  <article class="panel"><h2>3. Existencias y entradas de inventario</h2>
+    <div id="ingredient-list">Sin registros.</div>
+    <h3>Registrar entrada</h3>
+    <form id="stock-in-form">
+      <label>Ingrediente <select name="ingredient" required></select></label>
+      <label>Cantidad recibida <input name="quantity" type="number" min="0.000001" step="0.000001" required placeholder="2"/></label>
+      <label>Motivo <input name="reason" maxlength="150" value="Reposición de inventario" required/></label>
+      <button>Registrar entrada</button>
+    </form>
+    <h3>Movimientos recientes</h3><div id="movement-list" aria-live="polite"></div>
+  </article>
+  <article class="panel"><h2>4. Escalar y producir</h2>
     <form id="scale-form">
       <label>Receta <select name="recipe" required></select></label>
       <label>Producción deseada (piezas) <input type="number" name="desiredYield" min="1" step="1" value="20" required/></label>
-      <button>Calcular</button>
+      <button type="submit" class="secondary">Calcular vista previa (no descuenta)</button>
+      <button type="button" id="produce-button">Confirmar producción y descontar ingredientes</button>
     </form>
     <div id="scale-results" aria-live="polite"></div>
     <h3>Fichas registradas</h3><div id="recipe-list">Sin recetas.</div>
+    <h3>Producciones confirmadas</h3><div id="production-list"></div>
   </article>
 </section>
 <p id="notification" role="status" aria-live="polite"></p>
-</main><footer>Proyecto académico · Universidad de Guadalajara · Versión 0.1.0</footer>
+</main><footer>Proyecto académico · Universidad de Guadalajara · Versión 0.2.0</footer>
 <script src="/app.js" defer></script>
 </body></html>

@@ -1,22 +1,15 @@
-# ADR-003 — Persistencia JSON temporal para un MVP ejecutable
+# ADR-003 — Persistencia JSON temporal del MVP 0.1
 
-**Fecha:** 4 de noviembre de 2026. **Estado:** implementado como decisión temporal del prototipo; requiere ratificación del equipo.
+**Fecha inicial:** 4 de noviembre de 2026. **Estado:** **sustituido** por [ADR-004](ADR-004-mysql-transacciones-inventario.md) para la aplicación principal en v0.2.0.
 
 ## Contexto
-El acta de Paniko propone MySQL, pero el repositorio no tenía código fuente ni un entorno de base de datos configurado. Se necesitaba un prototipo reproducible para demostrar registros, fichas y escalado.
+El MVP original requería registro y fichas técnicas reproducibles sin instalar una base de datos.
 
-## Decisión
-En la versión **0.1.0** usar un archivo JSON local (ignorado por Git) con Node.js para ingredientes y recetas, con pruebas de API usando almacenamiento temporal.
-
-## Alternativas consideradas
-- MySQL desde el inicio: alineado con el acta, pero exige configurar servidor, credenciales y esquema antes de demostrar el flujo.
-- Datos solo en memoria: simple pero se pierden al reiniciar.
-- JSON local: rápido para prototipo individual y persistente entre reinicios.
+## Decisión inicial
+Se usó JSON local provisional con Node.js. Se conserva en `src/store.js` para pruebas locales reproducibles y compatibilidad; el servidor actual utiliza MySQL.
 
 ## Consecuencias
-**Positivas:** arranque sin instalaciones adicionales, suite reproducible y cero secretos de base de datos.
+JSON carece de transacciones multiusuario e integridad referencial SQL. No se recomienda para inventario concurrente ni despliegues de uso real.
 
-**Negativas:** escritura síncrona, sin transacciones multiusuario ni garantías de concurrencia, sin autenticación, no apto para despliegue multiinstancia. No equivale a implementar MySQL.
-
-## Seguimiento
-Migrar a MySQL antes de considerar el sistema listo para producción; documentar esquema, migración y tests de integridad. Consultar el Issue de deuda técnica correspondiente.
+## Cambio posterior
+El usuario eligió MySQL y desarrollo prioritario de inventario. Consultar [ADR-004](ADR-004-mysql-transacciones-inventario.md).

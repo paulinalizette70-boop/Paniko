@@ -30,12 +30,11 @@ function validateIngredient(raw) {
   const name = textField(raw.name, 'Nombre');
   const unit = raw.unit;
   if (!UNITS.includes(unit)) throw new ValidationError('Unidad no permitida (g, kg, ml, l, pieza)');
-  return {
-    name,
-    unit,
-    costPerUnit: numberField(raw.costPerUnit, 'Costo por unidad'),
-    stock: numberField(raw.stock, 'Existencia'),
-  };
+  const costPerUnit = numberField(raw.costPerUnit, 'Costo por unidad');
+  const stock = numberField(raw.stock, 'Existencia');
+  if (Math.abs(costPerUnit - Math.round(costPerUnit * 10000) / 10000) > 1e-10) throw new ValidationError('Costo: máximo 4 decimales');
+  if (Math.abs(stock - Math.round(stock * 1e6) / 1e6) > 1e-10) throw new ValidationError('Existencia: máximo 6 decimales');
+  return {name, unit, costPerUnit, stock};
 }
 
 function validateRecipe(raw, ingredients) {
@@ -53,7 +52,10 @@ function validateRecipe(raw, ingredients) {
     if (!ingredients.some((i) => i.id === item.ingredientId)) {
       throw new ValidationError('La receta contiene un ingrediente que no existe');
     }
-    return {ingredientId: item.ingredientId, quantity: numberField(item.quantity, 'Cantidad', {positive: true})};
+    const quantity = numberField(item.quantity, 'Cantidad', {positive: true});
+    if (Math.abs(quantity - Math.round(quantity * 1e6) / 1e6) > 1e-10 || Math.round(quantity * 1e6) === 0)
+      throw new ValidationError('Cantidad: máximo 6 decimales y mayor que cero');
+    return {ingredientId: item.ingredientId, quantity};
   });
   return {name, baseYield, items};
 }

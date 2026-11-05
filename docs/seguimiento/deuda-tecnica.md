@@ -1,8 +1,12 @@
-# Deudas técnicas comprobadas
+# Deudas técnicas y funcionales identificadas
 
-| Issue | Evidencia | Impacto | Acción |
-| --- | --- | --- | --- |
-| [#2 — Pruebas reproducibles](https://github.com/paulinalizette70-boop/Paniko/issues/2) | Al comienzo no había suite de pruebas; ahora hay 9 pruebas automatizadas | Reducir regresiones | Registrar como resuelta la base inicial; ampliar cobertura |
-| [ADR-003 / Issue #4](https://github.com/paulinalizette70-boop/Paniko/issues/4) | La implementación usa JSON local síncrono, no MySQL | Concurrencia y consistencia limitadas | Migrar a MySQL con transacciones y pruebas de integridad |
+| Tema | Estado | Riesgo / acción |
+| --- | --- | --- |
+| Persistencia JSON principal | Sustituida por MySQL en v0.2; JSON sigue en tests | Mantener adaptador de tests separado; ver [ADR-004](../adr/ADR-004-mysql-transacciones-inventario.md) |
+| Conversión de unidades g↔kg y ml↔l | Pendiente | Las cantidades de ficha deben usar exactamente la unidad de catálogo; agregar conversión y pruebas antes de importar recetas heterogéneas |
+| Autenticación y roles | Pendiente | **No exponer la aplicación públicamente:** cualquiera con acceso a la API podría modificar inventario |
+| Mermas y cierre formal de lotes | Pendiente | La producción solo registra consumo, no el ciclo completo |
+| Migración de datos JSON históricos | Pendiente | Los registros de v0.1 no se transfieren automáticamente a MySQL |
+| Pruebas de aceptación con negocio | Pendiente | Requiere validación real con Ale Sánchez |
 
-La autenticación, lotes, mermas y dashboard se encuentran **fuera del MVP v0.1.0**, pero siguen pendientes del alcance del acta. No se declaran terminados.
+Ver [Issues abiertos](https://github.com/paulinalizette70-boop/Paniko/issues).

@@ -5,15 +5,36 @@ on:
   pull_request:
     branches: [main]
 jobs:
-  test:
+  tests:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [20.x, 22.x]
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: test_ci_only
+          MYSQL_DATABASE: paniko_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -p'test_ci_only'"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: test_ci_only
+      DB_NAME: paniko_test
+      MYSQL_TEST: '1'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
-      - name: Ejecutar pruebas unitarias y de integración
+          node-version: 22.x
+      - name: Instalar dependencias
+        run: npm install --no-audit --no-fund
+      - name: Crear esquema de prueba MySQL
+        run: npm run db:init
+      - name: Ejecutar pruebas unitarias e integración MySQL
         run: npm test
