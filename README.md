@@ -53,7 +53,7 @@ Se ejecutaron **9 pruebas automatizadas** (8 unitarias y una prueba de integraci
 - [Salida de la ejecución](docs/pruebas/evidencia-ejecucion-2026-11-04.txt).
 - [Código de pruebas unitarias](tests/domain.test.js).
 - [Código de prueba de integración](tests/integration.test.js).
-- [GitHub Actions](.github/workflows/tests.yml) (ejecución en remoto sujeta a verificar).
+- [GitHub Actions](.github/workflows/tests.yml) — [ejecución remota verificada: completada correctamente](https://github.com/paulinalizette70-boop/Paniko/actions/runs/41957663860).
 
 ## Arquitectura
 
