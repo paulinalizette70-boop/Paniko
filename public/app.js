@@ -28,16 +28,38 @@ function fillSelect(select, list, empty) {
   }
   if (list.some(item=>item.id===previous)) select.value=previous;
 }
+function availableUnits(unit) {
+  if (['g','kg'].includes(unit)) return ['g','kg'];
+  if (['ml','l'].includes(unit)) return ['ml','l'];
+  return unit === 'pieza' ? ['pieza'] : [];
+}
+function setUnitOptions(select, ingredientId) {
+  const ing=ingredients.find(i=>i.id===ingredientId);
+  const previous=select.value;
+  const allowed=availableUnits(ing?.unit);
+  select.replaceChildren();
+  for (const unit of allowed) {
+    const option=make('option',unit);option.value=unit;select.append(option);
+  }
+  if (allowed.includes(previous))select.value=previous;
+  else if(ing)select.value=ing.unit;
+}
+function syncStockUnit() {
+  setUnitOptions($('stock-in-form').elements.unit,$('stock-in-form').elements.ingredient.value);
+}
 function addRecipeItem() {
-  const row = make('div', undefined, 'item-row');
-  const select = make('select');
-  select.setAttribute('aria-label', 'Ingrediente');
-  fillSelect(select, ingredients, 'Registra ingredientes antes');
-  const quantity = make('input');
-  quantity.type = 'number'; quantity.min = '0.000001'; quantity.step = '0.000001'; quantity.required = true;
-  quantity.placeholder = 'Cantidad'; quantity.setAttribute('aria-label', 'Cantidad base');
-  const remove = make('button', 'Quitar', 'secondary'); remove.type = 'button'; remove.addEventListener('click', () => row.remove());
-  row.append(select, quantity, remove); $('recipe-items').append(row);
+  const row=make('div',undefined,'item-row');
+  const select=make('select');select.setAttribute('aria-label','Ingrediente');
+  fillSelect(select,ingredients,'Registra ingredientes antes');
+  const quantity=make('input');
+  quantity.type='number';quantity.min='0.000001';quantity.step='0.000001';quantity.required=true;
+  quantity.placeholder='Cantidad';quantity.setAttribute('aria-label','Cantidad base');
+  const unit=make('select');unit.className='recipe-unit';unit.setAttribute('aria-label','Unidad');
+  const remove=make('button','Quitar','secondary');remove.type='button';
+  remove.addEventListener('click',()=>row.remove());
+  select.addEventListener('change',()=>setUnitOptions(unit,select.value));
+  row.append(select,quantity,unit,remove);$('recipe-items').append(row);
+  setUnitOptions(unit,select.value);
 }
 function render(movements, batches) {
   $('ingredient-list').replaceChildren();
@@ -48,8 +70,11 @@ function render(movements, batches) {
   if (!recipes.length) $('recipe-list').append(make('p', 'Sin recetas.', 'muted'));
   fillSelect($('scale-form').elements.recipe, recipes, 'Crea primero una receta');
   fillSelect($('stock-in-form').elements.ingredient, ingredients, 'Registra primero un ingrediente');
-  for (const select of $('recipe-items').querySelectorAll('select')) {
+  syncStockUnit();
+  for (const row of $('recipe-items').children) {
+    const select=row.querySelector('select');
     fillSelect(select, ingredients, 'Registra ingredientes antes');
+    setUnitOptions(row.querySelector('.recipe-unit'),select.value);
   }
   $('movement-list').replaceChildren();
   for (const item of movements.slice(0,12)) {
@@ -66,6 +91,7 @@ async function refresh() {
   ingredients=ings;recipes=recs;render(movements,batches);
 }
 $('add-item').addEventListener('click', addRecipeItem);
+$('stock-in-form').elements.ingredient.addEventListener('change',syncStockUnit);
 $('ingredient-form').addEventListener('submit', async (event) => {
   event.preventDefault(); const form = event.currentTarget;
   try {
@@ -78,14 +104,14 @@ $('recipe-form').addEventListener('submit', async (event) => {
   const rows = [...$('recipe-items').children];
   try {
     if (!rows.length) throw new Error('Añade al menos un ingrediente.');
-    await post('/api/recipes', {name:form.elements.name.value,baseYield:Number(form.elements.yield.value),items:rows.map(row=>({ingredientId:row.querySelector('select').value,quantity:Number(row.querySelector('input').value)}))});
+    await post('/api/recipes', {name:form.elements.name.value,baseYield:Number(form.elements.yield.value),items:rows.map(row=>({ingredientId:row.querySelector('select').value,quantity:Number(row.querySelector('input').value),unit:row.querySelector('.recipe-unit').value}))});
     form.reset(); $('recipe-items').replaceChildren(); addRecipeItem(); await refresh(); notify('Ficha técnica guardada.');
   } catch (error) { notify(error.message, true); }
 });
 $('stock-in-form').addEventListener('submit',async(event)=>{
   event.preventDefault();const form=event.currentTarget;
   try {
-    await post(`/api/ingredients/${form.elements.ingredient.value}/stock-in`,{quantity:Number(form.elements.quantity.value),reason:form.elements.reason.value});
+    await post(`/api/ingredients/${form.elements.ingredient.value}/stock-in`,{quantity:Number(form.elements.quantity.value),unit:form.elements.unit.value,reason:form.elements.reason.value});
     form.elements.quantity.value='';await refresh();notify('Entrada de inventario guardada.');
   }catch(error){notify(error.message,true);}
 });
