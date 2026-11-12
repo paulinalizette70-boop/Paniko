@@ -62,6 +62,20 @@ function createStore(filePath) {
       write(data);
       return {ingredient, movement};
     },
+    stockOut(id, raw) {
+      const data = read();
+      const ingredient = data.ingredients.find(i => i.id === id);
+      if (!ingredient) throw new ValidationError('Ingrediente no encontrado', 404);
+      const {quantity, reason} = stockEntry(raw, ingredient.unit, 'Salida manual de inventario');
+      const stockBefore = ingredient.stock;
+      if (quantity > stockBefore) throw new ValidationError('Inventario insuficiente para registrar la salida', 409);
+      ingredient.stock = roundQuantity(stockBefore - quantity);
+      const movement = {id:crypto.randomUUID(), ingredientId:id, name:ingredient.name, type:'salida',
+        quantity, stockBefore, stockAfter:ingredient.stock, reason, createdAt:new Date().toISOString()};
+      data.movements.push(movement);
+      write(data);
+      return {ingredient, movement};
+    },
     confirmProduction(id, desiredYield) {
       const data = read();
       const recipe = data.recipes.find(r => r.id === id);
