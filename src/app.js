@@ -6,12 +6,13 @@ const {ValidationError} = require('./domain');
 const {createStore} = require('./store');
 const {getCookieToken,cookieForToken,expiredCookie}=require('./auth');
 
-function createApp({store, auth = null, dataFile = path.join(__dirname, '..', 'data', 'paniko.json')} = {}) {
+function createApp({store, auth = null, products = null, dataFile = path.join(__dirname, '..', 'data', 'paniko.json')} = {}) {
   store = store || createStore(dataFile);
   const assets = {
     '/': ['index.html', 'text/html; charset=utf-8'],
     '/styles.css': ['styles.css', 'text/css; charset=utf-8'],
     '/app.js': ['app.js', 'application/javascript; charset=utf-8'],
+    '/products.js': ['products.js', 'application/javascript; charset=utf-8'],
   };
   async function bodyAsJson(req) {
     let size = 0; const chunks=[];
@@ -38,42 +39,75 @@ function createApp({store, auth = null, dataFile = path.join(__dirname, '..', 'd
         return;
       }
       if (req.method === 'GET' && pathname === '/api/health') return send(res, 200, {status: 'ok'});
-      if (req.method === 'GET' && pathname === '/api/auth/config')
-        return send(res,200,{required: Boolean(auth)});
+      if (req.method === 'GET' && pathname === '/api/auth/config') return send(res,200,{required:Boolean(auth)});
       if (auth) {
-        // SameSite=Strict + comprobación Origin en peticiones con cambios.
-        if (req.method === 'POST' && req.headers.origin) {
-          let from;
-          try { from=new URL(req.headers.origin); } catch { return send(res,403,{error:'Origen no permitido'}); }
-          if (from.host!==req.headers.host) return send(res,403,{error:'Origen no permitido'});
+        if(req.method==='POST' && req.headers.origin) {
+          let origin;
+          try {origin=new URL(req.headers.origin);} catch {return send(res,403,{error:'Origen no permitido'});}
+          if(origin.host!==req.headers.host) return send(res,403,{error:'Origen no permitido'});
         }
         const token=getCookieToken(req.headers.cookie);
-        if (pathname === '/api/auth/login' && req.method === 'POST') {
-          const credentials=await bodyAsJson(req);
-          const result=await auth.login(credentials?.username,credentials?.password);
-          if (!result) return send(res,401,{error:'Usuario o contraseña incorrectos'});
+        if(req.method==='POST' && pathname==='/api/auth/login') {
+          const body=await bodyAsJson(req);
+          const result=await auth.login(body?.username,body?.password);
+          if(!result)return send(res,401,{error:'Usuario o contraseña incorrectos'});
           return send(res,200,{user:result.user},{'Set-Cookie':cookieForToken(result.token,Boolean(req.socket.encrypted))});
         }
-        if (pathname === '/api/auth/logout' && req.method === 'POST') {
+        if(req.method==='POST' && pathname==='/api/auth/logout'){
           await auth.logout(token);
           return send(res,200,{ok:true},{'Set-Cookie':expiredCookie(Boolean(req.socket.encrypted))});
         }
-        if (req.method === 'GET' && pathname === '/api/auth/me') {
+        if(req.method==='GET' && pathname==='/api/auth/me'){
           const user=await auth.userForToken(token);
           return user?send(res,200,{user}):send(res,401,{error:'Sesión no iniciada'});
         }
-        // Es obligatorio autenticar ANTES de consultar cualquier ruta de datos.
-        if (pathname.startsWith('/api/')) {
+        if(pathname.startsWith('/api/')){
           const user=await auth.userForToken(token);
-          if (!user) return send(res,401,{error:'Inicia sesión para continuar'});
-          if (pathname==='/api/private/catalog' && req.method==='GET') {
-            if (user.role!=='admin') return send(res,403,{error:'Acceso reservado a administración'});
+          if(!user)return send(res,401,{error:'Inicia sesión para continuar'});
+          if(pathname==='/api/private/catalog' && req.method==='GET'){
+            if(user.role!=='admin')return send(res,403,{error:'Acceso reservado a administración'});
             return send(res,200,await auth.privateCatalog());
           }
-          const adminOnly=req.method!=='GET' &&
-            (pathname==='/api/ingredients' || pathname==='/api/recipes');
-          if (adminOnly && user.role!=='admin') return send(res,403,{error:'Se requiere permiso de administrador'});
+          if(req.method==='POST' && user.role!=='admin' &&
+             (pathname==='/api/ingredients'||pathname==='/api/recipes'||/\/api\/ingredients\/[a-f\d-]+\/adjust-stock$/i.test(pathname)))
+            return send(res,403,{error:'Se requiere permiso de administrador'});
         }
+      }
+
+      // Productos terminados: inventario separado de las fichas técnicas privadas.
+      if(pathname==='/api/product-categories'||pathname.startsWith('/api/products')){
+        if(!auth||!products)return send(res,503,{error:'El módulo de inventario requiere inicio de sesión y MySQL'});
+        const user=await auth.userForToken(getCookieToken(req.headers.cookie));
+        if(!user)return send(res,401,{error:'Inicia sesión para continuar'});
+        const admin=user.role==='admin';
+        if(pathname==='/api/product-categories'){
+          if(req.method==='GET')return send(res,200,await products.listCategories());
+          if(req.method==='POST'){
+            if(!admin)return send(res,403,{error:'Se requiere permiso de administrador'});
+            return send(res,201,await products.createCategory(await bodyAsJson(req)));
+          }
+        }
+        if(pathname==='/api/products'){
+          if(req.method==='GET')return send(res,200,await products.listProducts());
+          if(req.method==='POST'){
+            if(!admin)return send(res,403,{error:'Se requiere permiso de administrador'});
+            return send(res,201,await products.createProduct(await bodyAsJson(req)));
+          }
+        }
+        if(pathname==='/api/products/import-catalog'&&req.method==='POST'){
+          if(!admin)return send(res,403,{error:'Se requiere permiso de administrador'});
+          return send(res,200,await products.importCatalog());
+        }
+        if(pathname==='/api/products/movements'&&req.method==='GET')
+          return send(res,200,await products.movements());
+        const edit=pathname.match(/^\/api\/products\/([a-f\d-]+)\/update$/i);
+        if(edit&&req.method==='POST'){
+          if(!admin)return send(res,403,{error:'Se requiere permiso de administrador'});
+          return send(res,200,await products.updateProduct(edit[1],await bodyAsJson(req)));
+        }
+        const move=pathname.match(/^\/api\/products\/([a-f\d-]+)\/movements$/i);
+        if(move&&req.method==='POST')return send(res,201,await products.recordMovement(move[1],await bodyAsJson(req)));
+        return send(res,404,{error:'Ruta de productos no encontrada'});
       }
       if (req.method === 'GET' && pathname === '/api/ingredients') return send(res, 200, await store.listIngredients());
       if (req.method === 'POST' && pathname === '/api/ingredients') return send(res, 201, await store.addIngredient(await bodyAsJson(req)));
@@ -83,6 +117,10 @@ function createApp({store, auth = null, dataFile = path.join(__dirname, '..', 'd
       if (req.method === 'GET' && pathname === '/api/production') return send(res, 200, await store.listProduction());
       const stock = pathname.match(/^\/api\/ingredients\/([a-f\d-]+)\/stock-in$/i);
       if (stock && req.method === 'POST') return send(res, 200, await store.stockIn(stock[1], await bodyAsJson(req)));
+      const stockOut=pathname.match(/^\/api\/ingredients\/([a-f\d-]+)\/stock-out$/i);
+      if(stockOut&&req.method==='POST')return send(res,200,await store.stockOut(stockOut[1],await bodyAsJson(req)));
+      const adjust=pathname.match(/^\/api\/ingredients\/([a-f\d-]+)\/adjust-stock$/i);
+      if(adjust&&req.method==='POST')return send(res,200,await store.adjustStock(adjust[1],await bodyAsJson(req)));
       const scale = pathname.match(/^\/api\/recipes\/([a-f\d-]+)\/scale$/i);
       if (scale && req.method === 'POST') {
         const body = await bodyAsJson(req);
@@ -91,7 +129,7 @@ function createApp({store, auth = null, dataFile = path.join(__dirname, '..', 'd
       const produce = pathname.match(/^\/api\/recipes\/([a-f\d-]+)\/produce$/i);
       if (produce && req.method === 'POST') {
         const body = await bodyAsJson(req);
-        return send(res, 201, await store.confirmProduction(produce[1], body.desiredYield));
+        return send(res, 201, await store.confirmProduction(produce[1], body.desiredYield, {productId:body.productId||null}));
       }
       send(res, 404, {error: 'Ruta no encontrada'});
     } catch (error) {

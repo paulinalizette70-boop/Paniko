@@ -47,6 +47,13 @@ function setUnitOptions(select, ingredientId) {
 function syncStockUnit() {
   setUnitOptions($('stock-in-form').elements.unit,$('stock-in-form').elements.ingredient.value);
 }
+function syncStockOutUnit(){
+  const form=$('stock-out-form');setUnitOptions(form.elements.unit,form.elements.ingredient.value);
+}
+function syncAdjustUnit(){
+  const id=$('adjust-stock-form').elements.ingredient.value;
+  $('adjust-unit-label').textContent=ingredients.find(i=>i.id===id)?.unit||'unidad';
+}
 function addRecipeItem() {
   const row=make('div',undefined,'item-row');
   const select=make('select');select.setAttribute('aria-label','Ingrediente');
@@ -70,7 +77,9 @@ function render(movements, batches) {
   if (!recipes.length) $('recipe-list').append(make('p', 'Sin recetas.', 'muted'));
   fillSelect($('scale-form').elements.recipe, recipes, 'Crea primero una receta');
   fillSelect($('stock-in-form').elements.ingredient, ingredients, 'Registra primero un ingrediente');
-  syncStockUnit();
+  fillSelect($('stock-out-form').elements.ingredient,ingredients,'Registra primero un ingrediente');
+  fillSelect($('adjust-stock-form').elements.ingredient,ingredients,'Registra primero un ingrediente');
+  syncStockUnit();syncStockOutUnit();syncAdjustUnit();
   for (const row of $('recipe-items').children) {
     const select=row.querySelector('select');
     fillSelect(select, ingredients, 'Registra ingredientes antes');
@@ -92,6 +101,8 @@ async function refresh() {
 }
 $('add-item').addEventListener('click', addRecipeItem);
 $('stock-in-form').elements.ingredient.addEventListener('change',syncStockUnit);
+$('stock-out-form').elements.ingredient.addEventListener('change',syncStockOutUnit);
+$('adjust-stock-form').elements.ingredient.addEventListener('change',syncAdjustUnit);
 $('ingredient-form').addEventListener('submit', async (event) => {
   event.preventDefault(); const form = event.currentTarget;
   try {
@@ -113,6 +124,23 @@ $('stock-in-form').addEventListener('submit',async(event)=>{
   try {
     await post(`/api/ingredients/${form.elements.ingredient.value}/stock-in`,{quantity:Number(form.elements.quantity.value),unit:form.elements.unit.value,reason:form.elements.reason.value});
     form.elements.quantity.value='';await refresh();notify('Entrada de inventario guardada.');
+  }catch(error){notify(error.message,true);}
+});
+$('stock-out-form').addEventListener('submit',async event=>{
+  event.preventDefault();const form=event.currentTarget;
+  try{
+    await post(`/api/ingredients/${form.elements.ingredient.value}/stock-out`,{
+      quantity:Number(form.elements.quantity.value),unit:form.elements.unit.value,reason:form.elements.reason.value});
+    form.elements.quantity.value='';await refresh();notify('Salida de ingrediente registrada.');
+  }catch(error){notify(error.message,true);}
+});
+$('adjust-stock-form').addEventListener('submit',async event=>{
+  event.preventDefault();const form=event.currentTarget;
+  try{
+    if(!confirm('¿Confirmas el conteo físico? Se modificará la existencia y quedará registrado en el historial.'))return;
+    await post(`/api/ingredients/${form.elements.ingredient.value}/adjust-stock`,{
+      newStock:Number(form.elements.newStock.value),reason:form.elements.reason.value});
+    form.elements.newStock.value='';form.elements.reason.value='';await refresh();notify('Existencia ajustada. Movimiento registrado.');
   }catch(error){notify(error.message,true);}
 });
 function renderPreview(result) {
@@ -137,8 +165,56 @@ $('produce-button').addEventListener('click',async()=>{
     const result=await selectedPreview();
     if(!result.stockAvailable) throw new Error('No puedes confirmar: inventario insuficiente.');
     if(!confirm(`¿Confirmas ${result.desiredYield} piezas de ${result.recipeName}? Se descontarán ingredientes del inventario y se registrará el movimiento.`)) return;
-    const done=await post(`/api/recipes/${result.recipeId}/produce`,{desiredYield:result.desiredYield});
-    await refresh();$('scale-results').replaceChildren();notify(`Producción confirmada (${done.id}). El inventario se descontó.`);
+    const selectedProduct=$('finished-product-selector').value;
+    const done=await post(`/api/recipes/${result.recipeId}/produce`,{desiredYield:result.desiredYield,productId:selectedProduct||null});
+    await refresh();await window.PanikoFinishedProducts?.refresh?.();
+    $('scale-results').replaceChildren();
+    notify(done.finishedProduct ? `Producción registrada: ingredientes descontados y ${done.desiredYield} piezas añadidas a ${done.finishedProduct.name}.` : `Producción confirmada (${done.id}). Solo se descontaron ingredientes: no seleccionaste un producto vinculado.`);
   }catch(e){notify(e.message,true);}
 });
-addRecipeItem();refresh().catch(error=>notify(error.message,true));
+function showAuthUI(user,required){
+  $('workspace').hidden=Boolean(required&&!user);
+  $('auth-panel').hidden=Boolean(!required||user);
+  $('auth-bar').hidden=Boolean(!required||!user);
+  $('private-recipes-panel').hidden=Boolean(!required||user?.role!=='admin');
+  $('stock-adjust-panel').hidden=Boolean(required&&user?.role!=='admin');
+  if(user)$('auth-user').textContent=user.username+' ('+user.role+')';
+  document.dispatchEvent(new CustomEvent('paniko:auth',{detail:{user,required}}));
+}
+$('login-form').addEventListener('submit',async event=>{
+  event.preventDefault();const form=event.currentTarget;
+  try{
+    const data=await post('/api/auth/login',{username:form.elements.username.value,password:form.elements.password.value});
+    form.elements.password.value='';$('auth-message').textContent='';
+    showAuthUI(data.user,true);await refresh();
+  }catch(error){form.elements.password.value='';$('auth-message').textContent=error.message;}
+});
+$('logout-button').addEventListener('click',async()=>{
+  try{await post('/api/auth/logout',{});}catch(error){notify(error.message,true);}
+  $('private-recipes-list').replaceChildren();showAuthUI(null,true);
+});
+$('load-private-button').addEventListener('click',async()=>{
+ const view=$('private-recipes-list');
+ try{
+  const cat=await api('/api/private/catalog');view.replaceChildren();
+  for(const [heading,records] of [['Recetas',cat.recetas||[]],['Rellenos',cat.rellenos||[]]]){
+   view.append(make('h3',heading+' ('+records.length+')'));
+   for(const record of records){
+    const details=make('details');
+    details.append(make('summary',record.title),make('pre',JSON.stringify(record.data,null,2),'recipe-json'));
+    view.append(details);
+   }
+  }
+ }catch(error){view.replaceChildren(make('p',error.message,'warning'));}
+});
+async function initializePaniko(){
+  addRecipeItem();showAuthUI(null,true);
+  try{
+    const config=await api('/api/auth/config');
+    if(config.required){
+      try{const session=await api('/api/auth/me');showAuthUI(session.user,true);await refresh();}
+      catch{showAuthUI(null,true);}
+    }else{showAuthUI(null,false);await refresh();}
+  }catch(error){$('auth-message').textContent='No se pudo verificar el servidor. Revisa que Paniko esté encendido.';}
+}
+initializePaniko();

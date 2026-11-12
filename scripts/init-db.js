@@ -9,7 +9,7 @@ async function main(){
   try {
     await connection.query(`CREATE DATABASE IF NOT EXISTS \`${database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci`);
     await connection.query(`USE \`${database}\``);
-    for (const schema of ['schema.sql', 'private-catalog.sql']) {
+    for (const schema of ['schema.sql', 'private-catalog.sql', 'auth.sql', 'finished-products.sql']) {
       const sql=fs.readFileSync(path.join(__dirname,'..','sql',schema),'utf8').replace(/^--.*$/gm,'');
       for(const statement of sql.split(';').map(s=>s.trim()).filter(Boolean)) await connection.query(statement);
     }

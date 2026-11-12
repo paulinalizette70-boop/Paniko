@@ -3,30 +3,24 @@
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Paniko | Producción artesanal</title><link rel="stylesheet" href="/styles.css"/>
 </head><body>
-<header><div class="brand">Paniko<span> · MVP 0.4.0</span></div><p>Fichas técnicas e inventario de producción artesanal.</p></header>
+<header><div class="brand">Paniko<span> · MVP 0.6.1</span></div><p>Fichas técnicas e inventario de producción artesanal.</p></header>
 <main>
-<section id="auth-panel" class="panel auth-panel" hidden>
-  <h2>Acceso a Paniko</h2>
-  <p class="muted">Inicia sesión con una cuenta autorizada.</p>
+<section id="auth-panel" class="panel auth-panel" hidden><h2>Acceso a Paniko</h2>
   <form id="login-form">
-    <label>Usuario <input name="username" autocomplete="username" required maxlength="50"/></label>
-    <label>Contraseña <input name="password" type="password" autocomplete="current-password" required/></label>
-    <button type="submit">Iniciar sesión</button>
-  </form>
-  <p id="auth-message" role="status" aria-live="polite"></p>
+    <label>Usuario <input name="username" required maxlength="50" autocomplete="username"/></label>
+    <label>Contraseña <input name="password" required type="password" autocomplete="current-password"/></label>
+    <button>Iniciar sesión</button>
+  </form><p id="auth-message" role="status"></p>
 </section>
-<section id="auth-bar" class="auth-bar" hidden>
-  <span id="auth-user"></span>
-  <button id="logout-button" type="button" class="secondary">Cerrar sesión</button>
-</section>
-<section id="private-recipes-panel" class="panel" hidden>
-  <h2>Catálogo privado (administración)</h2>
-  <p class="muted tiny">Estas recetas aún son de preparación; no descuentan inventario y pueden tener datos pendientes de validar.</p>
-  <button id="load-private-button" type="button" class="secondary">Consultar catálogo privado</button>
-  <div id="private-recipes-list"></div>
-</section>
+<section id="auth-bar" class="auth-bar" hidden><span id="auth-user"></span><button id="logout-button" type="button" class="secondary">Cerrar sesión</button></section>
+<section id="private-recipes-panel" class="panel" hidden><h2>Recetas y rellenos privados (administración)</h2><p class="muted tiny">Las recetas de preparación no descuentan inventario automáticamente.</p><button id="load-private-button" type="button" class="secondary">Consultar recetas privadas</button><div id="private-recipes-list"></div></section>
 <div id="workspace">
-<section class="notice">Prototipo académico: almacenamiento en MySQL y movimientos de inventario. No incluye usuarios ni permisos; úsalo solo en un entorno de prueba, no con datos confidenciales.</section>
+<section class="notice">Prototipo académico: almacenamiento en MySQL y movimientos de inventario. Uso local con inicio de sesión; sigue siendo un prototipo y no debe exponerse a Internet.</section>
+<section id="finished-inventory" class="panel">
+  <h2>Productos terminados · Inventario</h2>
+  <p class="muted tiny">Separado de las recetas: aquí se registran piezas terminadas, precios, ventas, mermas y entradas. Las existencias nuevas comienzan en 0 hasta registrar el conteo real.</p>
+  <div id="finished-inventory-content"></div>
+</section>
 <section class="columns">
   <article class="panel"><h2>1. Registrar ingrediente</h2>
     <form id="ingredient-form">
@@ -59,11 +53,32 @@
       <label>Motivo <input name="reason" maxlength="150" value="Reposición de inventario" required/></label>
       <button>Registrar entrada</button>
     </form>
+    <h3>Registrar salida de ingrediente</h3>
+    <form id="stock-out-form">
+      <label>Ingrediente <select name="ingredient" required></select></label>
+      <label>Cantidad retirada <input name="quantity" type="number" min="0.000001" step="0.000001" required/></label>
+      <label>Unidad <select name="unit" required></select></label>
+      <label>Motivo <input name="reason" maxlength="150" value="Consumo no asociado a producción" required/></label>
+      <button type="submit">Registrar salida</button>
+    </form>
+    <div id="stock-adjust-panel">
+      <h3>Ajustar por conteo físico (administración)</h3>
+      <form id="adjust-stock-form">
+        <label>Ingrediente <select name="ingredient" required></select></label>
+        <label>Existencia real (<span id="adjust-unit-label">unidad</span>)
+          <input name="newStock" type="number" min="0" step="0.000001" required/></label>
+        <label>Motivo del ajuste <input name="reason" maxlength="142" required placeholder="Conteo físico o corrección"/></label>
+        <button type="submit">Guardar ajuste</button>
+      </form>
+    </div>
+    <p class="muted tiny">Los ajustes quedan identificados como «Ajuste» en el historial.</p>
     <h3>Movimientos recientes</h3><div id="movement-list" aria-live="polite"></div>
   </article>
   <article class="panel"><h2>4. Escalar y producir</h2>
     <form id="scale-form">
       <label>Receta <select name="recipe" required></select></label>
+      <label>Producto terminado a ingresar (opcional) <select name="finishedProduct" id="finished-product-selector"><option value="">Sin producto vinculado; solo descuenta ingredientes</option></select></label>
+      <p class="muted tiny">Para sumar producto automáticamente, un administrador debe vincularlo primero con esta receta operativa.</p>
       <label>Producción deseada (piezas) <input type="number" name="desiredYield" min="1" step="1" value="20" required/></label>
       <button type="submit" class="secondary">Calcular vista previa (no descuenta)</button>
       <button type="button" id="produce-button">Confirmar producción y descontar ingredientes</button>
@@ -75,6 +90,7 @@
 </section>
 <p id="notification" role="status" aria-live="polite"></p>
 </div>
-</main><footer>Proyecto académico · Universidad de Guadalajara · Versión 0.4.0</footer>
+</main><footer>Proyecto académico · Universidad de Guadalajara · Versión 0.6.1</footer>
 <script src="/app.js" defer></script>
+<script src="/products.js" defer></script>
 </body></html>

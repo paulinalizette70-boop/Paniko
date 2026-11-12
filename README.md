@@ -1,97 +1,71 @@
-# Paniko — Gestión de producción para panaderías artesanales
+# Paniko — Gestión de panadería artesanal
 
-Aplicación web académica de **Seminario de Integración: Desarrollo**, Universidad de Guadalajara, Centro Universitario de Tlaquepaque.
+**Versión de integración: 0.6.1 (noviembre de 2026)**  
+Proyecto académico de Ingeniería Informática — Universidad de Guadalajara, CU Tlaquepaque.
 
-**Versión:** 0.4.0 (noviembre de 2026). El MVP incorpora inventario en MySQL e importador local a tablas de preparación. Las fórmulas reales **no están publicadas ni cargadas en el MySQL de la panadería**; su importación y validación operativa continúan pendientes.
+Este paquete combina el código local **0.6.0** con las operaciones de **salida manual y ajuste físico de ingredientes** desarrolladas en la rama de inventario. No reemplaza automáticamente la base de datos ni las recetas privadas del negocio.
 
-## Qué permite hacer esta versión
+## Qué incluye
 
-1. Registrar ingredientes con unidad (g, kg, ml, l o pieza), costo unitario y existencia inicial.
-2. Registrar fichas técnicas de recetas con ingredientes, cantidades y número de piezas por preparación.
-3. Registrar **entradas** de inventario, con motivo y movimiento histórico.
-4. Calcular una **vista previa** de escalado de cantidades y costos, sin descontar existencias.
-5. **Confirmar una producción**: comprobar si hay ingredientes suficientes y descontarlos **en una transacción MySQL**, guardando el movimiento de salida y un registro de producción.
-6. Consultar las últimas entradas/salidas y las producciones confirmadas.
-7. Convertir g↔kg y ml↔l al capturar recetas y entradas, conservando las existencias en la unidad del ingrediente.
+| Área | Funciones |
+|---|---|
+| Acceso | Inicio/cierre de sesión; perfiles de administración y operador |
+| Ingredientes | Alta, existencias, entradas, salidas manuales y ajustes por conteo físico |
+| Recetas operativas | Fichas técnicas, conversión g↔kg y ml↔l, escalado y vista previa |
+| Producción | Descuento transaccional de insumos al confirmar producción |
+| Productos terminados | Catálogo separado de recetas, categorías, inventario, ventas, mermas, ajustes, vinculación opcional con recetas operativas |
+| Recetas privadas | Importador local y vista reservada a administración; fórmulas reales **no incluidas** |
+| Trazabilidad | Movimientos con cantidades anteriores/nuevas, fecha y motivo |
 
-**Límites importantes:** no hay autenticación ni permisos, todavía no se registran mermas ni se cierran lotes, no existe dashboard ni conversiones entre dimensiones incompatibles (peso, volumen y pieza). El costo es estimado a partir de insumos, no incluye mano de obra, energía ni venta. **No desplegar de manera pública** antes de agregar autenticación y autorización.
+### Nuevas rutas API (0.6.1)
 
-## Arquitectura
+- `POST /api/ingredients/:id/stock-out` con `{"quantity":250,"unit":"g","reason":"Consumo manual"}`. Registra salida sin permitir existencias negativas; convierte la unidad al formato en que se guarda el ingrediente.
+- `POST /api/ingredients/:id/adjust-stock` con `{"newStock":0.75,"reason":"Conteo físico"}`. Solo **administración**; `newStock` se indica en la unidad original del ingrediente. Registra la diferencia como entrada o salida y le añade `Ajuste:` al motivo.
+- `POST /api/recipes/:id/produce` sigue admitiendo `{"desiredYield":20,"productId":"UUID opcional"}` para descontar ingredientes y, cuando hay un producto vinculado, aumentar existencias de producto terminado.
 
-- Frontend: HTML, CSS, JavaScript.
-- Servidor API: Node.js 20 o superior, HTTP nativo.
-- Base de datos principal: **MySQL 8.0.16+**, tablas relacionales e InnoDB.
-- Cliente MySQL: [mysql2](https://www.npmjs.com/package/mysql2), con parámetros preparados.
-- Componentes: `src/domain.js` (validación/escalado), `src/mysql-store.js` (persistencia y transacciones), `src/app.js` (API), `sql/schema.sql` (esquema), `public/` (interfaz).
-- Adaptador JSON `src/store.js`: se conserva **solo para pruebas y desarrollo local**. El servidor normal utiliza MySQL, nunca cambia a JSON silenciosamente.
+## Inicio local
 
-### Tablas principales
+Requisitos: Node.js 22 (recomendado), MySQL 8, Git opcional para publicación.
 
-`ingredients`, `recipes`, `recipe_items`, `inventory_movements`, `production_batches` y `production_batch_items`.
+1. Crea un archivo `.env` **en tu computadora**, usando `.env.example` como guía. No publiques este archivo.
+2. Configura `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` y `DB_NAME`. Utiliza una cuenta MySQL con permisos adecuados solo sobre la base de Paniko.
+3. Desde PowerShell en la carpeta del proyecto, ejecuta:
 
-## Flujo de inventario
+   ```powershell
+   npm.cmd install
+   node --env-file=.env scripts/init-db.js
+   node --env-file=.env server.js
+   ```
 
-1. Crear *Harina de trigo* con unidad kg, costo por kg y existencia inicial (o 0).
-2. Registrar entrada de inventario por compra, por ejemplo 2 kg. El sistema genera un movimiento de tipo `entrada`.
-3. Registrar una ficha técnica indicando gramos o kilogramos, mililitros o litros; el sistema guarda cada cantidad en la unidad del ingrediente.
-4. Escalar de 10 a 20 piezas y comprobar el inventario.
-5. Pulsar **Confirmar producción**. Si existe stock suficiente, el sistema registra la producción y movimientos de `salida`, y descuenta cantidades. Si falta algún ingrediente, responde HTTP 409 y **no cambia el inventario**.
+4. Abre `http://127.0.0.1:3000`. La primera cuenta debe crearse con `node --env-file=.env scripts/create-admin.js`, siguiendo las instrucciones del programa.
 
-Las producciones se confirman como registros de consumo de insumos; aún no existe flujo de estados de lote, cierre ni merma. La validación final por Ale Sánchez sigue pendiente.
+El comando `node --env-file` funciona con las versiones recientes de Node. Si ya configuras las variables en tu entorno, también puedes usar `npm.cmd run db:init` y `npm.cmd start`.
 
-## API principal
+## Pruebas
 
-| Método | Ruta | Uso |
-|---|---|---|
-| GET / POST | `/api/ingredients` | Listar / registrar ingredientes |
-| GET / POST | `/api/recipes` | Listar / registrar fichas |
-| POST | `/api/ingredients/:id/stock-in` | Registrar entrada de inventario `{ "quantity": 2, "reason": "Compra" }` |
-| GET | `/api/inventory/movements` | Movimientos recientes |
-| POST | `/api/recipes/:id/scale` | Calcular vista previa `{ "desiredYield": 20 }` |
-| POST | `/api/recipes/:id/produce` | Confirmar consumo y descontar stock `{ "desiredYield": 20 }` |
-| GET | `/api/production` | Producciones recientes |
+```powershell
+npm.cmd test
+```
 
-## Pruebas y evidencias
+La integración fue probada localmente con datos ficticios: **33 pruebas aprobadas, 4 omitidas por requerir MySQL de pruebas, 0 fallidas**. Para las de MySQL, usa solamente una base separada con nombre terminado en `_test` y `MYSQL_TEST=1`. La aprobación de pruebas locales no equivale a una validación de negocio en producción.
 
-Ejecuta `npm test`. La versión 0.4.0 tiene **24 pruebas aprobadas, 0 fallidas y 0 omitidas**, verificadas en GitHub Actions con MySQL temporal y datos ficticios. [Ver ejecución v0.4.0](https://github.com/paulinalizette70-boop/Paniko/actions/runs/41968225354).
+## Privacidad y seguridad
 
-- [Ejecución aprobada de GitHub Actions v0.4.0 (24/24)](https://github.com/paulinalizette70-boop/Paniko/actions/runs/41968225354).
-- [Índice de evidencias para entregar](docs/entrega-github.md).
+- **No** subir archivos `.env`, `private/`, `node_modules/`, respaldos MySQL, credenciales ni fórmulas privadas.
+- Este ZIP ya fue preparado sin esos archivos; el ZIP original no es apto para publicarse íntegramente.
+- La app está destinada a uso local y pruebas. No exponer a Internet sin auditoría de seguridad, configuración TLS, controles de permisos y pruebas adicionales.
+- La información de recetas no se importa ni se modifica con esta actualización. Conserva tus respaldos y verifica la migración en una **base de pruebas** antes de trabajar con datos reales.
 
-- [Casos de prueba](docs/pruebas/casos-de-prueba.md).
-- [Bitácora de pruebas](docs/pruebas/registro-ejecuciones.md).
-- [Pruebas del inventario](tests/inventory.test.js).
-- [Prueba de integración con MySQL](tests/mysql.test.js); solo se ejecuta con `MYSQL_TEST=1` sobre una base **_test** separada.
-- [Workflow de GitHub Actions](.github/workflows/tests.yml), que instala `mysql2`, levanta MySQL 8, inicializa las tablas y ejecuta las pruebas.
-- [Evidencia histórica de v0.1.0](docs/pruebas/evidencia-ejecucion-2026-11-04.txt).
+## Sincronización con GitHub
 
-> MySQL se comprobó en el entorno aislado de GitHub Actions; **no** se ha probado en la computadora de la panadería ni realizado una aceptación formal con Ale Sánchez. Ver la [bitácora](docs/pruebas/registro-ejecuciones.md).
+Esta carpeta incluye `SINCRONIZAR_GITHUB.ps1`, un script opcional que crea una **rama nueva** en una copia temporal del repositorio y coloca en ella únicamente las carpetas de código permitidas. No modifica `main` ni borra tus archivos privados. Antes de publicar, muestra los cambios y pide confirmación. Después puedes abrir una Pull Request para revisar la integración.
 
-## Documentación del proyecto
+Repositorio: https://github.com/paulinalizette70-boop/Paniko
 
-- [Formato para incorporar recetas auténticas](docs/recetas/formato-recetas-reales.md).
-- [ADR-001: aplicación web](docs/adr/ADR-001-aplicacion-web.md).
-- [ADR-002: stack previsto](docs/adr/ADR-002-stack-y-persistencia.md).
-- [ADR-003: JSON como solución inicial, ya superada](docs/adr/ADR-003-json-provisional.md).
-- [ADR-004: MySQL y transacciones](docs/adr/ADR-004-mysql-transacciones-inventario.md).
-- [ADR-005: importación privada de recetas](docs/adr/ADR-005-catalogo-privado.md).
-- [ADR-006: normalización de unidades](docs/adr/ADR-006-conversion-unidades.md).
-- [Bloqueos](docs/seguimiento/bloqueos.md), [deudas técnicas](docs/seguimiento/deuda-tecnica.md), [Issues](https://github.com/paulinalizette70-boop/Paniko/issues).
+**Estado de publicación:** la Pull Request #8 contiene el módulo de inventario sobre la base 0.4.0. La **integración completa 0.6.1 del ZIP todavía no está publicada** hasta que se ejecute el proceso de sincronización de este paquete (o se suba mediante una rama revisada).
 
-## Equipo
+## Documentación adicional
 
-- Paulina Lizette Villalpando Guizar — Product Owner.
-- Saúl Emiliano Mora Famoso — Scrum Master.
-- Gael Iosef Ramírez Marmolejo — Development Team.
-
-**Uso:** prototipo universitario para pruebas y demostración. No cargues recetas confidenciales, datos reales de clientes ni secretos a un repositorio público sin autorización.
-
-## Fórmulas privadas (v0.3.0)
-
-El equipo decidió **no publicar recetas completas en GitHub**. El código incluye un importador a MySQL para el catálogo privado, con validaciones y pruebas sintéticas, pero **ninguna fórmula privada ni respaldo de la base**.
-
-- [Instrucciones para importar desde un archivo local ignorado por Git](docs/recetas/importacion-privada.md).
-- [ADR-005: decisión de privacidad y staging](docs/adr/ADR-005-catalogo-privado.md).
-- [SQL de las tablas privadas vacías](sql/private-catalog.sql).
-- [Tests unitarios del importador](tests/private-catalog.test.js).
-- [Test de integración MySQL con datos falsos](tests/private-catalog-mysql.test.js).
+- `docs/` contiene decisiones de arquitectura, evidencias históricas de pruebas y formato de recetas.
+- `tests/` contiene validaciones de dominio, autenticación, productos, inventario e integración.
+- `sql/` y `scripts/init-db.js` contienen el esquema inicial; las tablas se crean si no existen. Haz respaldos antes de cambios en una base que ya tenga datos.
