@@ -1,7 +1,7 @@
 'use strict';
 const crypto = require('node:crypto');
 const {ValidationError, validateIngredient, validateRecipe, scaleRecipe} = require('./domain');
-const {stockEntry, validateProduction, safeStockSum, roundQuantity} = require('./inventory');
+const {stockEntry, stockExit, stockAdjustment, validateProduction, safeStockSum, roundQuantity} = require('./inventory');
 
 // mysql2/promise devuelve DECIMAL como cadenas para preservar la precisión.
 function ingredientFromRow(row) {
@@ -101,6 +101,44 @@ function createMysqlStore(pool) {
       return {ingredient,movement:{id:movementId,ingredientId:id,name:ingredient.name,type:'entrada',quantity,stockBefore,stockAfter:ingredient.stock,reason}};
     });
   }
+  async function stockOut(id,raw) {
+    return inTransaction(pool,async c=>{
+      const [rows]=await c.execute('SELECT id,name,unit,cost_per_unit,stock FROM ingredients WHERE id=? FOR UPDATE',[id]);
+      if(!rows.length) throw new ValidationError('Ingrediente no encontrado',404);
+      const ingredient=ingredientFromRow(rows[0]);
+      const {quantity,reason}=stockExit(raw,ingredient.unit);
+      const before=ingredient.stock;
+      if(quantity>before) throw new ValidationError('Inventario insuficiente para esta salida',409);
+      const after=roundQuantity(before-quantity);
+      const [updated]=await c.execute('UPDATE ingredients SET stock=? WHERE id=? AND stock>=?',[after,id,quantity]);
+      if(updated.affectedRows!==1) throw new ValidationError('El inventario cambió: vuelve a revisar existencias',409);
+      ingredient.stock=after;
+      const movementId=crypto.randomUUID();
+      await c.execute(`INSERT INTO inventory_movements (id,ingredient_id,movement_type,quantity,stock_before,stock_after,reason) VALUES (?,?,'salida',?,?,?,?)`,
+        [movementId,id,quantity,before,after,reason]);
+      return {ingredient,movement:{id:movementId,ingredientId:id,name:ingredient.name,type:'salida',
+        quantity,stockBefore:before,stockAfter:after,reason}};
+    });
+  }
+  async function adjustStock(id,raw) {
+    return inTransaction(pool,async c=>{
+      const [rows]=await c.execute('SELECT id,name,unit,cost_per_unit,stock FROM ingredients WHERE id=? FOR UPDATE',[id]);
+      if(!rows.length) throw new ValidationError('Ingrediente no encontrado',404);
+      const ingredient=ingredientFromRow(rows[0]);
+      const {newStock,reason}=stockAdjustment(raw);
+      const before=ingredient.stock;
+      if(newStock===before) throw new ValidationError('La existencia no cambió',400);
+      const type=newStock>before?'entrada':'salida';
+      const quantity=roundQuantity(Math.abs(newStock-before));
+      await c.execute('UPDATE ingredients SET stock=? WHERE id=?',[newStock,id]);
+      const movementId=crypto.randomUUID();
+      await c.execute('INSERT INTO inventory_movements (id,ingredient_id,movement_type,quantity,stock_before,stock_after,reason) VALUES (?,?,?,?,?,?,?)',
+        [movementId,id,type,quantity,before,newStock,reason]);
+      ingredient.stock=newStock;
+      return {ingredient,movement:{id:movementId,ingredientId:id,name:ingredient.name,type,
+        quantity,stockBefore:before,stockAfter:newStock,reason}};
+    });
+  }
   async function confirmProduction(id,desiredYield) {
     return inTransaction(pool,async c=>{
       const recipe=await getRecipe(id,c);
@@ -127,6 +165,6 @@ function createMysqlStore(pool) {
       return {id:batchId,recipeId:recipe.id,recipeName:recipe.name,desiredYield,estimatedTotalCost:result.estimatedTotalCost,lines:result.lines.map(line=>({ingredientId:line.ingredientId,name:line.name,unit:line.unit,quantity:line.required,estimatedCost:line.estimatedCost}))};
     });
   }
-  return {listIngredients,listRecipes,getRecipe,addIngredient,addRecipe,preview,listMovements,listProduction,stockIn,confirmProduction};
+  return {listIngredients,listRecipes,getRecipe,addIngredient,addRecipe,preview,listMovements,listProduction,stockIn,stockOut,adjustStock,confirmProduction};
 }
 module.exports={createMysqlStore};
