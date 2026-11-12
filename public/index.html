@@ -3,7 +3,7 @@
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Paniko | Producción artesanal</title><link rel="stylesheet" href="/styles.css"/>
 </head><body>
-<header><div class="brand">Paniko<span> · MVP 0.6.2</span></div><p>Fichas técnicas e inventario de producción artesanal.</p></header>
+<header><div class="brand">Paniko<span> · MVP 0.6.3</span></div><p>Fichas técnicas e inventario de producción artesanal.</p></header>
 <main>
 <section id="auth-panel" class="panel auth-panel" hidden><h2>Acceso a Paniko</h2>
   <form id="login-form">
@@ -86,12 +86,15 @@
     </form>
     <div id="scale-results" aria-live="polite"></div>
     <h3>Fichas registradas</h3><div id="recipe-list">Sin recetas.</div>
-    <h3>Producciones confirmadas</h3><div id="production-list"></div>
+    <h3>Historial de lotes de producción</h3>
+    <label>Filtrar por receta <select id="production-filter"><option value="">Todas las recetas</option></select></label>
+    <p class="muted tiny">Últimos 100 lotes registrados. Puedes revisar los ingredientes consumidos y las piezas añadidas al inventario terminado sin modificar existencias.</p>
+    <div id="production-list"></div>
   </article>
 </section>
 <p id="notification" role="status" aria-live="polite"></p>
 </div>
-</main><footer>Proyecto académico · Universidad de Guadalajara · Versión 0.6.2</footer>
+</main><footer>Proyecto académico · Universidad de Guadalajara · Versión 0.6.3</footer>
 <script src="/app.js" defer></script>
 <script src="/products.js" defer></script>
 </body></html>

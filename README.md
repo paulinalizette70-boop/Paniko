@@ -1,6 +1,6 @@
 # Paniko — Gestión de panadería artesanal
 
-**Versión de integración: 0.6.2 (noviembre de 2026)**  
+**Versión de integración: 0.6.3 (noviembre de 2026)**  
 Proyecto académico de Ingeniería Informática — Universidad de Guadalajara, CU Tlaquepaque.
 
 Este paquete combina el código local **0.6.0** con las operaciones de **salida manual y ajuste físico de ingredientes** desarrolladas en la rama de inventario. No reemplaza automáticamente la base de datos ni las recetas privadas del negocio.
@@ -15,7 +15,7 @@ Este paquete combina el código local **0.6.0** con las operaciones de **salida 
 | Producción | Descuento transaccional de insumos al confirmar producción |
 | Productos terminados | Catálogo separado de recetas, categorías, inventario, ventas, mermas, ajustes, vinculación opcional con recetas operativas |
 | Recetas privadas | Importador local y vista reservada a administración; fórmulas reales **no incluidas** |
-| Trazabilidad | Movimientos con cantidades anteriores/nuevas, fecha y motivo |
+| Trazabilidad | Movimientos con cantidades anteriores/nuevas, fecha y motivo; historial filtrable de lotes con detalle de consumos y producto terminado |
 | Planeación de producción | Vista previa de capacidad máxima por inventario, faltantes por insumo y selección más sencilla del producto terminado vinculado |
 
 ### Nuevas rutas API (0.6.1)
@@ -56,7 +56,7 @@ El comando `node --env-file` funciona con las versiones recientes de Node. Si ya
 npm.cmd test
 ```
 
-La versión 0.6.2 se probó localmente con datos ficticios: **36 pruebas aprobadas, 4 omitidas por requerir MySQL de pruebas, 0 fallidas**. Para las de MySQL, usa solamente una base separada con nombre terminado en `_test` y `MYSQL_TEST=1`. La aprobación de pruebas locales no equivale a una validación de negocio en producción.
+La versión 0.6.3 se probó localmente con datos ficticios: **40 pruebas aprobadas, 4 omitidas por requerir MySQL de pruebas, 0 fallidas**. Para las de MySQL, usa solamente una base separada con nombre terminado en `_test` y `MYSQL_TEST=1`. La aprobación de pruebas locales no equivale a una validación de negocio en producción.
 
 ## Privacidad y seguridad
 
@@ -67,8 +67,8 @@ La versión 0.6.2 se probó localmente con datos ficticios: **36 pruebas aprobad
 
 ## Actualización del programa existente y GitHub
 
-- Para actualizar tu instalación **sin reemplazar la conexión a MySQL**, descomprime el ZIP en una carpeta separada y usa `ACTUALIZAR_PROGRAMA.ps1` indicando la ruta de tu Paniko actual. El instalador respalda únicamente los archivos que modifica y no toca `.env`, `private/`, `data/` ni tablas MySQL. Revisa también `ACTUALIZACION_0.6.2.txt`.
-- Se actualiza por separado la rama `integracion/paniko-0.6.1-20261111-1923` de GitHub con la mejora 0.6.2. La rama principal `main` permanece sin cambios hasta aprobar las pruebas y revisar la Pull Request #9.
+- Para actualizar tu instalación **sin reemplazar la conexión a MySQL**, descomprime el ZIP en una carpeta separada y usa `ACTUALIZAR_PROGRAMA.ps1` indicando la ruta de tu Paniko actual. El instalador respalda únicamente los archivos que modifica y no toca `.env`, `private/`, `data/` ni tablas MySQL. Revisa también `ACTUALIZACION_0.6.3.txt`.
+- Se actualiza por separado la rama `integracion/paniko-0.6.1-20261111-1923` de GitHub con la mejora 0.6.3. La rama principal `main` permanece sin cambios hasta aprobar las pruebas y revisar la Pull Request #9.
 - **No hace falta volver a ejecutar** el script de sincronización de la versión anterior.
 
 Repositorio: https://github.com/paulinalizette70-boop/Paniko
@@ -78,3 +78,10 @@ Repositorio: https://github.com/paulinalizette70-boop/Paniko
 - `docs/` contiene decisiones de arquitectura, evidencias históricas de pruebas y formato de recetas.
 - `tests/` contiene validaciones de dominio, autenticación, productos, inventario e integración.
 - `sql/` y `scripts/init-db.js` contienen el esquema inicial; las tablas se crean si no existen. Haz respaldos antes de cambios en una base que ya tenga datos.
+
+## Novedad 0.6.3: historial de lotes (solo lectura)
+
+- El historial de Producción ahora muestra los últimos 100 lotes, fecha, receta, piezas, costo estimado y costo estimado por pieza. Permite filtrar por receta y abrir el detalle de un lote.
+- Cada detalle muestra las cantidades de ingredientes realmente descontadas, los saldos antes/después registrados en los movimientos y, cuando corresponda, la incorporación de piezas al inventario de productos terminados. Los costos son estimados al momento de confirmar.
+- Nuevo endpoint autenticado **GET `/api/production/:id`**. No crea, edita ni elimina registros. No se requieren migraciones SQL; la información ya se encontraba en `production_batches`, `production_batch_items`, `inventory_movements` y `finished_product_movements`.
+- Se conserva la conexión a MySQL de la versión anterior y los archivos locales `.env`, `private/` y `data/`.

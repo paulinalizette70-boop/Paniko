@@ -1,6 +1,7 @@
 'use strict';
 let ingredients = [];
 let recipes = [];
+let productionBatches = [];
 const $ = (id) => document.getElementById(id);
 const make = (tag, content, cls) => {
   const element = document.createElement(tag);
@@ -68,6 +69,63 @@ function addRecipeItem() {
   row.append(select,quantity,unit,remove);$('recipe-items').append(row);
   setUnitOptions(unit,select.value);
 }
+function formatProductionDate(value){
+  if(!value)return 'Fecha no disponible';
+  const date=new Date(value);
+  return Number.isNaN(date.getTime())?'Fecha no disponible':date.toLocaleString('es-MX',{dateStyle:'medium',timeStyle:'short'});
+}
+function renderBatchDetail(container,detail){
+  container.replaceChildren();
+  container.append(make('p',`Lote: ${detail.id}`,'muted'));
+  container.append(make('p',`Confirmado: ${formatProductionDate(detail.createdAt)} · Costo estimado del lote: ${money(detail.estimatedTotalCost)}`));
+  container.append(make('h4','Ingredientes descontados'));
+  if(!detail.lines?.length)container.append(make('p','Sin consumos registrados.','muted'));
+  for(const line of detail.lines||[]){
+    const previous=line.stockBefore===null?'':` · stock ${line.stockBefore} → ${line.stockAfter} ${line.unit}`;
+    container.append(make('div',`${line.name}: ${line.quantity} ${line.unit} · costo estimado ${money(line.estimatedCost)}${previous}`,'list-row'));
+  }
+  if(detail.finishedProduct){
+    const p=detail.finishedProduct;
+    container.append(make('p',`Producto terminado: ${p.name} · +${p.quantity} piezas · inventario ${p.before} → ${p.after} piezas`,'good'));
+  }else container.append(make('p','Sin producto terminado vinculado a este lote.','muted'));
+}
+function renderProductionHistory(){
+  const root=$('production-list'), filter=$('production-filter').value;
+  root.replaceChildren();
+  const batches=productionBatches.filter(b=>!filter||b.recipeId===filter);
+  root.append(make('p',`${batches.length} lote(s) en el historial mostrado.`,'muted'));
+  for(const batch of batches){
+    const section=make('div',undefined,'list-row');
+    const costPerPiece=batch.desiredYield>0?money(batch.estimatedTotalCost/batch.desiredYield):'—';
+    section.append(make('div',`${formatProductionDate(batch.createdAt)} · ${batch.recipeName} · ${batch.desiredYield} piezas · ${money(batch.estimatedTotalCost)} (${costPerPiece}/pieza)`));
+    const button=make('button','Ver detalle','secondary');button.type='button';button.setAttribute('aria-expanded','false');
+    const detail=make('div',undefined,'production-detail');detail.hidden=true;
+    let loaded=false;
+    button.addEventListener('click',async()=>{
+      if(!detail.hidden){detail.hidden=true;button.textContent='Ver detalle';button.setAttribute('aria-expanded','false');return;}
+      detail.hidden=false;button.textContent='Ocultar detalle';button.setAttribute('aria-expanded','true');
+      if(loaded)return;
+      button.disabled=true;detail.replaceChildren(make('p','Cargando detalle del lote…','muted'));
+      try{
+        const data=await api(`/api/production/${batch.id}`);
+        renderBatchDetail(detail,data);loaded=true;
+      }catch(error){detail.replaceChildren(make('p',error.message,'warning'));}
+      finally{button.disabled=false;}
+    });
+    section.append(button,detail);root.append(section);
+  }
+  if(!batches.length)root.append(make('p','No hay lotes para este filtro.','muted'));
+}
+function syncProductionFilter(){
+  const select=$('production-filter'),old=select.value;
+  const byRecipe=new Map(productionBatches.map(b=>[b.recipeId,b.recipeName]));
+  select.replaceChildren();
+  const all=make('option','Todas las recetas');all.value='';select.append(all);
+  for(const [id,name] of [...byRecipe].sort((a,b)=>a[1].localeCompare(b[1],'es'))){
+    const opt=make('option',name);opt.value=id;select.append(opt);
+  }
+  if(byRecipe.has(old))select.value=old;
+}
 function render(movements, batches) {
   $('ingredient-list').replaceChildren();
   for (const item of ingredients) $('ingredient-list').append(make('div', `${item.name}: ${item.stock} ${item.unit} disponibles · ${money(item.costPerUnit)}/${item.unit}`, 'list-row'));
@@ -90,15 +148,15 @@ function render(movements, batches) {
     $('movement-list').append(make('div', `${item.type==='entrada'?'Entrada':'Salida'} · ${item.name} · ${item.quantity} · ${item.reason}`, 'list-row'));
   }
   if (!movements.length) $('movement-list').append(make('p', 'Todavía no hay movimientos.', 'muted'));
-  $('production-list').replaceChildren();
-  for(const batch of batches.slice(0,10)) $('production-list').append(make('div', `${batch.recipeName} · ${batch.desiredYield} piezas · ${money(batch.estimatedTotalCost)}`, 'list-row'));
-  if(!batches.length) $('production-list').append(make('p', 'Todavía no hay producciones confirmadas.', 'muted'));
+  productionBatches=batches;
+  syncProductionFilter();renderProductionHistory();
 }
 async function refresh() {
   const [ings,recs,movements,batches]=await Promise.all([
     api('/api/ingredients'),api('/api/recipes'),api('/api/inventory/movements'),api('/api/production')]);
   ingredients=ings;recipes=recs;render(movements,batches);
 }
+$('production-filter').addEventListener('change',renderProductionHistory);
 $('add-item').addEventListener('click', addRecipeItem);
 $('stock-in-form').elements.ingredient.addEventListener('change',syncStockUnit);
 $('stock-out-form').elements.ingredient.addEventListener('change',syncStockOutUnit);

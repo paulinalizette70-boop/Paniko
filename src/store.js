@@ -23,6 +23,14 @@ function createStore(filePath) {
     listRecipes: () => read().recipes,
     listMovements: () => read().movements.slice().reverse(),
     listProduction: () => read().batches.slice().reverse(),
+    getProductionBatch(id) {
+      const data=read(),batch=data.batches.find(b=>b.id===id);
+      if(!batch)throw new ValidationError('Lote de producción no encontrado',404);
+      return {...batch,lines:batch.lines.map(line=>{
+        const move=data.movements.find(m=>m.batchId===id&&m.ingredientId===line.ingredientId);
+        return {...line,stockBefore:move?.stockBefore??null,stockAfter:move?.stockAfter??null};
+      }),finishedProduct:null};
+    },
     getRecipe: (id) => read().recipes.find((r) => r.id === id),
     addIngredient(raw) {
       const ingredient = validateIngredient(raw);
