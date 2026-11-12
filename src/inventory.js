@@ -20,6 +20,24 @@ function stockEntry(raw, targetUnit) {
   return {quantity: normalized, reason: reason.trim()};
 }
 
+// Una salida manual consume inventario sin crear un lote de producción.
+function stockExit(raw, targetUnit) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new ValidationError('Salida de inventario inválida');
+  return stockEntry({...raw, reason: raw.reason || 'Salida manual de inventario'}, targetUnit);
+}
+
+// El ajuste establece el stock físico contado, siempre en la unidad almacenada.
+function stockAdjustment(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new ValidationError('Ajuste de inventario inválido');
+  const newStock=raw.newStock;
+  if (typeof newStock !== 'number' || !Number.isFinite(newStock) || newStock < 0 || newStock > 1e9 ||
+      Math.abs(roundQuantity(newStock)-newStock) > 1e-8)
+    throw new ValidationError('Existencia real: número entre 0 y 1000000000, máximo 6 decimales');
+  if (typeof raw.reason !== 'string' || !raw.reason.trim() || raw.reason.trim().length > 142)
+    throw new ValidationError('Motivo del ajuste: escribe entre 1 y 142 caracteres');
+  return {newStock:roundQuantity(newStock), reason:'Ajuste: '+raw.reason.trim()};
+}
+
 function validateProduction(recipe, ingredients, desiredYield) {
   const preview = scaleRecipe(recipe, ingredients, desiredYield);
   if (!preview.stockAvailable) {
@@ -35,4 +53,4 @@ function safeStockSum(before, increment) {
   return next;
 }
 
-module.exports = {stockEntry, validateProduction, roundQuantity, safeStockSum};
+module.exports = {stockEntry, stockExit, stockAdjustment, validateProduction, roundQuantity, safeStockSum};

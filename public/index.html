@@ -3,7 +3,7 @@
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Paniko | Producción artesanal</title><link rel="stylesheet" href="/styles.css"/>
 </head><body>
-<header><div class="brand">Paniko<span> · MVP 0.4.0</span></div><p>Fichas técnicas e inventario de producción artesanal.</p></header>
+<header><div class="brand">Paniko<span> · MVP 0.4.1</span></div><p>Fichas técnicas e inventario de producción artesanal.</p></header>
 <main>
 <section id="auth-panel" class="panel auth-panel" hidden>
   <h2>Acceso a Paniko</h2>
@@ -59,6 +59,23 @@
       <label>Motivo <input name="reason" maxlength="150" value="Reposición de inventario" required/></label>
       <button>Registrar entrada</button>
     </form>
+    <h3>Registrar salida manual</h3>
+    <form id="stock-out-form">
+      <label>Ingrediente <select name="ingredient" required></select></label>
+      <label>Cantidad retirada <input name="quantity" type="number" min="0.000001" step="0.000001" required/></label>
+      <label>Unidad <select name="unit" required></select></label>
+      <label>Motivo <input name="reason" maxlength="150" value="Consumo no asociado a producción" required/></label>
+      <button type="submit">Registrar salida</button>
+    </form>
+    <h3>Ajustar según conteo físico</h3>
+    <form id="adjust-stock-form">
+      <label>Ingrediente <select name="ingredient" required></select></label>
+      <label>Existencia real (<span id="adjust-unit-label">unidad</span>)
+        <input name="newStock" type="number" min="0" step="0.000001" required/></label>
+      <label>Motivo del ajuste <input name="reason" maxlength="142" required placeholder="Conteo físico o corrección"/></label>
+      <button type="submit">Guardar ajuste de inventario</button>
+    </form>
+    <p class="muted tiny">Los ajustes se registran como entradas o salidas, con el motivo identificado como «Ajuste».</p>
     <h3>Movimientos recientes</h3><div id="movement-list" aria-live="polite"></div>
   </article>
   <article class="panel"><h2>4. Escalar y producir</h2>
@@ -75,6 +92,6 @@
 </section>
 <p id="notification" role="status" aria-live="polite"></p>
 </div>
-</main><footer>Proyecto académico · Universidad de Guadalajara · Versión 0.4.0</footer>
+</main><footer>Proyecto académico · Universidad de Guadalajara · Versión 0.4.1</footer>
 <script src="/app.js" defer></script>
 </body></html>

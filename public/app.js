@@ -47,6 +47,15 @@ function setUnitOptions(select, ingredientId) {
 function syncStockUnit() {
   setUnitOptions($('stock-in-form').elements.unit,$('stock-in-form').elements.ingredient.value);
 }
+function syncStockOutUnit() {
+  const form=$('stock-out-form');
+  setUnitOptions(form.elements.unit,form.elements.ingredient.value);
+}
+function syncAdjustUnit() {
+  const id=$('adjust-stock-form').elements.ingredient.value;
+  const selected=ingredients.find(i=>i.id===id);
+  $('adjust-unit-label').textContent=selected?.unit || 'unidad';
+}
 function addRecipeItem() {
   const row=make('div',undefined,'item-row');
   const select=make('select');select.setAttribute('aria-label','Ingrediente');
@@ -70,7 +79,11 @@ function render(movements, batches) {
   if (!recipes.length) $('recipe-list').append(make('p', 'Sin recetas.', 'muted'));
   fillSelect($('scale-form').elements.recipe, recipes, 'Crea primero una receta');
   fillSelect($('stock-in-form').elements.ingredient, ingredients, 'Registra primero un ingrediente');
+  fillSelect($('stock-out-form').elements.ingredient,ingredients,'Registra primero un ingrediente');
+  fillSelect($('adjust-stock-form').elements.ingredient,ingredients,'Registra primero un ingrediente');
   syncStockUnit();
+  syncStockOutUnit();
+  syncAdjustUnit();
   for (const row of $('recipe-items').children) {
     const select=row.querySelector('select');
     fillSelect(select, ingredients, 'Registra ingredientes antes');
@@ -92,6 +105,8 @@ async function refresh() {
 }
 $('add-item').addEventListener('click', addRecipeItem);
 $('stock-in-form').elements.ingredient.addEventListener('change',syncStockUnit);
+$('stock-out-form').elements.ingredient.addEventListener('change',syncStockOutUnit);
+$('adjust-stock-form').elements.ingredient.addEventListener('change',syncAdjustUnit);
 $('ingredient-form').addEventListener('submit', async (event) => {
   event.preventDefault(); const form = event.currentTarget;
   try {
@@ -113,6 +128,25 @@ $('stock-in-form').addEventListener('submit',async(event)=>{
   try {
     await post(`/api/ingredients/${form.elements.ingredient.value}/stock-in`,{quantity:Number(form.elements.quantity.value),unit:form.elements.unit.value,reason:form.elements.reason.value});
     form.elements.quantity.value='';await refresh();notify('Entrada de inventario guardada.');
+  }catch(error){notify(error.message,true);}
+});
+$('stock-out-form').addEventListener('submit',async(event)=>{
+  event.preventDefault();const form=event.currentTarget;
+  try {
+    await post(`/api/ingredients/${form.elements.ingredient.value}/stock-out`,
+      {quantity:Number(form.elements.quantity.value),unit:form.elements.unit.value,reason:form.elements.reason.value});
+    form.elements.quantity.value='';
+    await refresh();notify('Salida de inventario registrada.');
+  }catch(error){notify(error.message,true);}
+});
+$('adjust-stock-form').addEventListener('submit',async(event)=>{
+  event.preventDefault();const form=event.currentTarget;
+  try {
+    if(!confirm('¿Confirmas el conteo físico? Se modificará la existencia y quedará registrado en el historial.'))return;
+    await post(`/api/ingredients/${form.elements.ingredient.value}/adjust-stock`,
+      {newStock:Number(form.elements.newStock.value),reason:form.elements.reason.value});
+    form.elements.newStock.value='';form.elements.reason.value='';
+    await refresh();notify('Existencia ajustada. Movimiento registrado.');
   }catch(error){notify(error.message,true);}
 });
 function renderPreview(result) {

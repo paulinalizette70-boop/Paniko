@@ -2,13 +2,13 @@
 
 Aplicación web académica de **Seminario de Integración: Desarrollo**, Universidad de Guadalajara, Centro Universitario de Tlaquepaque.
 
-**Versión:** 0.4.0 (noviembre de 2026). El MVP incorpora inventario en MySQL e importador local a tablas de preparación. Las fórmulas reales **no están publicadas ni cargadas en el MySQL de la panadería**; su importación y validación operativa continúan pendientes.
+**Versión:** 0.4.1 (noviembre de 2026). El MVP incorpora inventario en MySQL e importador local a tablas de preparación. Las fórmulas reales **no están publicadas ni cargadas en el MySQL de la panadería**; su importación y validación operativa continúan pendientes.
 
 ## Qué permite hacer esta versión
 
 1. Registrar ingredientes con unidad (g, kg, ml, l o pieza), costo unitario y existencia inicial.
 2. Registrar fichas técnicas de recetas con ingredientes, cantidades y número de piezas por preparación.
-3. Registrar **entradas** de inventario, con motivo y movimiento histórico.
+3. Registrar **entradas y salidas manuales** de inventario, con motivo e historial; corregir existencias según un conteo físico con ajuste trazable.
 4. Calcular una **vista previa** de escalado de cantidades y costos, sin descontar existencias.
 5. **Confirmar una producción**: comprobar si hay ingredientes suficientes y descontarlos **en una transacción MySQL**, guardando el movimiento de salida y un registro de producción.
 6. Consultar las últimas entradas/salidas y las producciones confirmadas.
@@ -50,6 +50,13 @@ Las producciones se confirman como registros de consumo de insumos; aún no exis
 | POST | `/api/recipes/:id/scale` | Calcular vista previa `{ "desiredYield": 20 }` |
 | POST | `/api/recipes/:id/produce` | Confirmar consumo y descontar stock `{ "desiredYield": 20 }` |
 | GET | `/api/production` | Producciones recientes |
+
+### Operaciones manuales añadidas (v0.4.1)
+
+- `POST /api/ingredients/:id/stock-out` recibe `{"quantity":250,"unit":"g","reason":"Consumo manual"}`. Convierte g↔kg y ml↔l, descuenta solamente si hay inventario disponible y registra una salida.
+- `POST /api/ingredients/:id/adjust-stock` recibe `{"newStock":0.75,"reason":"Conteo físico"}`. `newStock` está expresado en la **unidad registrada del ingrediente**, admite cero y registra la diferencia como entrada o salida con motivo que comienza por `Ajuste:`.
+- Los cambios de inventario en MySQL usan bloqueo de fila y transacciones. No se permite descontar más de lo existente ni guardar ajustes sin cambio.
+- El acceso sigue destinado exclusivamente al entorno local de desarrollo: **no publicar este sistema en internet sin habilitar autenticación y permisos**.
 
 ## Pruebas y evidencias
 

@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const {ValidationError, validateIngredient, validateRecipe, scaleRecipe} = require('./domain');
-const {stockEntry, validateProduction, roundQuantity, safeStockSum} = require('./inventory');
+const {stockEntry, stockExit, stockAdjustment, validateProduction, roundQuantity, safeStockSum} = require('./inventory');
 
 function createStore(filePath) {
   function read() {
@@ -61,6 +61,36 @@ function createStore(filePath) {
       data.movements.push(movement);
       write(data);
       return {ingredient, movement};
+    },
+    stockOut(id, raw) {
+      const data=read();
+      const ingredient=data.ingredients.find(i=>i.id===id);
+      if (!ingredient) throw new ValidationError('Ingrediente no encontrado',404);
+      const {quantity,reason}=stockExit(raw,ingredient.unit);
+      const before=ingredient.stock;
+      if (quantity>before) throw new ValidationError('Inventario insuficiente para esta salida',409);
+      ingredient.stock=roundQuantity(before-quantity);
+      const movement={id:crypto.randomUUID(),ingredientId:id,name:ingredient.name,type:'salida',
+        quantity,stockBefore:before,stockAfter:ingredient.stock,reason,createdAt:new Date().toISOString()};
+      data.movements.push(movement);
+      write(data);
+      return {ingredient,movement};
+    },
+    adjustStock(id,raw) {
+      const data=read();
+      const ingredient=data.ingredients.find(i=>i.id===id);
+      if (!ingredient) throw new ValidationError('Ingrediente no encontrado',404);
+      const {newStock,reason}=stockAdjustment(raw);
+      const before=ingredient.stock;
+      if (newStock===before) throw new ValidationError('La existencia no cambió',400);
+      const type=newStock>before?'entrada':'salida';
+      const movement={id:crypto.randomUUID(),ingredientId:id,name:ingredient.name,type,
+        quantity:roundQuantity(Math.abs(newStock-before)),stockBefore:before,stockAfter:newStock,
+        reason,createdAt:new Date().toISOString()};
+      ingredient.stock=newStock;
+      data.movements.push(movement);
+      write(data);
+      return {ingredient,movement};
     },
     confirmProduction(id, desiredYield) {
       const data = read();
