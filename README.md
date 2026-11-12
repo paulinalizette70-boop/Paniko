@@ -8,7 +8,7 @@ Aplicación web académica de **Seminario de Integración: Desarrollo**, Univers
 
 1. Registrar ingredientes con unidad (g, kg, ml, l o pieza), costo unitario y existencia inicial.
 2. Registrar fichas técnicas de recetas con ingredientes, cantidades y número de piezas por preparación.
-3. Registrar **entradas** de inventario, con motivo y movimiento histórico.
+3. Registrar **entradas y salidas manuales** de inventario, con motivo, validación de existencias e historial.
 4. Calcular una **vista previa** de escalado de cantidades y costos, sin descontar existencias.
 5. **Confirmar una producción**: comprobar si hay ingredientes suficientes y descontarlos **en una transacción MySQL**, guardando el movimiento de salida y un registro de producción.
 6. Consultar las últimas entradas/salidas y las producciones confirmadas.
@@ -46,6 +46,7 @@ Las producciones se confirman como registros de consumo de insumos; aún no exis
 | GET / POST | `/api/ingredients` | Listar / registrar ingredientes |
 | GET / POST | `/api/recipes` | Listar / registrar fichas |
 | POST | `/api/ingredients/:id/stock-in` | Registrar entrada de inventario `{ "quantity": 2, "reason": "Compra" }` |
+| POST | `/api/ingredients/:id/stock-out` | Registrar salida manual `{ "quantity": 0.5, "reason": "Merma" }`; rechaza stock insuficiente |
 | GET | `/api/inventory/movements` | Movimientos recientes |
 | POST | `/api/recipes/:id/scale` | Calcular vista previa `{ "desiredYield": 20 }` |
 | POST | `/api/recipes/:id/produce` | Confirmar consumo y descontar stock `{ "desiredYield": 20 }` |
