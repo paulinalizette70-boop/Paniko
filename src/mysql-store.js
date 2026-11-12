@@ -101,6 +101,24 @@ function createMysqlStore(pool) {
       return {ingredient,movement:{id:movementId,ingredientId:id,name:ingredient.name,type:'entrada',quantity,stockBefore,stockAfter:ingredient.stock,reason}};
     });
   }
+  async function stockOut(id,raw) {
+    return inTransaction(pool,async c=>{
+      const [rows]=await c.execute('SELECT id,name,unit,cost_per_unit,stock FROM ingredients WHERE id=? FOR UPDATE',[id]);
+      if(!rows.length) throw new ValidationError('Ingrediente no encontrado',404);
+      const ingredient=ingredientFromRow(rows[0]);
+      const {quantity,reason}=stockEntry(raw,ingredient.unit,'Salida manual de inventario');
+      const stockBefore=ingredient.stock;
+      if(quantity>stockBefore) throw new ValidationError('Inventario insuficiente para registrar la salida',409);
+      ingredient.stock=roundQuantity(stockBefore-quantity);
+      const [update]=await c.execute('UPDATE ingredients SET stock=? WHERE id=? AND stock>=?',[ingredient.stock,id,quantity]);
+      if(update.affectedRows!==1) throw new ValidationError('El inventario cambió: vuelve a revisar existencias',409);
+      const movementId=crypto.randomUUID();
+      await c.execute(`INSERT INTO inventory_movements (id,ingredient_id,movement_type,quantity,stock_before,stock_after,reason) VALUES (?,?,'salida',?,?,?,?)`,
+        [movementId,id,quantity,stockBefore,ingredient.stock,reason]);
+      return {ingredient,movement:{id:movementId,ingredientId:id,name:ingredient.name,type:'salida',
+        quantity,stockBefore,stockAfter:ingredient.stock,reason}};
+    });
+  }
   async function confirmProduction(id,desiredYield) {
     return inTransaction(pool,async c=>{
       const recipe=await getRecipe(id,c);
@@ -127,6 +145,6 @@ function createMysqlStore(pool) {
       return {id:batchId,recipeId:recipe.id,recipeName:recipe.name,desiredYield,estimatedTotalCost:result.estimatedTotalCost,lines:result.lines.map(line=>({ingredientId:line.ingredientId,name:line.name,unit:line.unit,quantity:line.required,estimatedCost:line.estimatedCost}))};
     });
   }
-  return {listIngredients,listRecipes,getRecipe,addIngredient,addRecipe,preview,listMovements,listProduction,stockIn,confirmProduction};
+  return {listIngredients,listRecipes,getRecipe,addIngredient,addRecipe,preview,listMovements,listProduction,stockIn,stockOut,confirmProduction};
 }
 module.exports={createMysqlStore};
