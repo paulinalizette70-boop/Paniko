@@ -49,7 +49,7 @@
   </article>
 </section>
 <section class="columns">
-  <article class="panel"><h2>3. Existencias y entradas de inventario</h2>
+  <article class="panel"><h2>3. Control de inventario</h2>
     <div id="ingredient-list">Sin registros.</div>
     <h3>Registrar entrada</h3>
     <form id="stock-in-form">
@@ -59,6 +59,15 @@
       <label>Motivo <input name="reason" maxlength="150" value="Reposición de inventario" required/></label>
       <button>Registrar entrada</button>
     </form>
+    <h3>Registrar salida manual</h3>
+    <form id="stock-out-form">
+      <label>Ingrediente <select name="ingredient" required></select></label>
+      <label>Cantidad utilizada o retirada <input name="quantity" type="number" min="0.000001" step="0.000001" required placeholder="0.5"/></label>
+      <label>Unidad <select name="unit" required></select></label>
+      <label>Motivo <input name="reason" maxlength="150" value="Ajuste de inventario" required/></label>
+      <button type="submit">Registrar salida</button>
+    </form>
+    <p class="muted tiny">Para producción desde una receta usa «Confirmar producción». Aquí registra únicamente salidas adicionales para evitar descontar dos veces.</p>
     <h3>Movimientos recientes</h3><div id="movement-list" aria-live="polite"></div>
   </article>
   <article class="panel"><h2>4. Escalar y producir</h2>
