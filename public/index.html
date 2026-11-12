@@ -3,7 +3,7 @@
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Paniko | Producción artesanal</title><link rel="stylesheet" href="/styles.css"/>
 </head><body>
-<header><div class="brand">Paniko<span> · MVP 0.6.1</span></div><p>Fichas técnicas e inventario de producción artesanal.</p></header>
+<header><div class="brand">Paniko<span> · MVP 0.6.2</span></div><p>Fichas técnicas e inventario de producción artesanal.</p></header>
 <main>
 <section id="auth-panel" class="panel auth-panel" hidden><h2>Acceso a Paniko</h2>
   <form id="login-form">
@@ -81,6 +81,7 @@
       <p class="muted tiny">Para sumar producto automáticamente, un administrador debe vincularlo primero con esta receta operativa.</p>
       <label>Producción deseada (piezas) <input type="number" name="desiredYield" min="1" step="1" value="20" required/></label>
       <button type="submit" class="secondary">Calcular vista previa (no descuenta)</button>
+      <button type="button" class="secondary" id="max-production-button" disabled>Usar máximo disponible</button>
       <button type="button" id="produce-button">Confirmar producción y descontar ingredientes</button>
     </form>
     <div id="scale-results" aria-live="polite"></div>
@@ -90,7 +91,7 @@
 </section>
 <p id="notification" role="status" aria-live="polite"></p>
 </div>
-</main><footer>Proyecto académico · Universidad de Guadalajara · Versión 0.6.1</footer>
+</main><footer>Proyecto académico · Universidad de Guadalajara · Versión 0.6.2</footer>
 <script src="/app.js" defer></script>
 <script src="/products.js" defer></script>
 </body></html>

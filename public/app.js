@@ -146,8 +146,18 @@ $('adjust-stock-form').addEventListener('submit',async event=>{
 function renderPreview(result) {
   const container=$('scale-results');container.replaceChildren();
   container.append(make('p', `${result.recipeName} · ${result.desiredYield} piezas · costo estimado ${money(result.estimatedTotalCost)}`));
-  for (const line of result.lines) container.append(make('div', `${line.name}: ${line.required} ${line.unit} (disponible: ${line.stock}) · ${money(line.estimatedCost)}`, `list-row ${line.sufficient?'':'warning'}`));
+  container.append(make('p', `Capacidad con existencias actuales: hasta ${result.maxProducible} piezas.`, result.maxProducible>0?'good':'warning'));
+  if(result.limitingIngredients?.length)container.append(make('p', `Insumo(s) limitante(s): ${result.limitingIngredients.join(', ')}`, 'muted'));
+  for(const line of result.lines){
+    const detail=`${line.name}: necesita ${line.required} ${line.unit} · disponible ${line.stock} ${line.unit}`+
+      (line.shortage>0?` · faltan ${line.shortage} ${line.unit}`:'')+` · ${money(line.estimatedCost)}`;
+    container.append(make('div',detail,`list-row ${line.sufficient?'':'warning'}`));
+  }
   container.append(make('p', result.stockAvailable?'Inventario suficiente para esta producción.':'Inventario insuficiente. No se puede confirmar la producción.', result.stockAvailable?'good':'warning'));
+  const maxButton=$('max-production-button');
+  maxButton.disabled=!Number.isSafeInteger(result.maxProducible)||result.maxProducible<1;
+  maxButton.dataset.maximum=String(result.maxProducible);
+  maxButton.dataset.recipeId=result.recipeId;
 }
 async function selectedPreview(){
   const form=$('scale-form');
@@ -157,6 +167,27 @@ async function selectedPreview(){
   renderPreview(result);
   return result;
 }
+function resetCapacitySuggestion(){
+  const button=$('max-production-button');
+  button.disabled=true;delete button.dataset.maximum;delete button.dataset.recipeId;
+  $('scale-results').replaceChildren();
+}
+$('scale-form').elements.recipe.addEventListener('change',resetCapacitySuggestion);
+$('scale-form').elements.desiredYield.addEventListener('input',()=>{
+  // La vista previa ya no corresponde a la cantidad editada.
+  $('scale-results').replaceChildren();
+});
+$('max-production-button').addEventListener('click',()=>{
+  const button=$('max-production-button');
+  const form=$('scale-form');
+  const maximum=Number(button.dataset.maximum);
+  if(button.disabled||button.dataset.recipeId!==form.elements.recipe.value||
+     !Number.isSafeInteger(maximum)||maximum<1)return;
+  form.elements.desiredYield.value=String(maximum);
+  button.disabled=true;
+  $('scale-results').replaceChildren();
+  notify(`Cantidad ajustada a ${maximum} piezas. Calcula la vista previa de nuevo para confirmar.`);
+});
 $('scale-form').addEventListener('submit', async(event)=>{
   event.preventDefault();try{await selectedPreview();notify('Vista previa calculada. No se modificó el inventario.');}catch(e){notify(e.message,true);}
 });
@@ -164,11 +195,12 @@ $('produce-button').addEventListener('click',async()=>{
   try {
     const result=await selectedPreview();
     if(!result.stockAvailable) throw new Error('No puedes confirmar: inventario insuficiente.');
-    if(!confirm(`¿Confirmas ${result.desiredYield} piezas de ${result.recipeName}? Se descontarán ingredientes del inventario y se registrará el movimiento.`)) return;
     const selectedProduct=$('finished-product-selector').value;
+    const details=selectedProduct?'También aumentará la existencia del producto terminado vinculado.':'No se seleccionó producto terminado; solo se descontarán ingredientes.';
+    if(!confirm(`¿Confirmas ${result.desiredYield} piezas de ${result.recipeName}? Se descontarán ingredientes. ${details}`)) return;
     const done=await post(`/api/recipes/${result.recipeId}/produce`,{desiredYield:result.desiredYield,productId:selectedProduct||null});
     await refresh();await window.PanikoFinishedProducts?.refresh?.();
-    $('scale-results').replaceChildren();
+    resetCapacitySuggestion();
     notify(done.finishedProduct ? `Producción registrada: ingredientes descontados y ${done.desiredYield} piezas añadidas a ${done.finishedProduct.name}.` : `Producción confirmada (${done.id}). Solo se descontaron ingredientes: no seleccionaste un producto vinculado.`);
   }catch(e){notify(e.message,true);}
 });

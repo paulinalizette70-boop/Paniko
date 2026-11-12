@@ -27,6 +27,7 @@
   };
   const fmtMoney=n=>n===null?'Precio pendiente':new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(n);
   let currentUser=null,products=[],categories=[],recipes=[],movements=[];
+  let previousProductionRecipeId=null;
   const isAdmin=()=>currentUser?.role==='admin';
   async function api(route,options){
     const response=await fetch(route,options);
@@ -43,12 +44,18 @@
     if(!recipePicker)return;
     const old=recipePicker.value;
     const recipeId=document.getElementById('scale-form')?.elements.recipe?.value;
+    const changed=recipeId!==previousProductionRecipeId;
+    const linked=products.filter(p=>p.active&&p.operationalRecipeId===recipeId);
     recipePicker.replaceChildren();
     const empty=el('option','Sin producto vinculado: solo descuenta ingredientes');empty.value='';recipePicker.append(empty);
-    for(const product of products.filter(p=>p.active&&p.operationalRecipeId===recipeId)){
+    for(const product of linked){
       const option=el('option',product.name);option.value=product.id;recipePicker.append(option);
     }
-    if([...recipePicker.options].some(o=>o.value===old))recipePicker.value=old;
+    // Si hay una sola opción, la seleccionamos al cambiar de receta.
+    // Conservar una selección explícita (incluso "ninguna") al actualizar la lista.
+    if(changed&&linked.length===1)recipePicker.value=linked[0].id;
+    else if([...recipePicker.options].some(o=>o.value===old))recipePicker.value=old;
+    previousProductionRecipeId=recipeId;
   }
   document.getElementById('scale-form')?.elements.recipe?.addEventListener('change',updateProductionOptions);
   function categoryChoices(){return categories.map(c=>({label:c.name,value:c.id}));}

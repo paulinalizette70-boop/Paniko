@@ -77,9 +77,28 @@ function validateRecipe(raw, ingredients) {
 
 function money(value) { return Math.round((value + Number.EPSILON) * 100) / 100; }
 
+function maximumProducible(recipe, ingredients) {
+  // El inventario y las recetas se guardan con seis decimales.
+  // BigInt evita los errores de punto flotante al dividir existencias.
+  let maximum=1_000_000_000n;
+  let limiting=[];
+  for (const item of recipe.items) {
+    const ingredient=ingredients.find(i=>i.id===item.ingredientId);
+    if(!ingredient)throw new ValidationError('Ingrediente de receta no encontrado',409);
+    const available=BigInt(Math.round(ingredient.stock*1_000_000));
+    const perBatch=BigInt(Math.round(item.quantity*1_000_000));
+    if(perBatch<=0n)throw new ValidationError('Cantidad de ingrediente inválida en la receta',409);
+    const possible=(available*BigInt(recipe.baseYield))/perBatch;
+    if(possible<maximum){maximum=possible;limiting=[ingredient.name];}
+    else if(possible===maximum)limiting.push(ingredient.name);
+  }
+  return {maximum:Number(maximum), limitingIngredients:limiting};
+}
+
 function scaleRecipe(recipe, ingredients, desiredYield) {
   numberField(desiredYield, 'Producción solicitada', {positive: true, integer: true});
   const factor = desiredYield / recipe.baseYield;
+  const capacity=maximumProducible(recipe,ingredients);
   const lines = recipe.items.map(({ingredientId, quantity}) => {
     const ingredient = ingredients.find((i) => i.id === ingredientId);
     if (!ingredient) throw new ValidationError('Ingrediente de receta no encontrado', 409);
@@ -91,6 +110,7 @@ function scaleRecipe(recipe, ingredients, desiredYield) {
       required,
       stock: ingredient.stock,
       sufficient: ingredient.stock + 1e-9 >= required,
+      shortage: Math.round(Math.max(0,required-ingredient.stock)*1_000_000)/1_000_000,
       estimatedCost: money(required * ingredient.costPerUnit),
     };
   });
@@ -100,10 +120,12 @@ function scaleRecipe(recipe, ingredients, desiredYield) {
     desiredYield,
     factor,
     lines,
+    maxProducible: capacity.maximum,
+    limitingIngredients: capacity.limitingIngredients,
     stockAvailable: lines.every((l) => l.sufficient),
     estimatedTotalCost: money(lines.reduce((total, l) => total + l.required *
       ingredients.find((i) => i.id === l.ingredientId).costPerUnit, 0)),
   };
 }
 
-module.exports = {ValidationError, validateIngredient, validateRecipe, scaleRecipe, convertQuantity, UNITS};
+module.exports = {ValidationError, validateIngredient, validateRecipe, scaleRecipe, maximumProducible, convertQuantity, UNITS};
