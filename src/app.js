@@ -83,6 +83,8 @@ function createApp({store, auth = null, dataFile = path.join(__dirname, '..', 'd
       if (req.method === 'GET' && pathname === '/api/production') return send(res, 200, await store.listProduction());
       const stock = pathname.match(/^\/api\/ingredients\/([a-f\d-]+)\/stock-in$/i);
       if (stock && req.method === 'POST') return send(res, 200, await store.stockIn(stock[1], await bodyAsJson(req)));
+      const stockOut = pathname.match(/^\/api\/ingredients\/([a-f\d-]+)\/stock-out$/i);
+      if (stockOut && req.method === 'POST') return send(res, 200, await store.stockOut(stockOut[1], await bodyAsJson(req)));
       const scale = pathname.match(/^\/api\/recipes\/([a-f\d-]+)\/scale$/i);
       if (scale && req.method === 'POST') {
         const body = await bodyAsJson(req);
