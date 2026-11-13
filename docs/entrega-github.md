@@ -79,3 +79,10 @@ En el [README](../README.md#capturas-de-paniko) agregamos capturas de Inicio e H
 Antes de cerrar la entrega queremos revisar las conversiones al crear fichas en nuestra instalación, añadir la revisión formal de GitHub y terminar la evidencia individual. Después seguiremos con el resumen financiero semanal que nos pidió Ale.
 
 **Estado actual:** `main` contiene **Paniko 0.7.2**; la aplicación y sus pruebas están publicadas, pero todavía hay trabajo por validar y documentar.
+
+
+## 9. Guía de demo de medio término
+
+Preparamos un [guion de Sprint Review](demo-medio-termino.md) para mostrar el recorrido del inventario, las fichas, el escalado, la producción y el historial, además de los comentarios de Ale. También dejamos un [plan de casos manuales DM-01 a DM-10](pruebas/plan-pruebas-demo.md).
+
+Estos archivos son una **guía y un plan de verificación**. Las pruebas manuales todavía deben ejecutarse y documentarse; no estamos diciendo que todas salieron bien sin haberlas realizado. La ejecución automatizada de `main` ya tiene [evidencia de éxito](https://github.com/paulinalizette70-boop/Paniko/actions/runs/43374837592).
