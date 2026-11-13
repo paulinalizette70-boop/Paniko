@@ -16,6 +16,7 @@
     <symbol id="i-book" viewBox="0 0 24 24"><path d="M5 3h14v17H7a3 3 0 0 0-3 1V6a3 3 0 0 1 3-3z"/><path d="M4 18a3 3 0 0 1 3-3h12M9 8h6m-6 4h4"/></symbol>
     <symbol id="i-cart" viewBox="0 0 24 24"><path d="M3 4h2l2.5 12h12L22 8H6"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></symbol>
     <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></symbol>
+    <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M20 4c-9 0-15 4-15 11a5 5 0 0 0 5 5c7 0 11-6 10-16z"/><path d="M5 20c2-4 6-7 11-10"/></symbol>
     <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
     <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
     <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></symbol>
@@ -52,11 +53,12 @@
           <button class="nav-link" type="button" data-view-target="production"><svg class="icon"><use href="#i-bread"/></svg><span>Producción</span></button>
           <button class="nav-link" type="button" data-view-target="ingredients"><svg class="icon"><use href="#i-box"/></svg><span>Ingredientes</span></button>
           <button class="nav-link" type="button" data-view-target="recipes"><svg class="icon"><use href="#i-book"/></svg><span>Recetas</span></button>
+          <button class="nav-link" type="button" data-view-target="sourdough"><svg class="icon"><use href="#i-leaf"/></svg><span>Mi masa madre</span></button>
           <button class="nav-link" type="button" data-view-target="products"><svg class="icon"><use href="#i-cart"/></svg><span>Productos y ventas</span></button>
           <button class="nav-link" type="button" data-view-target="history"><svg class="icon"><use href="#i-clock"/></svg><span>Historial</span></button>
           <button class="nav-link admin-nav" type="button" data-view-target="finance" hidden><svg class="icon"><use href="#i-lock"/></svg><span>Finanzas</span></button>
         </nav>
-        <div class="sidebar-bottom"><span class="sidebar-motto">Un día a la vez,<br/>un pan a la vez.</span><span class="version-label">Versión 0.7.3</span></div>
+        <div class="sidebar-bottom"><span class="sidebar-motto">Un día a la vez,<br/>un pan a la vez.</span><span class="version-label">Versión 0.8.0</span></div>
       </aside>
 
       <div class="main-column">
@@ -154,6 +156,19 @@
             </section>
           </section>
 
+          <section class="view" data-view="sourdough" aria-labelledby="sourdough-title" hidden>
+            <div class="page-heading"><span class="eyebrow">CUIDA TU CULTIVO</span><h1 id="sourdough-title">Mi masa madre</h1><p>Registra cada alimentación, lleva el peso de tu masa madre y consulta cuándo quieres revisarla de nuevo.</p></div>
+            <div class="panel sourdough-intro"><h2>Tu bitácora de masa madre</h2><p>La hidratación que mostramos corresponde a <strong>la harina y el agua añadidas en cada alimentación</strong>, no necesariamente a la hidratación total del cultivo. Tú decides el intervalo de revisión según tu rutina y las condiciones reales.</p><p class="hint">Estas anotaciones no descuentan ingredientes del inventario. La próxima revisión solo aparece cuando abras Paniko; no se envían recordatorios automáticos.</p></div>
+            <details class="panel action-details" id="sourdough-create-details"><summary><span class="action-icon accent-olive"><svg class="icon"><use href="#i-plus"/></svg></span><span><strong>Agregar una masa madre</strong><small>Nombre, ubicación y frecuencia de revisión</small></span><svg class="icon arrow"><use href="#i-chevron"/></svg></summary>
+              <form id="starter-create-form" class="form-stack inset-form"><label>Nombre de tu masa madre<input name="name" required maxlength="100" placeholder="Ej. Masa madre principal"/></label>
+                <div class="input-pair"><label>¿Dónde la guardas?<select name="location"><option value="ambiente">Temperatura ambiente</option><option value="refrigerador">Refrigerador</option></select></label><label>Revisar cada cuántas horas<input name="feedEveryHours" type="number" min="1" max="336" step="1" value="24" required/></label></div>
+                <label>Peso actual (g) · opcional<input name="initialWeightGrams" type="number" min="0" max="1000000" step="0.01" placeholder="Puedes capturarlo después"/></label>
+                <label>Notas<input name="notes" maxlength="500" placeholder="Ej. Uso harina de fuerza"/></label>
+                <button class="btn-primary" type="submit">Guardar masa madre</button></form>
+            </details>
+            <div id="sourdough-list" class="sourdough-grid" aria-live="polite"><p class="muted">Todavía no hay registros.</p></div>
+          </section>
+
           <section class="view" data-view="history" aria-labelledby="history-title" hidden>
             <div class="page-heading"><span class="eyebrow">TODO QUEDA REGISTRADO</span><h1 id="history-title">Historial</h1><p>Consulta lotes y movimientos anteriores sin modificar las existencias.</p></div>
             <div class="panel"><div class="section-heading panel-heading"><div><h2>Lotes de producción</h2><p class="muted">Últimos 100 lotes registrados.</p></div><label class="filter-field">Filtrar por receta<select id="production-filter"><option value="">Todas las recetas</option></select></label></div><div id="production-list" class="history-list"></div></div>
@@ -162,6 +177,26 @@
 
           <section id="finance-panel" class="view" data-view="finance" aria-labelledby="finance-title" hidden>
             <div class="page-heading"><span class="eyebrow">SOLO ADMINISTRACIÓN</span><h1 id="finance-title">Gestión financiera</h1><p>Administra los costos de ingredientes y productos, junto con los precios de venta. Solo administración puede hacer cambios.</p></div>
+            <div class="panel finance-dashboard"><div class="section-heading panel-heading"><div><h2>Ingresos y ganancias</h2><p class="muted">Ventas registradas, costo de piezas vendidas y gastos adicionales. Los importes se guardan al momento de cada venta.</p></div><label class="filter-field">Periodo<select id="finance-period"><option value="7">Últimos 7 días</option><option value="30">Últimos 30 días</option><option value="90">Últimos 90 días</option><option value="365">Últimos 365 días</option></select></label></div>
+              <div class="finance-metric-grid">
+                <div class="finance-metric"><span>Ingresos conocidos</span><strong id="finance-revenue">—</strong></div>
+                <div class="finance-metric"><span>Costo de lo vendido</span><strong id="finance-cogs">—</strong></div>
+                <div class="finance-metric"><span>Gastos adicionales</span><strong id="finance-expenses">—</strong></div>
+                <div class="finance-metric"><span>Utilidad bruta</span><strong id="finance-gross">—</strong></div>
+                <div class="finance-metric emphasis"><span>Utilidad neta</span><strong id="finance-net">—</strong></div>
+              </div>
+              <p id="finance-summary-note" class="hint" aria-live="polite">Cargando resumen…</p>
+              <p class="hint">Utilidad bruta = ingresos − costo de productos vendidos. Utilidad neta = utilidad bruta − gastos adicionales. No dupliques como gasto la materia prima que ya está incluida en el costo por pieza.</p>
+            </div>
+            <div class="finance-side-by-side">
+              <div class="panel"><h2>Registrar gasto</h2><p class="muted">Renta, servicios, nómina, empaque y otros gastos no incluidos en el costo de las piezas.</p>
+                <form id="finance-expense-form" class="form-stack"><label>Categoría<select name="category" required><option>Renta</option><option>Servicios</option><option>Nómina</option><option>Empaque</option><option>Mantenimiento</option><option>Otros</option></select></label>
+                  <label>Concepto<input name="description" maxlength="150" required placeholder="Ej. Recibo de luz"/></label>
+                  <div class="input-pair"><label>Importe MXN<input name="amount" type="number" min="0.01" step="0.01" required placeholder="0.00"/></label><label>Fecha<input id="finance-expense-date" name="expenseDate" type="date" required/></label></div>
+                  <button type="submit" class="btn-primary">Guardar gasto</button></form>
+              </div>
+              <div class="panel"><h2>Ventas y gastos recientes</h2><div id="finance-recent-list" aria-live="polite"><p class="muted">Cargando movimientos…</p></div></div>
+            </div>
             <div class="stats-grid finance-metrics">
               <div class="stat-card"><div><span class="stat-label">Valor estimado de ingredientes</span><strong id="finance-inventory-value">—</strong><small>Existencias × costo unitario</small></div></div>
               <div class="stat-card"><div><span class="stat-label">Costo estimado de lotes recientes</span><strong id="finance-batch-cost">—</strong><small>Últimos lotes registrados</small></div></div>
@@ -179,5 +214,6 @@
   </div>
   <script src="/app.js" defer></script>
   <script src="/products.js" defer></script>
+  <script src="/sourdough.js" defer></script>
 </body>
 </html>

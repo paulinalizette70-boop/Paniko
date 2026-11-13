@@ -19,13 +19,14 @@ function operationalData(value){
 }
 
 
-function createApp({store, auth = null, products = null, dataFile = path.join(__dirname, '..', 'data', 'paniko.json')} = {}) {
+function createApp({store, auth = null, products = null, finance = null, sourdough = null, dataFile = path.join(__dirname, '..', 'data', 'paniko.json')} = {}) {
   store = store || createStore(dataFile);
   const assets = {
     '/': ['index.html', 'text/html; charset=utf-8'],
     '/styles.css': ['styles.css', 'text/css; charset=utf-8'],
     '/app.js': ['app.js', 'application/javascript; charset=utf-8'],
     '/products.js': ['products.js', 'application/javascript; charset=utf-8'],
+    '/sourdough.js': ['sourdough.js', 'application/javascript; charset=utf-8'],
   };
   async function bodyAsJson(req) {
     let size = 0; const chunks=[];
@@ -123,6 +124,36 @@ function createApp({store, auth = null, products = null, dataFile = path.join(__
         const move=pathname.match(/^\/api\/products\/([a-f\d-]+)\/movements$/i);
         if(move&&req.method==='POST')return respond(201,await products.recordMovement(move[1],await bodyAsJson(req)));
         return respond(404,{error:'Ruta de productos no encontrada'});
+      }
+      // Seguimiento de masa madre: lectura y alimentación para personal con sesión.
+      // No descuenta ingredientes del inventario automáticamente.
+      if(pathname.startsWith('/api/sourdough/')){
+        if(!auth||!sourdough)return respond(503,{error:'Módulo de masa madre no disponible: verifica la migración MySQL'});
+        if(!loggedInUser)return respond(401,{error:'Inicia sesión para continuar'});
+        if(pathname==='/api/sourdough/starters'){
+          if(req.method==='GET')return respond(200,await sourdough.listStarters());
+          if(req.method==='POST')return respond(201,await sourdough.createStarter(await bodyAsJson(req)));
+        }
+        const starterAction=pathname.match(/^\/api\/sourdough\/starters\/([a-f\d-]{36})\/(update|feed|feedings)$/i);
+        if(starterAction){
+          const [,id,action]=starterAction;
+          if(action==='update'&&req.method==='POST')return respond(200,await sourdough.updateStarter(id,await bodyAsJson(req)));
+          if(action==='feed'&&req.method==='POST')return respond(201,await sourdough.feed(id,await bodyAsJson(req)));
+          if(action==='feedings'&&req.method==='GET')return respond(200,await sourdough.feedings(id));
+        }
+        return respond(404,{error:'Operación de masa madre no encontrada'});
+      }
+      // Control financiero exclusivo de administración, también a nivel de API.
+      if(pathname==='/api/finance/dashboard'&&req.method==='GET'){
+        if(!auth||loggedInUser?.role!=='admin')return respond(403,{error:'Solo administración puede consultar las ganancias'});
+        if(!finance)return respond(503,{error:'Panel financiero no disponible: verifica la migración MySQL'});
+        const days=Number(url.searchParams.get('days')||7);
+        return respond(200,await finance.dashboard(days));
+      }
+      if(pathname==='/api/finance/expenses'&&req.method==='POST'){
+        if(!auth||loggedInUser?.role!=='admin')return respond(403,{error:'Solo administración puede registrar gastos'});
+        if(!finance)return respond(503,{error:'Panel financiero no disponible: verifica la migración MySQL'});
+        return respond(201,await finance.addExpense(await bodyAsJson(req)));
       }
       if(pathname==='/api/finance/products'&&req.method==='GET'){
         if(!auth||!loggedInUser||loggedInUser.role!=='admin')
