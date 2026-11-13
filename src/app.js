@@ -124,6 +124,19 @@ function createApp({store, auth = null, products = null, dataFile = path.join(__
         if(move&&req.method==='POST')return respond(201,await products.recordMovement(move[1],await bodyAsJson(req)));
         return respond(404,{error:'Ruta de productos no encontrada'});
       }
+      if(pathname==='/api/finance/products'&&req.method==='GET'){
+        if(!auth||!loggedInUser||loggedInUser.role!=='admin')
+          return respond(403,{error:'Solo administración puede consultar los costos de productos'});
+        if(!products?.listFinancials)return respond(503,{error:'El inventario de productos requiere MySQL'});
+        return respond(200,await products.listFinancials());
+      }
+      const financialProduct=pathname.match(/^\/api\/finance\/products\/([a-f\d-]+)\/pricing$/i);
+      if(financialProduct&&req.method==='POST'){
+        if(!auth||!loggedInUser||loggedInUser.role!=='admin')
+          return respond(403,{error:'Solo administración puede editar costos y precios de productos'});
+        if(!products?.updateFinancials)return respond(503,{error:'El inventario de productos requiere MySQL'});
+        return respond(200,await products.updateFinancials(financialProduct[1],await bodyAsJson(req)));
+      }
       if(pathname==='/api/finance/overview'&&req.method==='GET'){
         if(!auth||!loggedInUser||loggedInUser.role!=='admin')return respond(403,{error:'Acceso exclusivo a administración'});
         const [ingredients,batches]=await Promise.all([store.listIngredients(),store.listProduction()]);

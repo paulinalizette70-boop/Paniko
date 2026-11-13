@@ -86,6 +86,11 @@
       const newBtn=button('Registrar producto','secondary');
       const newCatBtn=button('Crear categoría','secondary');
       toolbar.append(importBtn,newBtn,newCatBtn);
+      if(isAdmin()){
+        const costs=button('Editar costos y precios en Finanzas','btn-soft');
+        costs.addEventListener('click',()=>window.PanikoNavigate?.('finance'));
+        toolbar.append(costs);
+      }
       const newBox=el('div');newBox.hidden=true;
       const form=el('form');form.className='finished-editor';
       const productName=input('text','productName','',{required:'',maxlength:150});
