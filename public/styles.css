@@ -217,3 +217,11 @@ h3{font-size:1rem;font-weight:750}
 .catalog-edit-form textarea{width:100%;resize:vertical;border:1px solid #d9ded3;border-radius:12px;background:white;padding:11px 13px;color:var(--ink);}
 .catalog-edit-form .recipe-actions{margin-top:12px;}
 @media(max-width:650px){.catalog-edit-form{padding:13px}.catalog-edit-item{grid-template-columns:1fr 1fr}.catalog-edit-item input:first-child{grid-column:1/-1}.catalog-edit-item button{grid-column:1/-1}}
+
+/* Finanzas: tarjetas comprensibles con costo y precio separados */
+#finance-product-list {display:grid;gap:12px}
+#finance-product-list .finance-cost-row {display:grid;grid-template-columns:minmax(150px,1.3fr) repeat(2,minmax(140px,1fr)) auto;gap:14px;align-items:end;padding:16px;background:#fffefa;border:1px solid #e9e8e0;border-radius:14px}
+#finance-product-list .finance-cost-row>div strong{display:block;margin-bottom:5px}
+#finance-product-list .finance-cost-row>small{grid-column:1/-1}
+@media(max-width:920px){#finance-product-list .finance-cost-row{grid-template-columns:1fr 1fr}#finance-product-list .finance-cost-row>div{grid-column:1/-1}}
+@media(max-width:600px){#finance-product-list .finance-cost-row{grid-template-columns:1fr}#finance-product-list .finance-cost-row>div{grid-column:auto}}

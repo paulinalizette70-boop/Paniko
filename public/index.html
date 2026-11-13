@@ -161,12 +161,15 @@
           </section>
 
           <section id="finance-panel" class="view" data-view="finance" aria-labelledby="finance-title" hidden>
-            <div class="page-heading"><span class="eyebrow">SOLO ADMINISTRACIÓN</span><h1 id="finance-title">Gestión financiera</h1><p>Costos de insumos y valor estimado del inventario. El personal operativo no tiene acceso a esta información.</p></div>
+            <div class="page-heading"><span class="eyebrow">SOLO ADMINISTRACIÓN</span><h1 id="finance-title">Gestión financiera</h1><p>Administra los costos de ingredientes y productos, junto con los precios de venta. Solo administración puede hacer cambios.</p></div>
             <div class="stats-grid finance-metrics">
               <div class="stat-card"><div><span class="stat-label">Valor estimado de ingredientes</span><strong id="finance-inventory-value">—</strong><small>Existencias × costo unitario</small></div></div>
               <div class="stat-card"><div><span class="stat-label">Costo estimado de lotes recientes</span><strong id="finance-batch-cost">—</strong><small>Últimos lotes registrados</small></div></div>
             </div>
             <div class="panel finance-editor"><div class="section-heading panel-heading"><div><h2>Costos de ingredientes</h2><p class="muted">Solo administración puede consultar o actualizar el costo unitario. Los cambios afectan los cálculos futuros, no los costos registrados en lotes anteriores.</p></div></div><div id="finance-ingredient-list" aria-live="polite"></div></div>
+            <div class="panel finance-editor"><div class="section-heading panel-heading"><div><h2>Costos y precios de productos</h2>
+            <p class="muted">Edita por separado el costo de elaboración por pieza y el precio de venta al público. El costo es manual y no se inventa a partir de las recetas. Estos cambios no modifican existencias ni ventas anteriores.</p></div></div>
+            <div id="finance-product-list" aria-live="polite"><p class="muted">Abre Finanzas para consultar tus productos.</p></div></div>
           </section>
 
           <footer class="app-footer">Paniko · Elaborado con cariño para panaderías artesanales <span>Proyecto académico · Uso local</span></footer>

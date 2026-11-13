@@ -658,6 +658,44 @@ async function loadFinances(){
       root.append(form);
     }
   }catch(error){root.replaceChildren(make('p',error.message,'warning'));}
+  await loadProductFinances();
+}
+
+async function loadProductFinances(){
+  if(currentUser?.role!=='admin')return;
+  const root=$('finance-product-list');
+  root.replaceChildren(make('p','Cargando costos y precios de productos…','muted'));
+  try{
+    const products=await api('/api/finance/products');
+    root.replaceChildren();
+    if(!products.length){root.append(make('p','Aún no hay productos terminados. Regístralos primero en Productos y ventas.','muted'));return;}
+    for(const item of products){
+      const form=make('form',undefined,'finance-cost-row');
+      const title=make('div');title.append(make('strong',item.name),make('small',`${item.stock} piezas disponibles`));
+      const costLabel=make('label','Costo de elaboración por pieza (MXN)');
+      const cost=make('input');cost.type='number';cost.step='0.01';cost.min='0';cost.placeholder='Sin definir';
+      cost.value=item.unitCost===null?'':String(item.unitCost);cost.setAttribute('aria-label',`Costo de elaboración de ${item.name}`);
+      costLabel.append(cost);
+      const priceLabel=make('label','Precio de venta por pieza (MXN)');
+      const price=make('input');price.type='number';price.step='0.01';price.min='0';price.placeholder='Sin definir';
+      price.value=item.salePrice===null?'':String(item.salePrice);price.setAttribute('aria-label',`Precio de venta de ${item.name}`);
+      priceLabel.append(price);
+      const save=make('button','Guardar costos y precio','btn-soft');save.type='submit';
+      const note=make('small','Ambos importes son opcionales. No cambian el inventario ni las ventas anteriores.','muted');
+      form.append(title,costLabel,priceLabel,save,note);
+      form.addEventListener('submit',async event=>{
+        event.preventDefault();if(!form.reportValidity())return;save.disabled=true;
+        try{
+          await post(`/api/finance/products/${item.id}/pricing`,{
+            unitCost:cost.value===''?null:Number(cost.value),
+            salePrice:price.value===''?null:Number(price.value)});
+          await loadProductFinances();await window.PanikoFinishedProducts?.refresh?.();
+          notify(`Costos y precio de ${item.name} actualizados.`);
+        }catch(error){notify(error.message,true);save.disabled=false;}
+      });
+      root.append(form);
+    }
+  }catch(error){root.replaceChildren(make('p',error.message,'warning'));}
 }
 
 async function initializePaniko(){

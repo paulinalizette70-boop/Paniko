@@ -1,6 +1,6 @@
 # Paniko · Gestión de panadería artesanal
 
-**MVP académico | Versión de integración 0.7.2 | Seminario de Integración: Desarrollo**
+**MVP académico | Versión de integración 0.7.4 | Seminario de Integración: Desarrollo**
 
 **Universidad de Guadalajara · Centro Universitario de Tlaquepaque · Ingeniería Informática**
 
@@ -249,3 +249,13 @@ El [PR #9](https://github.com/paulinalizette70-boop/Paniko/pull/9) sigue abierto
 - Disponible en Recetas > Ver % panadero, en el formulario > Calcular % panadero antes de guardar, y en Producción > Ver porcentajes panaderos después de la vista previa.
 - Nuevas rutas autenticadas GET /api/recipes/:id/bakers y POST /api/recipes/bakers-preview. No modifican inventarios ni contienen datos financieros para operadores.
 - No modifica tablas SQL ni configuraciones .env. El instalador 0.7.2 también actualiza src/inventory.js, preservando la corrección del error de inventario de 0.7.1.
+
+## Paniko 0.7.4 — Edición de costos y precios de productos
+
+En **Finanzas → Costos y precios de productos** la administración puede registrar por separado un **costo manual de elaboración por pieza** y el **precio de venta** de cada producto terminado. El costo es opcional; no se infiere automáticamente de la receta y no reemplaza el costo de los lotes ya producidos.
+
+La API comprueba permisos: \`GET /api/finance/products\` y \`POST /api/finance/products/:id/pricing\` están restringidas al administrador; los operadores pueden utilizar el inventario de productos sin conocer su costo de elaboración.
+
+Hay una **migración aditiva** \`scripts/migrate-product-cost.js\`: verifica si existe la columna \`finished_products.unit_cost\` y la agrega si falta, sin alterar productos, ventas ni existencias. Para instalaciones locales, **respaldar MySQL antes de aplicar**. El instalador \`INSTALAR_FINANZAS_074.ps1\` conserva \`.env\`, \`private/\`, \`data/\` y \`node_modules/\` y respalda el código anterior.
+
+No se publican fórmulas reales ni archivos privados.
