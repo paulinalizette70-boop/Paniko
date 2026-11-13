@@ -154,6 +154,8 @@ function availableUnits(unit,name='') {
     return ['pieza','g','kg'];
   if(/^agua(?: (?:potable|purificada|filtrada))?$/.test(key)&&['g','kg','ml','l'].includes(unit))
     return ['g','kg','ml','l'];
+  if(/^leche(?: (?:entera|tibia|fria|liquida|fresca|pasteurizada|deslactosada|descremada|semidescremada|de vaca|sin lactosa))*$/.test(key)&&['g','kg','ml','l'].includes(unit))
+    return ['g','kg','ml','l'];
   if (['g','kg'].includes(unit)) return ['g','kg'];
   if (['ml','l'].includes(unit)) return ['ml','l'];
   return unit === 'pieza' ? ['pieza'] : [];

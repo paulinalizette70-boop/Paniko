@@ -20,7 +20,8 @@ function fakePool({flourStock=1,waterStock=0.5,starterStock=0.1}={}){
    async beginTransaction(){local=clone(state)},async commit(){state=clone(local);commits++},
    async rollback(){rollbacks++},release(){},
    async execute(sql,p=[]){
-    if(sql.startsWith('SELECT id,starter_ingredient_id FROM sourdough_starters'))return[[clone(local.cultures[p[0]])].filter(Boolean)];
+    if(sql.startsWith('SELECT id,starter_ingredient_id,current_weight_g,name FROM sourdough_starters'))return[[clone(local.cultures[p[0]])].filter(Boolean)];
+    if(sql.startsWith('SELECT id,name,starter_ingredient_id FROM sourdough_starters'))return[[clone(local.cultures[p[0]])].filter(Boolean)];
     if(sql.startsWith('SELECT id,name,active,starter_ingredient_id'))return[[clone(local.cultures[p[0]])].filter(Boolean)];
     if(sql.startsWith('SELECT id,name,unit,stock FROM ingredients WHERE id'))return[[clone(local.ingredients[p[0]])].filter(Boolean)];
     if(sql.startsWith('SELECT id FROM sourdough_starters WHERE starter_ingredient_id'))return[[...Object.values(local.cultures)].filter(c=>c.starter_ingredient_id===p[0]&&c.id!==p[1]).map(c=>({id:c.id}))];
@@ -98,4 +99,86 @@ test('MASA-082-06 API de vinculación requiere sesión pero no permiso financier
  assert.equal((await fetch(url,opts)).status,401);
  assert.equal((await fetch(url,{...opts,headers:{...opts.headers,Cookie:`paniko_session=${'A'.repeat(43)}`}})).status,200);
  assert.equal(linked,1);
+});
+
+test('MASA-083-01 sincronizar peso inicial agrega una entrada auditada, preservando harina y agua',async()=>{
+ const pool=fakePool({starterStock:0,flourStock:1,waterStock:.5});
+ const store=createSourdoughStore(pool),orig=pool.state().ingredients;
+ const updated=await store.linkInventory(ids.culture,{...mapping,syncMode:'starter',expectedInventoryGrams:0});
+ assert.equal(updated.currentWeightGrams,100);assert.equal(updated.inventoryUpdated,true);
+ const now=pool.state();
+ assert.equal(now.ingredients[ids.starter].stock,0.1);
+ assert.deepEqual(now.ingredients[ids.flour],orig[ids.flour]);
+ assert.deepEqual(now.ingredients[ids.water],orig[ids.water]);
+ assert.equal(now.movements.length,1);
+ assert.equal(now.movements[0].type,'entrada');assert.equal(now.movements[0].quantity,0.1);
+ assert.match(now.movements[0].reason,/Sincronización inicial/);
+ assert.equal((await store.listStarters())[0].currentWeightGrams,100);
+});
+
+test('MASA-083-02 si Inventario tiene más masa madre, la sincronización registra salida',async()=>{
+ const pool=fakePool({starterStock:.2}),store=createSourdoughStore(pool);
+ await store.linkInventory(ids.culture,{...mapping,syncMode:'starter',expectedInventoryGrams:200});
+ const now=pool.state();assert.equal(now.ingredients[ids.starter].stock,0.1);
+ assert.equal(now.movements[0].type,'salida');assert.equal(now.movements[0].quantity,.1);
+});
+
+test('MASA-083-03 no se sincroniza si el valor leído desde la UI está desactualizado',async()=>{
+ const pool=fakePool({starterStock:.2}),store=createSourdoughStore(pool);
+ const before=pool.state();
+ await assert.rejects(()=>store.linkInventory(ids.culture,{...mapping,syncMode:'starter',expectedInventoryGrams:100}),/cambió/);
+ assert.deepEqual(pool.state(),before);assert.equal(pool.rollbacks,1);
+});
+
+test('MASA-083-04 no se permite reescribir la existencia si ya se vinculó',async()=>{
+ const pool=fakePool(),store=createSourdoughStore(pool);
+ await store.linkInventory(ids.culture,mapping);
+ const before=pool.state();
+ await assert.rejects(()=>store.linkInventory(ids.culture,{...mapping,syncMode:'starter',expectedInventoryGrams:100}),/solo se permite antes/);
+ assert.deepEqual(pool.state(),before);
+});
+
+test('MASA-083-05 inventario no se modifica sin selección explícita de sincronización',async()=>{
+ const pool=fakePool({starterStock:0}),store=createSourdoughStore(pool);
+ const res=await store.linkInventory(ids.culture,mapping);
+ assert.equal(res.currentWeightGrams,0);assert.equal(res.inventoryUpdated,false);
+ assert.equal(pool.state().ingredients[ids.starter].stock,0);assert.equal(pool.state().movements.length,0);
+});
+
+test('MASA-083-06 alimentación posterior al ajuste inicial actualiza las tres existencias',async()=>{
+ const pool=fakePool({starterStock:0,flourStock:1,waterStock:.5}),store=createSourdoughStore(pool);
+ await store.linkInventory(ids.culture,{...mapping,syncMode:'starter',expectedInventoryGrams:0});
+ const fed=await store.feed(ids.culture,{beforeGrams:100,discardedGrams:20,flourGrams:250,waterGrams:200});
+ assert.equal(fed.afterGrams,530);
+ const state=pool.state();assert.equal(state.ingredients[ids.starter].stock,0.53);
+ assert.equal(state.ingredients[ids.flour].stock,0.75);assert.equal(state.ingredients[ids.water].stock,0.3);
+ assert.equal(state.movements.length,5);
+});
+
+
+test('MASA-083-07 masa madre ya vinculada puede corregir existencia cero con conteo físico auditado',async()=>{
+ const pool=fakePool({starterStock:0}),store=createSourdoughStore(pool);
+ await store.linkInventory(ids.culture,mapping);
+ const result=await store.reconcileInventory(ids.culture,{realWeightGrams:100,expectedInventoryGrams:0});
+ assert.equal(result.currentWeightGrams,100);assert.equal(result.inventoryUpdated,true);
+ const state=pool.state();assert.equal(state.ingredients[ids.starter].stock,0.1);
+ assert.equal(state.movements.length,1);assert.equal(state.movements[0].type,'entrada');
+ assert.match(state.movements[0].reason,/Conteo físico de masa madre/);
+ assert.equal(state.feedings.length,0);
+ assert.equal((await store.listStarters())[0].currentWeightGrams,100);
+});
+
+test('MASA-083-08 conteo físico desactualizado no altera la masa madre ni otros ingredientes',async()=>{
+ const pool=fakePool({starterStock:0.3}),store=createSourdoughStore(pool);
+ await store.linkInventory(ids.culture,mapping);
+ const original=pool.state();
+ await assert.rejects(()=>store.reconcileInventory(ids.culture,{realWeightGrams:100,expectedInventoryGrams:0}),/cambió/);
+ assert.deepEqual(pool.state(),original);
+});
+
+test('MASA-083-09 conteo igual no registra movimientos nuevos',async()=>{
+ const pool=fakePool(),store=createSourdoughStore(pool);
+ await store.linkInventory(ids.culture,mapping);
+ const result=await store.reconcileInventory(ids.culture,{realWeightGrams:100,expectedInventoryGrams:100});
+ assert.equal(result.inventoryUpdated,false);assert.equal(pool.state().movements.length,0);
 });
