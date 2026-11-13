@@ -1,97 +1,97 @@
-# Paniko · Gestión de panadería artesanal
+# Paniko 🍞
+**Sistema para organizar el inventario, las recetas y la producción de una panadería**
 
-**MVP académico | Versión en `main`: 0.7.2 | Seminario de Integración: Desarrollo**
+Proyecto de **Seminario de Integración: Desarrollo**  
+Ingeniería Informática · Universidad de Guadalajara, CU Tlaquepaque
 
-**Universidad de Guadalajara · Centro Universitario de Tlaquepaque · Ingeniería Informática**
+**Versión actual en `main`: 0.7.2**
 
-Paniko es una aplicación web para organizar el trabajo diario de una panadería artesanal. Reúne **ingredientes, inventario, recetas y fichas técnicas, escalado de preparaciones, producción, productos terminados, ventas e historial**. Busca sustituir registros dispersos por un flujo sencillo y trazable.
+## ¿Qué es Paniko?
 
-> **Estado de publicación:** Paniko **0.7.2 está integrado en `main`** mediante el [Pull Request #9 fusionado](https://github.com/paulinalizette70-boop/Paniko/pull/9). Las pruebas y la aceptación funcional del entorno real deben verificarse por separado. Paniko es un prototipo académico de uso local; no se recomienda desplegarlo públicamente sin una revisión de seguridad.
+Paniko es el proyecto que estamos desarrollando para facilitar el trabajo en una panadería artesanal. La idea surgió de la necesidad de tener mejor organizados los ingredientes, las recetas y todo lo que se utiliza al preparar el pan.
 
-## Índice
+Quiero que sea una herramienta práctica, no un sistema complicado de llenar. Por eso estamos trabajando para que se puedan consultar las existencias, crear fichas técnicas, calcular cantidades para distintas producciones y llevar un historial de los movimientos sin tener que hacerlo todo a mano.
 
-- [Objetivo y alcance](#objetivo-y-alcance)
-- [Funcionalidades](#funcionalidades)
-- [Tecnologías y arquitectura](#tecnologías-y-arquitectura)
-- [Instalación y configuración](#instalación-y-configuración)
-- [Cómo utilizar Paniko](#cómo-utilizar-paniko)
-- [Pruebas y evidencias](#pruebas-y-evidencias)
-- [Capturas de pantalla](#capturas-de-pantalla)
-- [Evaluación con usuaria real](#evaluación-con-usuaria-real)
-- [Backlog y trabajo pendiente](#backlog-y-trabajo-pendiente)
-- [Organización y contribuciones](#organización-y-contribuciones)
-- [Privacidad, seguridad y licencia](#privacidad-seguridad-y-licencia)
+El proyecto todavía está en desarrollo. Ya tenemos varias funciones implementadas, pero hay otras que seguimos probando y mejorando.
 
-## Objetivo y alcance
+## ¿Qué se puede hacer actualmente?
 
-**Objetivo general:** facilitar el control de insumos y preparaciones de una panadería artesanal, permitiendo calcular cantidades según la producción deseada y conservar el registro de sus movimientos.
-
-En esta etapa, la prioridad del MVP es el **inventario y su relación con las recetas y la producción**. La aplicación tiene módulos adicionales en desarrollo; se diferencian abajo las funciones implementadas de las mejoras pendientes.
-
-## Funcionalidades
-
-| Módulo | Función disponible en la versión 0.7.2 |
+| Sección | ¿Para qué sirve? |
 | --- | --- |
-| Inicio de sesión y roles | Sesiones de administración y operador; cierre de sesión y autorización de rutas |
-| Inicio | Resumen operativo y accesos directos a las tareas comunes |
-| Ingredientes | Registro, existencias, entradas, salidas manuales y ajustes por conteo físico |
-| Recetas y fichas técnicas | Registro de fichas, consulta de fórmulas del catálogo local por personas autenticadas y generación de fichas escalables cuando los datos son completos |
-| Escalado | Cálculo de cantidades, costos estimados según permisos, faltantes y capacidad máxima conservadora |
-| Producción | Confirmación de tandas con verificación y descuento transaccional de ingredientes |
-| Productos y ventas | Catálogo de productos terminados, existencias, ventas, ajustes y movimientos de merma |
-| Historial | Consulta de movimientos y lotes de producción con sus consumos |
-| Finanzas | Acceso restringido a administración para consultar costos, valoración y gestionar precios |
+| **Inicio** | Consultar un resumen de la panadería y entrar a las funciones principales. |
+| **Ingredientes** | Registrar insumos, consultar existencias y hacer entradas, salidas o ajustes. |
+| **Recetas** | Consultar recetas, crear fichas técnicas y escalar ingredientes según las piezas que se necesitan. |
+| **Producción** | Calcular lo necesario para una tanda y descontar ingredientes cuando se confirma. |
+| **Productos y ventas** | Registrar productos terminados, controlar piezas disponibles y registrar ventas y otros movimientos. |
+| **Historial** | Revisar producciones y movimientos anteriores. |
+| **Finanzas** | Consultar costos y gestionar precios. Esta sección está reservada para administración. |
 
-**Reglas relevantes:**
+También implementamos inicio de sesión y dos tipos de usuario. Las personas que trabajan en la panadería pueden consultar las recetas dentro del sistema, pero **solo administración puede acceder a la información financiera**.
 
-- Las recetas son accesibles **dentro de la aplicación** a las personas con cuenta; las fórmulas reales **no se publican en GitHub**.
-- La gestión financiera y las operaciones relacionadas con costos y precios están restringidas al perfil de administración, tanto en la interfaz como en la API.
-- La aplicación admite cantidades en **g/kg** y **ml/l** para la misma magnitud. No transforma unidades incompatibles ni inventa equivalencias de cucharadas a gramos.
-- La vista previa de producción no descuenta inventario; el servidor comprueba las existencias de nuevo cuando se confirma una tanda.
-- El resumen financiero **semanal** solicitado por la usuaria todavía **no está implementado**: véase la [historia HU-11](https://github.com/paulinalizette70-boop/Paniko/issues/10).
+### Conversión de unidades y porcentaje panadero
 
-## Tecnologías y arquitectura
+Una parte importante del proyecto es que las recetas no siempre están escritas con las mismas unidades que el inventario.
 
-| Capa | Tecnología |
-| --- | --- |
-| Interfaz | HTML5, CSS3 y JavaScript |
-| Servidor y API | Node.js, módulo HTTP nativo |
-| Datos | MySQL 8, tablas relacionales y transacciones InnoDB |
-| Acceso a MySQL | `mysql2` |
-| Pruebas | `node:test` y `node:assert` |
-| Integración continua | GitHub Actions con servicio MySQL aislado |
-| Control de versiones | Git y GitHub mediante ramas y Pull Requests |
+En la versión **0.7.2** trabajamos en estas equivalencias:
 
-**Organización del proyecto:**
+- **Gramos y kilogramos:** 1000 g = 1 kg.
+- **Mililitros y litros:** 1000 ml = 1 l.
+- **Agua:** usamos la aproximación culinaria de 1 g ≈ 1 ml.
+- **Huevo:** tomamos como referencia 1 pieza = 50 g sin cáscara.
+- **Porcentaje panadero:** la cantidad total de harinas representa el 100 % y, a partir de ella, se calculan los porcentajes de los demás ingredientes.
 
-```text
-Paniko/
-├── .github/workflows/     # Pruebas automáticas
-├── docs/                  # ADRs, pruebas, releases y seguimiento
-├── public/                # Interfaz web
-├── scripts/               # Inicio de BD, admin e importación local
-├── sql/                   # Esquemas y tablas
-├── src/                   # Dominio, autenticación, API y persistencia
-├── tests/                 # Pruebas unitarias e integración
-├── .env.example           # Ejemplo de configuración, sin secretos
-├── package.json
-└── server.js
-```
+Estas equivalencias no se aplican de manera general a cualquier ingrediente. Por ejemplo, no podemos asumir que el aceite y el agua pesan lo mismo por litro. La parte de conversiones ya tiene pruebas en el código, pero todavía queremos revisar los formularios con el uso real de la panadería.
 
-Las fórmulas operativas guardadas localmente pueden provenir de un catálogo de importación. Las tablas históricas `private_catalog_*` conservan ese nombre por compatibilidad, pero el acceso a las recetas dentro de Paniko se rige por la sesión del usuario.
+## Cómo fue la prueba con Ale
 
-## Instalación y configuración
+Del **4 al 7 de noviembre de 2026** le compartí a **Ale Sánchez**, encargada de la panadería, la versión **0.4** de Paniko. La utilizó durante **tres días** dentro de ese periodo.
 
-### Requisitos
+En general me comentó que sí le ayudó para trabajar, pero también me hizo varias observaciones que nos sirvieron para seguir mejorándolo.
 
-- **Node.js 20 o superior** (se recomienda Node.js 22).
-- **MySQL 8** instalado y funcionando.
-- Navegador actualizado.
-- Git para descargar la rama directamente (opcional si se dispone de un paquete revisado).
+1. **La pantalla era confusa.** Había demasiada información junta, así que después reorganizamos la aplicación por secciones.
+2. **Tuvo problemas al crear fichas técnicas.** No reconocía correctamente que un ingrediente registrado en gramos podía utilizarse en kilogramos, o al revés.
+3. **Le gustaría ver cómo le fue en la semana.** Nos pidió un espacio para revisar cuánto vendió, ganó, invirtió y perdió.
 
-### 1. Descargar la versión principal
+Esa prueba fue importante porque pudimos conocer la opinión de alguien que realmente trabaja en una panadería. **Ale probó la versión 0.4**, así que no vamos a presentar sus comentarios como una aprobación de la versión 0.7.2.
 
-En PowerShell:
+Dejamos la información más detallada aquí:
+
+- [Prueba y comentarios de Ale](docs/seguimiento/evaluacion-usuaria-ale-v04.md)
+- [Lo que aprendimos y qué vamos a mejorar](docs/seguimiento/retrospectiva-medio-termino.md)
+
+## Capturas de Paniko
+
+Estas capturas corresponden a la interfaz que utilizamos durante las pruebas locales de la versión 0.7.1. Ocultamos los datos de operaciones y no publicamos cantidades de recetas reales.
+
+**Pantalla de inicio**
+
+![Pantalla de inicio de Paniko](docs/img/paniko-inicio.webp)
+
+**Historial de producción**
+
+![Pantalla de historial de Paniko con datos ocultos](docs/img/paniko-historial.webp)
+
+En una prueba local también apareció el error **«La unidad de Agua no coincide con la registrada en Ingredientes»** al intentar crear una ficha. El agua estaba registrada en litros y la receta la utilizaba en gramos. Este caso está registrado en el [Issue #12](https://github.com/paulinalizette70-boop/Paniko/issues/12). La versión 0.7.2 incluye un cambio para tratar esa equivalencia, pero falta comprobarlo en nuestra instalación.
+
+No subimos la captura original de esa receta porque contiene información privada de la panadería.
+
+## Tecnologías que usamos
+
+- **HTML, CSS y JavaScript** para las pantallas.
+- **Node.js** para el servidor y la API.
+- **MySQL** para guardar ingredientes, recetas, movimientos y demás registros.
+- **Git y GitHub** para llevar el control de los cambios.
+- **GitHub Actions** y las pruebas de Node.js para comprobar que los cambios no rompan otras funciones.
+
+El código está organizado principalmente en `public/` (pantallas), `src/` (funciones del sistema), `sql/` (base de datos), `tests/` (pruebas), `scripts/` (configuración) y `docs/` (documentación).
+
+## Cómo ejecutar el proyecto
+
+Para trabajar con Paniko necesitamos **Node.js 20 o superior** (preferentemente 22), **MySQL 8** y un navegador.
+
+**1. Descargar el proyecto y sus dependencias**
+
+Desde PowerShell:
 
 ```powershell
 git clone https://github.com/paulinalizette70-boop/Paniko.git
@@ -99,153 +99,93 @@ cd Paniko
 npm.cmd install
 ```
 
-Si ya tienes una instalación local con datos reales, **no sustituyas su carpeta directamente**. Realiza un respaldo y verifica primero los cambios en una copia con una base de pruebas.
+**2. Configurar la conexión a MySQL**
 
-### 2. Configurar MySQL
-
-Crea una base de datos de desarrollo (por ejemplo, `paniko`) y un usuario con permisos adecuados sobre ella. Copia `.env.example` a `.env` y configura allí `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` y `DB_NAME`. La conexión no debe incluirse en commits ni capturas.
+Copia `.env.example` a un archivo llamado `.env` y escribe ahí los datos de tu conexión. Ese archivo **no se debe subir a GitHub**.
 
 ```powershell
 Copy-Item .env.example .env
-# Edita .env con tus propios valores; no publiques el archivo.
+# Editar .env con los datos de la base de datos
 node --env-file=.env scripts/init-db.js
 ```
 
-**Importante:** inicializa el esquema solo en un entorno autorizado. Si la base ya contiene información, respáldala antes de cualquier cambio.
+Si ya tienes una base de datos con información, haz una copia de seguridad antes de aplicar cambios.
 
-### 3. Crear cuenta de administración
-
-Ejecuta este comando en una consola interactiva. La contraseña se solicita durante la ejecución y no debe aparecer en GitHub.
+**3. Crear el primer usuario administrador**
 
 ```powershell
 node --env-file=.env scripts/create-admin.js
 ```
 
-### 4. Iniciar Paniko
+El programa solicitará una contraseña. Se hace desde una terminal interactiva.
+
+**4. Iniciar Paniko**
 
 ```powershell
 node --env-file=.env server.js
 ```
 
-Abre **http://127.0.0.1:3000** (o el puerto configurado en `.env`) e inicia sesión.
+Después abre **http://127.0.0.1:3000**.
 
-**Nota para Windows:** usamos `npm.cmd` para evitar el bloqueo de ejecución del script `npm.ps1` en algunas instalaciones de PowerShell.
+> Si ya tienes Paniko instalado con recetas o movimientos reales, no reemplaces toda la carpeta ni la base de datos sin hacer un respaldo. Para instalaciones que vienen de la 0.6.0 también tenemos una [nota de corrección de inventario](docs/releases/Paniko-0.7.1-correccion-inventario.md).
 
-### Si vienes de una instalación 0.6.0
+## Cómo usamos las pruebas
 
-Una versión anterior del actualizador 0.7.1 omitía el archivo `src/inventory.js`, ocasionando errores `stockExit is not a function` y `stockAdjustment is not a function` en ciertas instalaciones. **No uses a ciegas ese actualizador** sobre tu sistema en uso. Consulta [la nota de corrección de inventario](docs/releases/Paniko-0.7.1-correccion-inventario.md), conserva `.env`, `private/` y la base de datos, y verifica las pruebas antes de registrar movimientos reales.
+Agregamos pruebas para revisar los cálculos, las conversiones de unidades, las fichas técnicas, el inventario, los productos, el inicio de sesión y algunas operaciones con MySQL.
 
-## Cómo utilizar Paniko
-
-Un flujo habitual, preferentemente con **datos ficticios para la demo**, consiste en:
-
-1. **Ingredientes:** registrar harina, azúcar u otros insumos y sus existencias.
-2. **Recetas:** crear una ficha técnica, o generar una ficha a partir de una fórmula local completa y confirmada.
-3. **Producción:** seleccionar la receta y el número de piezas que se desea preparar.
-4. **Vista previa:** comprobar cantidades, unidades, faltantes y límite según inventario.
-5. **Confirmar producción:** registrar el consumo de insumos y, si corresponde, las existencias de producto terminado.
-6. **Productos y ventas:** registrar ventas y consultar su movimiento.
-7. **Historial:** verificar los lotes y cambios de existencias.
-
-**Ejemplo ficticio de conversión:** si la harina se almacena en `kg` y una ficha utiliza `500 g`, la cantidad equivalente es `0.5 kg`. El sistema debe reutilizar el ingrediente existente, no duplicarlo. Esta operación cuenta con pruebas técnicas, pero el flujo de creación de fichas debe validarse en la interfaz actual debido a la [incidencia #11](https://github.com/paulinalizette70-boop/Paniko/issues/11).
-
-## Pruebas y evidencias
-
-La suite está en [`tests/`](tests/) y se ejecuta mediante:
+Para ejecutarlas:
 
 ```powershell
 npm.cmd test
 ```
 
-Incluye pruebas de dominio, validación de fichas, conversiones, inventario, autenticación/roles, productos, historial e integración. Los casos con MySQL deben utilizar **exclusivamente** una base aislada cuyo nombre termine en `_test`; nunca ejecutar las pruebas de integración contra datos reales.
+Las pruebas que utilizan MySQL se hacen con una base independiente que termina en `_test`, para no modificar información de la panadería.
 
-**Evidencias verificables:**
+**Evidencias que podemos mostrar:**
 
-- [Workflow de GitHub Actions](.github/workflows/tests.yml) (Node.js y MySQL aislado).
-- [Ejecución aprobada de Paniko 0.7.1](https://github.com/paulinalizette70-boop/Paniko/actions/runs/43344993724).
-- [Catálogo de casos de prueba](docs/pruebas/casos-de-prueba.md).
-- [Bitácora de pruebas y evaluación](docs/pruebas/registro-ejecuciones.md).
-- [Pull Request de integración #9](https://github.com/paulinalizette70-boop/Paniko/pull/9).
+- [Pruebas aprobadas al integrar la versión 0.7.2 a `main`](https://github.com/paulinalizette70-boop/Paniko/actions/runs/43368734526).
+- [Casos de prueba](docs/pruebas/casos-de-prueba.md).
+- [Registro de ejecuciones](docs/pruebas/registro-ejecuciones.md).
+- [Pull Request #9, donde integramos las mejoras](https://github.com/paulinalizette70-boop/Paniko/pull/9).
 
-Las pruebas automatizadas comprueban el comportamiento técnico bajo las condiciones de prueba. **No equivalen a la aceptación de la versión 0.7.2 por parte de la panadería.**
+Que las pruebas automáticas salgan bien es una buena señal, pero todavía necesitamos verificar que todo se pueda utilizar correctamente desde las pantallas y con la instalación local.
 
-## Capturas de pantalla
+## ¿Qué nos falta?
 
-Estas imágenes corresponden a la interfaz local de Paniko mostrada el **12 de noviembre de 2026** (capturas realizadas en **v0.7.1**). Se publican únicamente vistas que no contienen fórmulas reales ni cifras confidenciales. En Historial se ocultó la información de la operación.
+Estas son las siguientes cosas que queremos trabajar:
 
-**Inicio — navegación y panel general**
+| Pendiente | Seguimiento |
+| --- | --- |
+| Revisar de principio a fin la creación de fichas con gramos y kilogramos. | [Issue #11](https://github.com/paulinalizette70-boop/Paniko/issues/11) |
+| Probar en nuestra instalación la conversión de agua entre gramos y litros. | [Issue #12](https://github.com/paulinalizette70-boop/Paniko/issues/12) |
+| Hacer el resumen financiero semanal que nos pidió Ale. | [Issue #10](https://github.com/paulinalizette70-boop/Paniko/issues/10) |
+| Volver a mostrarle la nueva interfaz a Ale y anotar sus observaciones. | [Evaluación](docs/seguimiento/evaluacion-usuaria-ale-v04.md) |
+| Completar las evidencias individuales y revisar los PRs antiguos que siguen abiertos. | [Entrega en GitHub](docs/entrega-github.md) |
 
-![Vista de Inicio de Paniko 0.7.1](docs/img/paniko-inicio.webp)
+## Integrantes del equipo
 
-**Historial — consulta de lotes y movimientos (datos ocultos)**
+- **Paulina Lizette Villalpando Guizar**
+- **Saúl Emiliano Mora Famoso**
+- **Gael Iosef Ramírez Marmolejo**
 
-![Vista de Historial de Paniko con datos operativos ocultos](docs/img/paniko-historial.webp)
+Este es un proyecto que seguimos desarrollando en equipo. En los commits, Issues y Pull Requests vamos registrando los cambios y las tareas para que se pueda revisar el avance de cada integrante.
 
-Las capturas recibidas de Ingredientes, Productos y ventas y Recetas contenían información del negocio. **No se subieron originales con inventarios, precios o fórmulas reales**. Se prepararon versiones anonimizadas para revisión antes de publicar más imágenes.
+## Cómo organizamos los cambios en GitHub
 
-**Incidencia visible en Recetas:** la creación de una ficha de v0.7.1 mostró el mensaje «La unidad de Agua no coincide con la registrada en Ingredientes» porque la receta utiliza masa (g) y el inventario volumen (l). Es distinto de g↔kg: requiere una equivalencia específica del ingrediente o una conversión guiada. Está documentado en [Issue #12](https://github.com/paulinalizette70-boop/Paniko/issues/12); el código de v0.7.2 incorpora cambios de conversión de agua, **pendientes de comprobar en la instalación local**. La imagen original del error no se publica porque muestra una fórmula real.
+Tratamos de no hacer todos los cambios directamente en `main`. Primero se trabajan en otra rama, se prueban y después se integran mediante un Pull Request.
 
-## Evaluación con usuaria real
+La versión **0.7.2 ya se integró a `main` con el [PR #9](https://github.com/paulinalizette70-boop/Paniko/pull/9)**. Las pruebas automáticas de esa integración terminaron correctamente. Nos falta documentar una revisión formal del código por otro integrante; no queremos marcarla como realizada si todavía no tenemos esa evidencia.
 
-La responsable de la panadería, **Ale Sánchez**, utilizó **Paniko v0.4** durante **tres días dentro del periodo del 4 al 7 de noviembre de 2026**. La retroalimentación reportada fue:
+También guardamos las [decisiones de arquitectura](docs/adr/), los [bloqueos](docs/seguimiento/bloqueos.md) y la [deuda técnica](docs/seguimiento/deuda-tecnica.md) para recordar por qué hicimos ciertos cambios y qué falta resolver.
 
-- **Utilidad:** el sistema le ayudó durante el periodo de prueba.
-- **Usabilidad:** concentrar toda la información en una sola pantalla le resultó confuso.
-- **Creación de fichas:** encontró dificultades al trabajar con el mismo ingrediente expresado en gramos y kilogramos.
-- **Necesidad de negocio:** solicitó visualizar semanalmente ventas, ganancias, inversión y pérdidas.
+## Sobre las recetas y los datos privados
 
-Estos comentarios orientaron el rediseño de navegación y las prioridades del backlog. **Ale evaluó la versión 0.4, no la versión 0.7.2**, que todavía requiere revalidación con la usuaria.
+El repositorio es público porque lo utilizamos para el proyecto académico, **pero las recetas reales de la panadería no lo son**.
 
-- [Informe de evaluación con Ale](docs/seguimiento/evaluacion-usuaria-ale-v04.md).
-- [Retrospectiva del medio término](docs/seguimiento/retrospectiva-medio-termino.md).
+Por eso no subimos nuestras fórmulas, contraseñas, archivos `.env`, la carpeta `private/`, respaldos de MySQL ni capturas con datos sensibles. Las personas autorizadas pueden consultar las recetas dentro de Paniko, pero eso no significa que sus cantidades deban quedar publicadas en GitHub.
 
-## Backlog y trabajo pendiente
-
-| Prioridad | Pendiente | Seguimiento |
-| --- | --- | --- |
-| Alta | Validar el flujo de **crear fichas** cuando inventario y receta usan g/kg | [Issue #11](https://github.com/paulinalizette70-boop/Paniko/issues/11) |
-| Alta | Definir y desarrollar el **resumen financiero semanal** exclusivo para administración | [HU-11 / Issue #10](https://github.com/paulinalizette70-boop/Paniko/issues/10) |
-| Alta | Validar Paniko 0.7.2 en la instalación local; el PR #9 ya fue fusionado a `main` | [PR #9 fusionado](https://github.com/paulinalizette70-boop/Paniko/pull/9) |
-| Media | Actualizar incidencias históricas y documentar pendientes reales de producción/cierre | [Issues](https://github.com/paulinalizette70-boop/Paniko/issues) |
-| Media | Añadir capturas auténticas, evidencia individual y revisión formal del equipo | [Entrega GitHub](docs/entrega-github.md) |
-
-## Organización y contribuciones
-
-**Equipo académico:** Paulina Lizette Villalpando Guizar, Saúl Emiliano Mora Famoso y Gael Iosef Ramírez Marmolejo.
-
-La participación y las aportaciones individuales deben respaldarse con commits, PRs y evidencias concretas; los nombres del equipo no implican que todas las tareas hayan sido ejecutadas por todas las personas.
-
-**Flujo recomendado de trabajo:**
-
-1. Registrar una historia, error o tarea en GitHub Issues.
-2. Crear una rama descriptiva a partir de la rama de desarrollo correspondiente.
-3. Implementar el cambio usando **datos ficticios** y agregar las pruebas pertinentes.
-4. Ejecutar `npm.cmd test` y verificar GitHub Actions.
-5. Abrir un Pull Request que explique el objetivo, los archivos modificados, las pruebas y los riesgos.
-6. Solicitar revisión a otra persona, responder comentarios y documentar la aprobación.
-7. Fusionar solo cuando las pruebas y la revisión estén completas; mantener `main` estable.
-
-El [PR #9](https://github.com/paulinalizette70-boop/Paniko/pull/9) fue fusionado para publicar Paniko 0.7.2 en `main`. **No se registró una revisión formal de otro integrante antes de la fusión**; la revisión colegiada y la validación local siguen pendientes como evidencia del proyecto.
-
-**Documentación técnica:** [ADRs](docs/adr/), [bloqueos](docs/seguimiento/bloqueos.md), [deuda técnica](docs/seguimiento/deuda-tecnica.md) y [guía de entrega](docs/entrega-github.md).
-
-## Privacidad, seguridad y licencia
-
-- El repositorio es **público** para el código, pero las recetas reales y los datos financieros del negocio **no son públicos**. No subir `.env`, `private/`, bases de datos, respaldos, credenciales ni fórmulas reales.
-- La visibilidad de las recetas **dentro** de Paniko no autoriza a compartirlas **fuera** de la aplicación.
-- No publicar capturas que expongan datos de la panadería o sesiones autenticadas.
-- El proyecto se destina a desarrollo académico y pruebas locales. El uso real exige respaldos y validación adicional de permisos y seguridad.
-- **Licencia actual:** `UNLICENSED` en `package.json`. No se ha elegido ni añadido una licencia de software libre; el equipo debe decidir las condiciones de redistribución antes de presentar una licencia distinta. Que el código sea visible en GitHub **no** significa que las recetas o fórmulas del negocio puedan reutilizarse libremente.
+Por ahora el código tiene la configuración de licencia `UNLICENSED`; todavía no hemos definido una licencia de distribución con el equipo.
 
 ---
 
-**Paniko · Hecho para organizar una panadería artesanal, una preparación a la vez.**
-
-## Actualización 0.7.2: equivalencias y porcentaje panadero
-
-- Se adopta la equivalencia solicitada de **1 huevo = 50 g sin cáscara**. Para Agua, **1 ml ≈ 1 g**. Estas conversiones solo se aplican a Agua/Huevo y a unidades de masa y volumen compatibles; no se inventan densidades de otros ingredientes.
-- Las fichas técnicas se pueden crear con existencias cero. Se reutilizan los ingredientes que ya existen y se crean los que faltan con stock y costo cero. Las existencias solo se comprueban cuando se desea producir.
-- El **porcentaje panadero** toma como 100 % la suma de todas las harinas de la ficha; calcula el peso de cada ingrediente respecto de esa base. Si no hay harina o no existe equivalencia de peso, muestra una advertencia en vez de un porcentaje arbitrario.
-- Disponible en Recetas > Ver % panadero, en el formulario > Calcular % panadero antes de guardar, y en Producción > Ver porcentajes panaderos después de la vista previa.
-- Nuevas rutas autenticadas GET /api/recipes/:id/bakers y POST /api/recipes/bakers-preview. No modifican inventarios ni contienen datos financieros para operadores.
-- No modifica tablas SQL ni configuraciones .env. El instalador 0.7.2 también actualiza src/inventory.js, preservando la corrección del error de inventario de 0.7.1.
+*Paniko sigue en desarrollo. Queremos que cada versión sea más útil, más clara y más fácil de usar en el trabajo diario de la panadería.*
