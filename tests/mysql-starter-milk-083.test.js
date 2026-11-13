@@ -16,7 +16,7 @@ test('DB-083-01 MySQL aislado: corregir masa madre vinculada y leche g/ml en fic
   const inv=createMysqlStore(pool),sourdough=createSourdoughStore(pool),suffix=randomUUID();
   const m=await inv.addIngredient({name:'Masa madre 083 '+suffix,unit:'kg',stock:0,costPerUnit:0});
   const f=await inv.addIngredient({name:'Harina 083 '+suffix,unit:'kg',stock:1,costPerUnit:0});
-  const w=await inv.addIngredient({name:'Agua filtrada',unit:'l',stock:1,costPerUnit:0});
+  const w=await inv.addIngredient({name:'Agua potable',unit:'l',stock:1,costPerUnit:0});
   const milk=await inv.addIngredient({name:'Leche entera',unit:'l',stock:0.5,costPerUnit:0});
   const culture=await sourdough.createStarter({name:'Cultivo 083 '+suffix,location:'ambiente',feedEveryHours:24,initialWeightGrams:100});
   const link=await sourdough.linkInventory(culture.id,{starterIngredientId:m.id,flourIngredientId:f.id,waterIngredientId:w.id,syncMode:'starter',expectedInventoryGrams:0});
