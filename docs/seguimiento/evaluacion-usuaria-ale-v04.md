@@ -3,8 +3,8 @@
 **Proyecto:** Paniko, sistema de gestión de panadería artesanal  
 **Usuaria:** Ale Sánchez, responsable de la panadería y stakeholder  
 **Versión probada:** Paniko v0.4 (NO v0.7.1)  
-**Duración:** tres días de uso  
-**Fecha exacta:** por confirmar (retroalimentación reportada en noviembre de 2026)  
+**Periodo de prueba:** del 4 al 7 de noviembre de 2026  
+**Uso reportado:** tres días durante ese periodo (no necesariamente todos los días calendario)  
 **Tipo de evidencia:** relato cualitativo de la usuaria, comunicado por la Product Owner. No existe en este documento un acta firmada, grabación, métricas verificadas ni encuesta cuantitativa.
 
 ## Propósito
@@ -35,7 +35,7 @@ Estas observaciones son una **síntesis de lo reportado**. No son citas textuale
 
 ## Límites de esta evidencia
 
-Esta fue una evaluación exploratoria de **v0.4**, no una aceptación formal del MVP actual. No se documentan fechas concretas, participantes adicionales, número de operaciones, tasas de éxito ni importes reales porque no se suministraron esos datos. No es correcto decir que Ale probó o aprobó la v0.7.1 basándonos en estos comentarios.
+Esta fue una evaluación exploratoria de **v0.4**, no una aceptación formal del MVP actual. Se conoce el periodo del 4 al 7 de noviembre de 2026, pero no se documentan los días específicos de uso, participantes adicionales, número de operaciones, tasas de éxito ni importes reales porque no se suministraron esos datos. No es correcto decir que Ale probó o aprobó la v0.7.1 basándonos en estos comentarios.
 
 ## Próxima validación sugerida
 
