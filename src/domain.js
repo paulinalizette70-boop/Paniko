@@ -43,6 +43,40 @@ function convertQuantity(quantity, sourceUnit, targetUnit) {
   return rounded;
 }
 
+
+// Equivalencias de trabajo declaradas por la panadería: 1 huevo = 50 g sin cáscara.
+// Para Agua, 1 g ≈ 1 ml (aproximación culinaria). No aplicar a otros ingredientes.
+const EGG_GRAMS_PER_PIECE = 50;
+function ingredientKind(name) {
+  const key=String(name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase().replace(/\s+/g,' ');
+  if (/^huevos?(?: (?:grandes?|medianos?|chicos?|enteros?))?$/.test(key)) return 'egg';
+  if (/^agua(?: (?:potable|purificada|filtrada))?$/.test(key)) return 'water';
+  return null;
+}
+function convertIngredientQuantity(quantity,sourceUnit,targetUnit,ingredientName){
+  if (!UNITS.includes(sourceUnit) || !UNITS.includes(targetUnit)) throw new ValidationError('Unidad no permitida');
+  const standard=(sourceUnit===targetUnit) ||
+    (['g','kg'].includes(sourceUnit)&&['g','kg'].includes(targetUnit)) ||
+    (['ml','l'].includes(sourceUnit)&&['ml','l'].includes(targetUnit));
+  if(standard) return convertQuantity(quantity,sourceUnit,targetUnit);
+  const kind=ingredientKind(ingredientName);
+  const eggUnits=['pieza','g','kg'];
+  const waterUnits=['g','kg','ml','l'];
+  let factors;
+  if(kind==='egg'&&eggUnits.includes(sourceUnit)&&eggUnits.includes(targetUnit))
+    factors={g:1,kg:1000,pieza:EGG_GRAMS_PER_PIECE};
+  else if(kind==='water'&&waterUnits.includes(sourceUnit)&&waterUnits.includes(targetUnit))
+    factors={g:1,kg:1000,ml:1,l:1000};
+  else throw new ValidationError(`Unidades incompatibles: no hay equivalencia de ${sourceUnit} a ${targetUnit} para ${ingredientName||'este ingrediente'}`);
+  numberField(quantity,'Cantidad',{positive:true});
+  const raw=quantity*factors[sourceUnit]/factors[targetUnit];
+  const rounded=Math.round(raw*1e6)/1e6;
+  if(!Number.isFinite(raw)||raw>1e9||rounded<=0||
+     Math.abs(raw-rounded)>1e-10||Math.abs(quantity-Math.round(quantity*1e6)/1e6)>1e-10)
+    throw new ValidationError('Cantidad fuera de precisión máxima de 6 decimales');
+  return rounded;
+}
+
 function validateIngredient(raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new ValidationError('Ingrediente inválido');
   const name = textField(raw.name, 'Nombre');
@@ -69,10 +103,53 @@ function validateRecipe(raw, ingredients) {
     seen.add(item.ingredientId);
     const ingredient=ingredients.find(i=>i.id===item.ingredientId);
     if(!ingredient)throw new ValidationError('La receta contiene un ingrediente que no existe');
-    const quantity=convertQuantity(item.quantity,item.unit ?? ingredient.unit,ingredient.unit);
+    const quantity=convertIngredientQuantity(item.quantity,item.unit ?? ingredient.unit,ingredient.unit,ingredient.name);
     return {ingredientId:item.ingredientId,quantity};
   });
   return {name, baseYield, items};
+}
+
+
+// Porcentaje panadero: las harinas suman el 100 % del peso de referencia.
+// No depende de inventario. Las unidades volumétricas no se convierten a masa
+// salvo Agua (1 ml ≈ 1 g) y Huevo (1 pieza = 50 g sin cáscara).
+function isFlour(name) {
+  const normalized=String(name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
+  return /^harinas?(?:\s|$)/.test(normalized);
+}
+function weightInGrams(quantity,unit,name){
+  if(!Number.isFinite(quantity)||quantity<=0)return null;
+  if(unit==='g')return quantity;
+  if(unit==='kg')return quantity*1000;
+  const kind=ingredientKind(name);
+  if(kind==='water'&&unit==='ml')return quantity;
+  if(kind==='water'&&unit==='l')return quantity*1000;
+  if(kind==='egg'&&unit==='pieza')return quantity*EGG_GRAMS_PER_PIECE;
+  return null;
+}
+function bakerPercentages(recipe,ingredients){
+  const rows=recipe.items.map(item=>{
+    const ingredient=ingredients.find(i=>i.id===item.ingredientId);
+    if(!ingredient)throw new ValidationError('Ingrediente de receta no encontrado',409);
+    return {ingredientId:ingredient.id,name:ingredient.name,
+      quantity:item.quantity,unit:ingredient.unit,
+      weightGrams:weightInGrams(item.quantity,ingredient.unit,ingredient.name),
+      isFlour:isFlour(ingredient.name)};
+  });
+  const flourRows=rows.filter(x=>x.isFlour);
+  // Si alguna harina carece de peso, NO mostrar porcentajes incorrectos.
+  const hasValidFlour=flourRows.length>0 && flourRows.every(x=>x.weightGrams!==null);
+  const totalFlourGrams=hasValidFlour?flourRows.reduce((sum,x)=>sum+x.weightGrams,0):0;
+  const available=hasValidFlour&&Number.isFinite(totalFlourGrams)&&totalFlourGrams>0;
+  return {
+    available,totalFlourGrams:available?Math.round(totalFlourGrams*1e6)/1e6:null,
+    note:available?'Las harinas de esta ficha suman 100 %. No incluye la harina interna de masas madre o prefermentos.':
+      'No se puede calcular: la ficha necesita al menos una harina con peso en g o kg.',
+    lines:rows.map(row=>({...row,
+      percentage:available&&row.weightGrams!==null
+        ?Math.round(row.weightGrams/totalFlourGrams*100*100)/100:null
+    }))
+  };
 }
 
 function money(value) { return Math.round((value + Number.EPSILON) * 100) / 100; }
@@ -99,6 +176,8 @@ function scaleRecipe(recipe, ingredients, desiredYield) {
   numberField(desiredYield, 'Producción solicitada', {positive: true, integer: true});
   const factor = desiredYield / recipe.baseYield;
   const capacity=maximumProducible(recipe,ingredients);
+  const bakers=bakerPercentages(recipe,ingredients);
+  const byIngredient=new Map(bakers.lines.map(line=>[line.ingredientId,line]));
   const lines = recipe.items.map(({ingredientId, quantity}) => {
     const ingredient = ingredients.find((i) => i.id === ingredientId);
     if (!ingredient) throw new ValidationError('Ingrediente de receta no encontrado', 409);
@@ -112,6 +191,7 @@ function scaleRecipe(recipe, ingredients, desiredYield) {
       sufficient: ingredient.stock + 1e-9 >= required,
       shortage: Math.round(Math.max(0,required-ingredient.stock)*1_000_000)/1_000_000,
       estimatedCost: money(required * ingredient.costPerUnit),
+      bakerPercentage: byIngredient.get(ingredientId)?.percentage ?? null,
     };
   });
   return {
@@ -119,6 +199,7 @@ function scaleRecipe(recipe, ingredients, desiredYield) {
     recipeName: recipe.name,
     desiredYield,
     factor,
+    bakers,
     lines,
     maxProducible: capacity.maximum,
     limitingIngredients: capacity.limitingIngredients,
@@ -128,4 +209,4 @@ function scaleRecipe(recipe, ingredients, desiredYield) {
   };
 }
 
-module.exports = {ValidationError, validateIngredient, validateRecipe, scaleRecipe, maximumProducible, convertQuantity, UNITS};
+module.exports = {ValidationError, validateIngredient, validateRecipe, scaleRecipe, maximumProducible, convertQuantity, convertIngredientQuantity, EGG_GRAMS_PER_PIECE, bakerPercentages, UNITS};

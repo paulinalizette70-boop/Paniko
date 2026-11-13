@@ -2,7 +2,7 @@
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
-const {ValidationError} = require('./domain');
+const {ValidationError,bakerPercentages,validateRecipe} = require('./domain');
 const {createStore} = require('./store');
 const {getCookieToken,cookieForToken,expiredCookie}=require('./auth');
 
@@ -156,6 +156,20 @@ function createApp({store, auth = null, products = null, dataFile = path.join(__
       }
       if (req.method === 'GET' && pathname === '/api/recipes') return respond( 200, await store.listRecipes());
       if (req.method === 'POST' && pathname === '/api/recipes') return respond( 201, await store.addRecipe(await bodyAsJson(req)));
+      if(req.method==='POST' && pathname==='/api/recipes/bakers-preview'){
+        const input=await bodyAsJson(req);
+        const ingredients=await store.listIngredients();
+        const validated=validateRecipe(input,ingredients);
+        return respond(200,{recipeName:validated.name,baseYield:validated.baseYield,
+          ...bakerPercentages(validated,ingredients)});
+      }
+      const bakers=pathname.match(/^\/api\/recipes\/([a-f\d-]+)\/bakers$/i);
+      if(req.method==='GET' && bakers){
+        const recipe=await store.getRecipe(bakers[1]);
+        if(!recipe)return respond(404,{error:'Ficha técnica no encontrada'});
+        const calculation=bakerPercentages(recipe,await store.listIngredients());
+        return respond(200,{recipeId:recipe.id,recipeName:recipe.name,baseYield:recipe.baseYield,...calculation});
+      }
       if (req.method === 'GET' && pathname === '/api/inventory/movements') return respond( 200, await store.listMovements());
       if (req.method === 'GET' && pathname === '/api/production') return respond( 200, await store.listProduction());
       const batchDetail=pathname.match(/^\/api\/production\/([a-f\d]{8}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{12})$/i);

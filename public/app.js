@@ -52,12 +52,36 @@ function renderIngredientList(){
   }
   if(!list.length)root.append(make('p',ingredients.length?'No se encontraron ingredientes.':'Todavía no hay ingredientes registrados.','muted'));
 }
+function displayPercentage(number){
+  return typeof number==='number'?new Intl.NumberFormat('es-MX',{maximumFractionDigits:2}).format(number)+' %':'—';
+}
+function renderBakerPercentages(root,data){
+  root.replaceChildren();
+  if(!data.available){root.append(make('p',data.note,'muted'));return;}
+  root.append(make('p',`Harinas totales: ${data.totalFlourGrams} g = 100 %`,'baker-base'));
+  const table=make('table',undefined,'baker-table');
+  const header=make('thead');const tr=make('tr');
+  for(const label of ['Ingrediente','Cantidad de la ficha','Peso equivalente','% panadero'])tr.append(make('th',label));
+  header.append(tr);table.append(header);
+  const body=make('tbody');
+  for(const row of data.lines){
+    const line=make('tr');
+    for(const label of [row.name,`${row.quantity} ${row.unit}`,
+      row.weightGrams===null?'Sin equivalencia':`${Math.round(row.weightGrams*1e6)/1e6} g`,
+      displayPercentage(row.percentage)])line.append(make('td',label));
+    body.append(line);
+  }
+  table.append(body);root.append(table);
+  root.append(make('p',data.note,'hint'));
+  if(data.lines.some(row=>row.percentage===null))
+    root.append(make('p','Las unidades sin equivalencia de peso se muestran sin porcentaje.','hint'));
+}
 function renderRecipeList(){
   const root=$('recipe-list'),query=normalizeSearch($('recipe-search').value.trim());
   root.replaceChildren();
   const list=recipes.filter(r=>normalizeSearch(r.name).includes(query));
   for(const recipe of list){
-    const line=make('div',undefined,'inventory-item');
+    const line=make('div',undefined,'inventory-item recipe-card');
     const details=make('div');details.append(make('strong',recipe.name),make('small',`${recipe.items.length} ingredientes · Rendimiento base: ${recipe.baseYield} piezas`));
     const use=make('button','Preparar','secondary');use.type='button';
     use.addEventListener('click',()=>{
@@ -67,7 +91,24 @@ function renderRecipeList(){
       $('scale-form').elements.desiredYield.value=String(recipe.baseYield);
       resetCapacitySuggestion();
     });
-    line.append(details,use);root.append(line);
+    const percentButton=make('button','Ver % panadero','secondary');percentButton.type='button';
+    percentButton.setAttribute('aria-expanded','false');
+    const detail=make('div',undefined,'baker-detail');detail.hidden=true;
+    let percentLoaded=false;
+    percentButton.addEventListener('click',async()=>{
+      if(!detail.hidden){detail.hidden=true;percentButton.textContent='Ver % panadero';percentButton.setAttribute('aria-expanded','false');return;}
+      detail.hidden=false;percentButton.textContent='Ocultar %';percentButton.setAttribute('aria-expanded','true');
+      if(percentLoaded)return;
+      detail.replaceChildren(make('p','Calculando porcentaje panadero…','muted'));
+      percentButton.disabled=true;
+      try{
+        const formula=await api(`/api/recipes/${recipe.id}/bakers`);
+        renderBakerPercentages(detail,formula);percentLoaded=true;
+      }catch(error){detail.replaceChildren(make('p',error.message,'warning'));}
+      finally{percentButton.disabled=false;}
+    });
+    const actions=make('div',undefined,'recipe-actions');actions.append(percentButton,use);
+    line.append(details,actions,detail);root.append(line);
   }
   if(!list.length)root.append(make('p',recipes.length?'No se encontraron recetas.':'Todavía no hay fichas técnicas.','muted'));
 }
@@ -92,7 +133,12 @@ function fillSelect(select, list, empty) {
   }
   if (list.some(item=>item.id===previous)) select.value=previous;
 }
-function availableUnits(unit) {
+function availableUnits(unit,name='') {
+  const key=normalizeSearch(name).trim().replace(/\s+/g,' ');
+  if(/^huevos?(?: (?:grandes?|medianos?|chicos?|enteros?))?$/.test(key)&&['pieza','g','kg'].includes(unit))
+    return ['pieza','g','kg'];
+  if(/^agua(?: (?:potable|purificada|filtrada))?$/.test(key)&&['g','kg','ml','l'].includes(unit))
+    return ['g','kg','ml','l'];
   if (['g','kg'].includes(unit)) return ['g','kg'];
   if (['ml','l'].includes(unit)) return ['ml','l'];
   return unit === 'pieza' ? ['pieza'] : [];
@@ -100,7 +146,7 @@ function availableUnits(unit) {
 function setUnitOptions(select, ingredientId) {
   const ing=ingredients.find(i=>i.id===ingredientId);
   const previous=select.value;
-  const allowed=availableUnits(ing?.unit);
+  const allowed=availableUnits(ing?.unit,ing?.name);
   select.replaceChildren();
   for (const unit of allowed) {
     const option=make('option',unit);option.value=unit;select.append(option);
@@ -232,13 +278,31 @@ $('ingredient-form').addEventListener('submit', async (event) => {
     form.reset(); await refresh(); notify('Ingrediente registrado.');
   } catch (error) { notify(error.message, true); }
 });
+function currentRecipeInput(form){
+  return {name:form.elements.name.value,baseYield:Number(form.elements.yield.value),
+    items:[...$('recipe-items').children].map(row=>({ingredientId:row.querySelector('select').value,
+      quantity:Number(row.querySelector('input').value),unit:row.querySelector('.recipe-unit').value}))};
+}
+$('baker-preview-button').addEventListener('click',async()=>{
+  const form=$('recipe-form');
+  if(!form.reportValidity()){notify('Completa la ficha antes de calcular los porcentajes.',true);return;}
+  const result=$('baker-form-preview');result.hidden=false;
+  try{
+    if(!$('recipe-items').children.length)throw new Error('Añade ingredientes para calcular el porcentaje.');
+    const percentages=await post('/api/recipes/bakers-preview',currentRecipeInput(form));
+    renderBakerPercentages(result,percentages);
+  }catch(error){result.replaceChildren(make('p',error.message,'warning'));}
+});
+$('recipe-form').addEventListener('input',()=>{const container=$('baker-form-preview');container.hidden=true;container.replaceChildren();});
 $('recipe-form').addEventListener('submit', async (event) => {
   event.preventDefault(); const form = event.currentTarget;
   const rows = [...$('recipe-items').children];
   try {
     if (!rows.length) throw new Error('Añade al menos un ingrediente.');
-    await post('/api/recipes', {name:form.elements.name.value,baseYield:Number(form.elements.yield.value),items:rows.map(row=>({ingredientId:row.querySelector('select').value,quantity:Number(row.querySelector('input').value),unit:row.querySelector('.recipe-unit').value}))});
-    form.reset(); $('recipe-items').replaceChildren(); addRecipeItem(); await refresh(); notify('Ficha técnica guardada.');
+    await post('/api/recipes', currentRecipeInput(form));
+    form.reset(); $('recipe-items').replaceChildren(); addRecipeItem();
+    $('baker-form-preview').hidden=true;$('baker-form-preview').replaceChildren();
+    await refresh(); notify('Ficha técnica guardada.');
   } catch (error) { notify(error.message, true); }
 });
 $('stock-in-form').addEventListener('submit',async(event)=>{
@@ -275,6 +339,13 @@ function renderPreview(result) {
     const detail=`${line.name}: necesita ${line.required} ${line.unit} · disponible ${line.stock} ${line.unit}`+
       (line.shortage>0?` · faltan ${line.shortage} ${line.unit}`:'')+(currentUser?.role==='admin'?` · ${money(line.estimatedCost)}`:'');
     container.append(make('div',detail,`list-row ${line.sufficient?'':'warning'}`));
+  }
+  if(result.bakers){
+    const accordion=make('details',undefined,'baker-preview');
+    accordion.append(make('summary','Ver porcentajes panaderos (harinas = 100 %)'));
+    const content=make('div',undefined,'baker-detail');
+    renderBakerPercentages(content,result.bakers);accordion.append(content);
+    container.append(accordion);
   }
   container.append(make('p', result.stockAvailable?'Inventario suficiente para esta producción.':'Inventario insuficiente. No se puede confirmar la producción.', result.stockAvailable?'good':'warning'));
   const maxButton=$('max-production-button');

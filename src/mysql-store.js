@@ -127,7 +127,7 @@ function createMysqlStore(pool) {
       const [rows]=await c.execute('SELECT id,name,unit,cost_per_unit,stock FROM ingredients WHERE id=? FOR UPDATE',[id]);
       if(!rows.length) throw new ValidationError('Ingrediente no encontrado',404);
       const ingredient=ingredientFromRow(rows[0]);
-      const {quantity,reason}=stockEntry(raw,ingredient.unit);
+      const {quantity,reason}=stockEntry(raw,ingredient.unit,ingredient.name);
       const stockBefore=ingredient.stock;
       ingredient.stock=safeStockSum(stockBefore,quantity);
       const movementId=crypto.randomUUID();
@@ -141,7 +141,7 @@ function createMysqlStore(pool) {
       const [rows]=await c.execute('SELECT id,name,unit,cost_per_unit,stock FROM ingredients WHERE id=? FOR UPDATE',[id]);
       if(!rows.length)throw new ValidationError('Ingrediente no encontrado',404);
       const ingredient=ingredientFromRow(rows[0]);
-      const {quantity,reason}=stockExit(raw,ingredient.unit),before=ingredient.stock;
+      const {quantity,reason}=stockExit(raw,ingredient.unit,ingredient.name),before=ingredient.stock;
       if(quantity>before)throw new ValidationError('Inventario insuficiente para esta salida',409);
       const after=roundQuantity(before-quantity);
       const [updated]=await c.execute('UPDATE ingredients SET stock=? WHERE id=? AND stock>=?',[after,id,quantity]);

@@ -1,12 +1,14 @@
 'use strict';
-const {ValidationError,convertQuantity,validateRecipe,validateIngredient} = require('./domain');
+const {ValidationError,convertQuantity,convertIngredientQuantity,validateRecipe,validateIngredient} = require('./domain');
 
 // 'base_yield' del sistema actual representa unidades enteras de producción,
 // no gramos de masa ni peso final. No inventar unidades a partir de pesos.
 const PIECE_YIELD_UNITS = new Set(['pieza','piezas','panes','hogazas','baguettes','panques','panqués','bollos','galletas','unidades','porciones','croissants','rollos']);
 const INGREDIENT_UNITS = new Set(['g','kg','ml','l','pieza']);
 const normalized = value => String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().replace(/\s+/g,' ').toLocaleLowerCase('es');
-const compatible = (a,b) => a===b || (['g','kg'].includes(a)&&['g','kg'].includes(b)) || (['ml','l'].includes(a)&&['ml','l'].includes(b));
+const compatible = (a,b,name) => {
+  try{convertIngredientQuantity(1,a,b,name);return true;}catch(_){return false;}
+};
 
 function planCatalogRecipe(raw, requestedYield=null){
   const issues=[];
@@ -62,8 +64,8 @@ async function promoteCatalogRecipe(pool,source,requestedYield=null){
     const grouped=new Map();
     for(const item of plan.items){
       const matches=ingredients.filter(x=>normalized(x.name)===normalized(item.name));
-      let ingredient=matches.find(x=>x.unit===item.unit)||matches.find(x=>compatible(x.unit,item.unit));
-      if(!ingredient&&matches.length)throw new ValidationError(`La unidad de ${item.name} no coincide con la registrada en Ingredientes`,409);
+      let ingredient=matches.find(x=>x.unit===item.unit)||matches.find(x=>compatible(x.unit,item.unit,item.name));
+      if(!ingredient&&matches.length)throw new ValidationError(`No existe una equivalencia segura entre la unidad de ${item.name} en la receta y la unidad del ingrediente registrado`,409);
       if(!ingredient){
         ingredient={id:crypto.randomUUID(),name:item.name,unit:item.unit,costPerUnit:0,stock:0};
         validateIngredient(ingredient);
@@ -71,7 +73,7 @@ async function promoteCatalogRecipe(pool,source,requestedYield=null){
           [ingredient.id,ingredient.name,ingredient.unit,0,0]);
         ingredients.push(ingredient);createdIngredients.push({name:ingredient.name,unit:ingredient.unit});
       }
-      const quantity=convertQuantity(item.quantity,item.unit,ingredient.unit);
+      const quantity=convertIngredientQuantity(item.quantity,item.unit,ingredient.unit,ingredient.name);
       const previous=grouped.get(ingredient.id)||0;
       const total=Math.round((previous+quantity)*1e6)/1e6;
       if(total<=0||total>1e9)throw new ValidationError(`Cantidad demasiado grande de ${ingredient.name}`);

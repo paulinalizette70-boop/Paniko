@@ -70,7 +70,7 @@ function createStore(filePath) {
       const data = read();
       const ingredient = data.ingredients.find(i => i.id === id);
       if (!ingredient) throw new ValidationError('Ingrediente no encontrado', 404);
-      const {quantity, reason} = stockEntry(raw, ingredient.unit);
+      const {quantity, reason} = stockEntry(raw, ingredient.unit,ingredient.name);
       const stockBefore = ingredient.stock;
       ingredient.stock = safeStockSum(stockBefore, quantity);
       const movement = {id:crypto.randomUUID(), ingredientId:id, name:ingredient.name, type:'entrada', quantity, stockBefore, stockAfter:ingredient.stock, reason, createdAt:new Date().toISOString()};
@@ -81,7 +81,7 @@ function createStore(filePath) {
     stockOut(id,raw){
       const data=read(),ingredient=data.ingredients.find(i=>i.id===id);
       if(!ingredient)throw new ValidationError('Ingrediente no encontrado',404);
-      const {quantity,reason}=stockExit(raw,ingredient.unit),before=ingredient.stock;
+      const {quantity,reason}=stockExit(raw,ingredient.unit,ingredient.name),before=ingredient.stock;
       if(quantity>before)throw new ValidationError('Inventario insuficiente para esta salida',409);
       ingredient.stock=roundQuantity(before-quantity);
       const movement={id:crypto.randomUUID(),ingredientId:id,name:ingredient.name,type:'salida',

@@ -1,12 +1,12 @@
 # Paniko · Gestión de panadería artesanal
 
-**MVP académico | Versión de integración 0.7.1 | Seminario de Integración: Desarrollo**
+**MVP académico | Versión de integración 0.7.2 | Seminario de Integración: Desarrollo**
 
 **Universidad de Guadalajara · Centro Universitario de Tlaquepaque · Ingeniería Informática**
 
 Paniko es una aplicación web para organizar el trabajo diario de una panadería artesanal. Reúne **ingredientes, inventario, recetas y fichas técnicas, escalado de preparaciones, producción, productos terminados, ventas e historial**. Busca sustituir registros dispersos por un flujo sencillo y trazable.
 
-> **Estado de publicación:** la versión 0.7.1 está en la rama [de integración](https://github.com/paulinalizette70-boop/Paniko/tree/integracion/paniko-0.6.1-20261111-1923) y en el [Pull Request #9](https://github.com/paulinalizette70-boop/Paniko/pull/9). La rama `main` conserva la versión 0.4.0 hasta revisar y fusionar el PR. Paniko es un prototipo académico de uso local; no se recomienda desplegarlo públicamente sin una revisión de seguridad.
+> **Estado de publicación:** la versión 0.7.2 está en la rama [de integración](https://github.com/paulinalizette70-boop/Paniko/tree/integracion/paniko-0.6.1-20261111-1923) y en el [Pull Request #9](https://github.com/paulinalizette70-boop/Paniko/pull/9). La rama `main` conserva la versión 0.4.0 hasta revisar y fusionar el PR. Paniko es un prototipo académico de uso local; no se recomienda desplegarlo públicamente sin una revisión de seguridad.
 
 ## Índice
 
@@ -238,3 +238,12 @@ El [PR #9](https://github.com/paulinalizette70-boop/Paniko/pull/9) sigue abierto
 ---
 
 **Paniko · Hecho para organizar una panadería artesanal, una preparación a la vez.**
+
+## Actualización 0.7.2: equivalencias y porcentaje panadero
+
+- Se adopta la equivalencia solicitada de **1 huevo = 50 g sin cáscara**. Para Agua, **1 ml ≈ 1 g**. Estas conversiones solo se aplican a Agua/Huevo y a unidades de masa y volumen compatibles; no se inventan densidades de otros ingredientes.
+- Las fichas técnicas se pueden crear con existencias cero. Se reutilizan los ingredientes que ya existen y se crean los que faltan con stock y costo cero. Las existencias solo se comprueban cuando se desea producir.
+- El **porcentaje panadero** toma como 100 % la suma de todas las harinas de la ficha; calcula el peso de cada ingrediente respecto de esa base. Si no hay harina o no existe equivalencia de peso, muestra una advertencia en vez de un porcentaje arbitrario.
+- Disponible en Recetas > Ver % panadero, en el formulario > Calcular % panadero antes de guardar, y en Producción > Ver porcentajes panaderos después de la vista previa.
+- Nuevas rutas autenticadas GET /api/recipes/:id/bakers y POST /api/recipes/bakers-preview. No modifican inventarios ni contienen datos financieros para operadores.
+- No modifica tablas SQL ni configuraciones .env. El instalador 0.7.2 también actualiza src/inventory.js, preservando la corrección del error de inventario de 0.7.1.

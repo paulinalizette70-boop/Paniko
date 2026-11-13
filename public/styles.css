@@ -190,3 +190,18 @@ h3{font-size:1rem;font-weight:750}
 .finance-editor{margin-top:22px}.finance-cost-row{display:grid;grid-template-columns:minmax(170px,1fr) minmax(150px,200px) auto;align-items:end;gap:16px;padding:16px 0;border-bottom:1px solid var(--border)}
 .finance-cost-row:last-child{border-bottom:0}.finance-cost-row>div{display:grid;gap:5px}.finance-cost-row small{display:block;color:var(--ink-soft)}
 @media(max-width:650px){.finance-cost-row{grid-template-columns:1fr}.finance-metrics{grid-template-columns:1fr}.catalog-recipe summary{flex-wrap:wrap}}
+
+/* Porcentajes panaderos en fichas; adaptación a móvil sin desbordar las tarjetas */
+.recipe-actions { display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; }
+.baker-detail { width:100%; min-width:0; overflow-x:auto; padding:.7rem 0; }
+.baker-detail .baker-base { font-weight:700; color:var(--ink, #3f4331); }
+.baker-table { width:100%; border-collapse:collapse; font-size:.91rem; }
+.baker-table th,.baker-table td { padding:.55rem .6rem; border-bottom:1px solid var(--border, #e7e1d6); text-align:left; white-space:nowrap; }
+.baker-table th { font-weight:700; background:#f6f4eb; }
+.baker-preview { margin-top:.8rem; padding:.75rem; border:1px solid #dedad0; border-radius:12px; }
+.baker-preview summary { cursor:pointer; font-weight:700; }
+@media (max-width:650px) {.baker-table {font-size:.84rem;} .recipe-actions {width:100%;} }
+
+.recipe-card { flex-wrap:wrap; }
+.recipe-card .baker-detail { flex:1 1 100%; border-top:1px solid #ebe7dd; }
+.recipe-card .baker-detail[hidden]{display:none;}
