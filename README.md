@@ -1,12 +1,12 @@
 # Paniko · Gestión de panadería artesanal
 
-**MVP académico | Versión de integración 0.7.2 | Seminario de Integración: Desarrollo**
+**MVP académico | Versión en `main`: 0.7.2 | Seminario de Integración: Desarrollo**
 
 **Universidad de Guadalajara · Centro Universitario de Tlaquepaque · Ingeniería Informática**
 
 Paniko es una aplicación web para organizar el trabajo diario de una panadería artesanal. Reúne **ingredientes, inventario, recetas y fichas técnicas, escalado de preparaciones, producción, productos terminados, ventas e historial**. Busca sustituir registros dispersos por un flujo sencillo y trazable.
 
-> **Estado de publicación:** la versión 0.7.2 está en la rama [de integración](https://github.com/paulinalizette70-boop/Paniko/tree/integracion/paniko-0.6.1-20261111-1923) y en el [Pull Request #9](https://github.com/paulinalizette70-boop/Paniko/pull/9). La rama `main` conserva la versión 0.4.0 hasta revisar y fusionar el PR. Paniko es un prototipo académico de uso local; no se recomienda desplegarlo públicamente sin una revisión de seguridad.
+> **Estado de publicación:** Paniko **0.7.2 está integrado en `main`** mediante el [Pull Request #9 fusionado](https://github.com/paulinalizette70-boop/Paniko/pull/9). Las pruebas y la aceptación funcional del entorno real deben verificarse por separado. Paniko es un prototipo académico de uso local; no se recomienda desplegarlo públicamente sin una revisión de seguridad.
 
 ## Índice
 
@@ -30,7 +30,7 @@ En esta etapa, la prioridad del MVP es el **inventario y su relación con las re
 
 ## Funcionalidades
 
-| Módulo | Función disponible en la rama 0.7.1 |
+| Módulo | Función disponible en la versión 0.7.2 |
 | --- | --- |
 | Inicio de sesión y roles | Sesiones de administración y operador; cierre de sesión y autorización de rutas |
 | Inicio | Resumen operativo y accesos directos a las tareas comunes |
@@ -89,12 +89,12 @@ Las fórmulas operativas guardadas localmente pueden provenir de un catálogo de
 - Navegador actualizado.
 - Git para descargar la rama directamente (opcional si se dispone de un paquete revisado).
 
-### 1. Descargar la versión de integración
+### 1. Descargar la versión principal
 
 En PowerShell:
 
 ```powershell
-git clone --branch integracion/paniko-0.6.1-20261111-1923 https://github.com/paulinalizette70-boop/Paniko.git
+git clone https://github.com/paulinalizette70-boop/Paniko.git
 cd Paniko
 npm.cmd install
 ```
@@ -167,7 +167,7 @@ Incluye pruebas de dominio, validación de fichas, conversiones, inventario, aut
 - [Bitácora de pruebas y evaluación](docs/pruebas/registro-ejecuciones.md).
 - [Pull Request de integración #9](https://github.com/paulinalizette70-boop/Paniko/pull/9).
 
-Las pruebas automatizadas comprueban el comportamiento técnico bajo las condiciones de prueba. **No equivalen a la aceptación de la versión 0.7.1 por parte de la panadería.**
+Las pruebas automatizadas comprueban el comportamiento técnico bajo las condiciones de prueba. **No equivalen a la aceptación de la versión 0.7.2 por parte de la panadería.**
 
 ## Capturas de pantalla
 
@@ -194,7 +194,7 @@ La responsable de la panadería, **Ale Sánchez**, utilizó **Paniko v0.4** dura
 - **Creación de fichas:** encontró dificultades al trabajar con el mismo ingrediente expresado en gramos y kilogramos.
 - **Necesidad de negocio:** solicitó visualizar semanalmente ventas, ganancias, inversión y pérdidas.
 
-Estos comentarios orientaron el rediseño de navegación y las prioridades del backlog. **Ale evaluó la versión 0.4, no la 0.7.1; esta última todavía requiere revalidación con la usuaria.**
+Estos comentarios orientaron el rediseño de navegación y las prioridades del backlog. **Ale evaluó la versión 0.4, no la versión 0.7.2**, que todavía requiere revalidación con la usuaria.
 
 - [Informe de evaluación con Ale](docs/seguimiento/evaluacion-usuaria-ale-v04.md).
 - [Retrospectiva del medio término](docs/seguimiento/retrospectiva-medio-termino.md).
@@ -205,7 +205,7 @@ Estos comentarios orientaron el rediseño de navegación y las prioridades del b
 | --- | --- | --- |
 | Alta | Validar el flujo de **crear fichas** cuando inventario y receta usan g/kg | [Issue #11](https://github.com/paulinalizette70-boop/Paniko/issues/11) |
 | Alta | Definir y desarrollar el **resumen financiero semanal** exclusivo para administración | [HU-11 / Issue #10](https://github.com/paulinalizette70-boop/Paniko/issues/10) |
-| Alta | Probar v0.7.1 en la instalación local, revisar el PR #9 y fusionar a `main` | [PR #9](https://github.com/paulinalizette70-boop/Paniko/pull/9) |
+| Alta | Validar Paniko 0.7.2 en la instalación local; el PR #9 ya fue fusionado a `main` | [PR #9 fusionado](https://github.com/paulinalizette70-boop/Paniko/pull/9) |
 | Media | Actualizar incidencias históricas y documentar pendientes reales de producción/cierre | [Issues](https://github.com/paulinalizette70-boop/Paniko/issues) |
 | Media | Añadir capturas auténticas, evidencia individual y revisión formal del equipo | [Entrega GitHub](docs/entrega-github.md) |
 
@@ -225,7 +225,7 @@ La participación y las aportaciones individuales deben respaldarse con commits,
 6. Solicitar revisión a otra persona, responder comentarios y documentar la aprobación.
 7. Fusionar solo cuando las pruebas y la revisión estén completas; mantener `main` estable.
 
-El [PR #9](https://github.com/paulinalizette70-boop/Paniko/pull/9) sigue abierto para revisar la integración de v0.7.1. Las revisiones formales y la fusión permanecen pendientes.
+El [PR #9](https://github.com/paulinalizette70-boop/Paniko/pull/9) fue fusionado para publicar Paniko 0.7.2 en `main`. **No se registró una revisión formal de otro integrante antes de la fusión**; la revisión colegiada y la validación local siguen pendientes como evidencia del proyecto.
 
 **Documentación técnica:** [ADRs](docs/adr/), [bloqueos](docs/seguimiento/bloqueos.md), [deuda técnica](docs/seguimiento/deuda-tecnica.md) y [guía de entrega](docs/entrega-github.md).
 
