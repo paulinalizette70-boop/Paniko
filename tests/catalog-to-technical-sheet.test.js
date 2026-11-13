@@ -98,3 +98,36 @@ test('FICHA-05 API requiere sesión, usa catálogo guardado y admite operador pa
   const missing=await fetch(base+'/api/recipes/from-catalog/no_existe',{method:'POST',headers:{Cookie:'paniko_session='+'B'.repeat(43),'Content-Type':'application/json'},body:'{}'});
   assert.equal(missing.status,404);
 });
+
+test('FICHA-06 MySQL aislado: ficha importada usa ingredientes reales sin alterar stock y es idempotente',
+  {skip:process.env.MYSQL_TEST==='1'?false:'Requiere MySQL de pruebas aislado'},async()=>{
+    if(!String(process.env.DB_NAME||'').endsWith('_test'))throw Error('No ejecutar contra una base de datos real');
+    const {poolFromEnv}=require('../src/database');
+    const {createMysqlStore}=require('../src/mysql-store');
+    const pool=poolFromEnv();
+    try{
+      const identifier=randomUUID().replace(/-/g,'').slice(0,16);
+      const ingredientName='Ingrediente ficticio '+identifier;
+      const source={id:'ficticia_'+identifier,nombre:'Ficha sintética '+identifier,estado:'confirmada',
+        rendimiento:{cantidad:5,unidad:'piezas'},ingredientes:[
+          {ingrediente:ingredientName,cantidad:125,unidad:'g'}],componentes:[],variantes:[]};
+      const store=createMysqlStore(pool);
+      const first=await store.importCatalogRecipe(source,5);
+      assert.equal(first.existing,false);
+      assert.equal(first.createdIngredients.length,1);
+      const second=await store.importCatalogRecipe(source,5);
+      assert.equal(second.existing,true);
+      assert.equal(second.id,first.id);
+      const found=(await store.listRecipes()).find(r=>r.id===first.id);
+      assert.equal(found.baseYield,5);
+      assert.equal(found.items.length,1);
+      const stock=(await store.listIngredients()).find(i=>i.name===ingredientName);
+      assert.equal(stock.stock,0);
+      assert.equal(stock.costPerUnit,0);
+      const preview=await store.preview(first.id,10);
+      assert.equal(preview.lines.length,1);
+      assert.equal(preview.lines[0].required,250);
+      assert.equal(preview.maxProducible,0);
+      assert.equal((await store.listIngredients()).find(i=>i.id===stock.id).stock,0);
+    }finally{await pool.end();}
+  });

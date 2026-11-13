@@ -57,7 +57,7 @@ El comando `node --env-file` funciona con las versiones recientes de Node. Si ya
 npm.cmd test
 ```
 
-La integración 0.7.1 superó localmente **52 pruebas, sin fallos y con 4 omitidas que requieren MySQL de pruebas**. Las pruebas omitidas se ejecutan en GitHub Actions con MySQL aislado. Para las de MySQL, usa solamente una base separada con nombre terminado en `_test` y `MYSQL_TEST=1`. La aprobación de pruebas locales no equivale a una validación de negocio en producción.
+La integración 0.7.1 superó localmente **52 pruebas, sin fallos y con 5 omitidas que requieren MySQL de pruebas**. Las pruebas omitidas se ejecutan en GitHub Actions con MySQL aislado. Para las de MySQL, usa solamente una base separada con nombre terminado en `_test` y `MYSQL_TEST=1`. La aprobación de pruebas locales no equivale a una validación de negocio en producción.
 
 ## Privacidad y seguridad
 
@@ -114,6 +114,17 @@ Paniko organiza sus operaciones en **Inicio**, **Producción**, **Ingredientes**
 6. Abre `http://127.0.0.1:3000` y presiona `Ctrl+F5` para renovar los archivos CSS y JavaScript en el navegador.
 
 Esta actualización exige partir de la versión 0.6.3. Si tienes otra versión, **no la fuerces** y revisa la compatibilidad antes de instalar.
+
+## Versión 0.7.1: recetas compartidas y fichas técnicas escalables
+
+- Todas las personas con cuenta en Paniko consultan las **recetas originales** y las **fichas técnicas** desde una sola sección **Recetas**. No existe una sección de recetas exclusiva del administrador.
+- **Finanzas** es exclusiva de administración. El servidor retira costos y valores financieros de las respuestas para operadores y deniega las rutas `/api/finance/*` con HTTP 403. El personal puede operar inventario, recetas, producción y productos; los precios los fija administración.
+- Cada fórmula original **confirmada y completa** puede transformarse en ficha de producción con el botón **Crear ficha técnica escalable**, o utilizar **Crear las fichas completas** para convertir en una operación guiada todas las que tienen rendimiento en piezas conocido.
+- La transformación se ejecuta al confirmar, en una transacción MySQL: reutiliza ingredientes del inventario si su nombre y unidad son compatibles, agrega los faltantes con **stock 0 y costo 0** y registra la ficha con las cantidades originales. **No se descuentan existencias durante la importación.** No duplica una receta que ya existe con el mismo nombre.
+- No se hacen conversiones arbitrarias de cucharadas a gramos; no se crea una ficha desde una fórmula provisional ni una subpreparación sin revisar. Para fórmulas expresadas en gramos de masa, Paniko pide el número real de piezas del lote. **No se estima ni inventa.**
+- Nuevo endpoint autenticado `POST /api/recipes/from-catalog/:catalogId` con `{"baseYield":5}`, que utiliza los datos **almacenados en MySQL** y no datos externos. No publica fórmulas reales en GitHub.
+- No hay migraciones SQL ni cambios de credenciales, recetas locales o datos de inventario. Si las fórmulas originales no aparecen, comprueba que el catálogo local haya sido importado anteriormente con el script `scripts/import-private-recipes.js`; la app no leerá el archivo de recetas directamente desde Internet.
+- Las fórmulas antiguas siguen en tablas de staging llamadas `private_catalog_*` por compatibilidad, pero ahora son consultables **dentro de Paniko** para usuarios autenticados. «Privado» se refiere a que las fórmulas reales nunca deben publicarse en el repositorio GitHub.
 
 ## Versión 0.7.1: recetas compartidas y fichas técnicas escalables
 
