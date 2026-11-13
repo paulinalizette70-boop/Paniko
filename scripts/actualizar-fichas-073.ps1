@@ -20,11 +20,15 @@ $files=@(
   'package-lock.json',
   'docs\releases\Paniko-0.7.3-edicion-recetas.md'
 )
+$payloadRoot=$PSScriptRoot
+if(-not (Test-Path -LiteralPath (Join-Path $payloadRoot 'src\app.js'))){
+  $payloadRoot=Split-Path -Parent $PSScriptRoot
+}
 if(-not (Test-Path -LiteralPath (Join-Path $Destino 'server.js'))){ throw 'La carpeta elegida no parece una instalación de Paniko.' }
 $version=(Get-Content -LiteralPath (Join-Path $Destino 'package.json') -Raw | ConvertFrom-Json).version
 if($version -notin @('0.7.1','0.7.2','0.7.3')){throw "Version local no compatible: $version. No se cambió nada."}
 foreach($file in $files){
-  if(-not (Test-Path -LiteralPath (Join-Path $PSScriptRoot $file))){throw "Paquete incompleto: $file"}
+  if(-not (Test-Path -LiteralPath (Join-Path $payloadRoot $file))){throw "Paquete incompleto: $file"}
 }
 Write-Host "Instalación: $Destino"
 Write-Host "Versión actual: $version  -> 0.7.3"
@@ -49,7 +53,7 @@ $copied=New-Object System.Collections.Generic.List[string]
 try{
   foreach($file in $files){
     $target=Join-Path $Destino $file
-    $source=Join-Path $PSScriptRoot $file
+    $source=Join-Path $payloadRoot $file
     New-Item -ItemType Directory -Path (Split-Path -Parent $target) -Force | Out-Null
     Copy-Item -LiteralPath $source -Destination $target -Force
     $copied.Add($file)
