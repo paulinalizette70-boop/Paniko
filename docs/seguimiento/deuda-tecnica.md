@@ -2,11 +2,14 @@
 
 | Tema | Estado | Riesgo / acción |
 | --- | --- | --- |
-| Persistencia JSON principal | Sustituida por MySQL en v0.2; JSON sigue en tests | Mantener adaptador de tests separado; ver [ADR-004](../adr/ADR-004-mysql-transacciones-inventario.md) |
-| Conversión de unidades g↔kg y ml↔l | Implementada en v0.4.0, pendiente de validación de aceptación | Normaliza fichas y entradas; no convierte dimensiones incompatibles. Ver [ADR-006](../adr/ADR-006-conversion-unidades.md) |
-| Autenticación y roles | Pendiente | **No exponer la aplicación públicamente:** cualquiera con acceso a la API podría modificar inventario |
-| Mermas y cierre formal de lotes | Pendiente | La producción solo registra consumo, no el ciclo completo |
-| Migración de datos JSON históricos | Pendiente | Los registros de v0.1 no se transfieren automáticamente a MySQL |
-| Pruebas de aceptación con negocio | Pendiente | Requiere validación real con Ale Sánchez |
+| Persistencia JSON principal | Sustituida por MySQL; JSON sigue en tests | Mantener adaptador aislado; ver [ADR-004](../adr/ADR-004-mysql-transacciones-inventario.md) |
+| Conversión g↔kg y ml↔l | Implementada y con pruebas técnicas | Confirmar facilidad de uso con datos del negocio; no convertir magnitudes incompatibles |
+| Autenticación y roles | Implementados en rama v0.7.1 y probados de forma automática | PR #9 aún no fusionado; comprobar permisos reales en Windows/MySQL, especialmente sección financiera |
+| Mermas y cierre formal de lotes | Hay movimientos de producto terminado; cierre formal de lotes por verificar | Evaluar el ciclo completo de producción y conciliación de cantidades |
+| Migración de registros históricos | Pendiente | No migrar ni sobreescribir datos reales sin copia de seguridad |
+| Prueba con Ale | Realizada durante **tres días en v0.4**; [informe](evaluacion-usuaria-ale-v04.md) | Aporta retroalimentación cualitativa positiva y problemas de navegación; no equivale a aprobación de v0.7.1 |
+| Rediseño de la interfaz | Implementado en v0.7.0/0.7.1 | Volver a probar con Ale para confirmar que la navegación es clara |
+| Dashboard financiero semanal | **No implementado**; nueva [HU-11](https://github.com/paulinalizette70-boop/Paniko/issues/10) | Definir ventas, inversión, ganancias y pérdidas con Ale, garantizar trazabilidad y acceso solo admin |
+| Capturas y documentación de medio término | Parcial | Incorporar capturas auténticas, evidencias de PR revisado y aceptación documentada |
 
-Ver [Issues abiertos](https://github.com/paulinalizette70-boop/Paniko/issues).
+Las evidencias actuales no justifican afirmar que Ale haya aceptado la v0.7.1 ni que el dashboard financiero exista.
