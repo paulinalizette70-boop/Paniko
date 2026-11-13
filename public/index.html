@@ -58,7 +58,7 @@
           <button class="nav-link" type="button" data-view-target="history"><svg class="icon"><use href="#i-clock"/></svg><span>Historial</span></button>
           <button class="nav-link admin-nav" type="button" data-view-target="finance" hidden><svg class="icon"><use href="#i-lock"/></svg><span>Finanzas</span></button>
         </nav>
-        <div class="sidebar-bottom"><span class="sidebar-motto">Un día a la vez,<br/>un pan a la vez.</span><span class="version-label">Versión 0.8.1</span></div>
+        <div class="sidebar-bottom"><span class="sidebar-motto">Un día a la vez,<br/>un pan a la vez.</span><span class="version-label">Versión 0.8.2</span></div>
       </aside>
 
       <div class="main-column">
@@ -177,7 +177,7 @@
 
           <section class="view" data-view="sourdough" aria-labelledby="sourdough-title" hidden>
             <div class="page-heading"><span class="eyebrow">CUIDA TU CULTIVO</span><h1 id="sourdough-title">Mi masa madre</h1><p>Registra cada alimentación, lleva el peso de tu masa madre y consulta cuándo quieres revisarla de nuevo.</p></div>
-            <div class="panel sourdough-intro"><h2>Tu bitácora de masa madre</h2><p>La hidratación que mostramos corresponde a <strong>la harina y el agua añadidas en cada alimentación</strong>, no necesariamente a la hidratación total del cultivo. Tú decides el intervalo de revisión según tu rutina y las condiciones reales.</p><p class="hint">Estas anotaciones no descuentan ingredientes del inventario. La próxima revisión solo aparece cuando abras Paniko; no se envían recordatorios automáticos.</p></div>
+            <div class="panel sourdough-intro"><h2>Tu bitácora de masa madre</h2><p>La hidratación que mostramos corresponde a <strong>la harina y el agua añadidas en cada alimentación</strong>, no necesariamente a la hidratación total del cultivo. Tú decides el intervalo de revisión según tu rutina y las condiciones reales.</p><p class="hint">Vincula cada cultivo con los ingredientes Masa madre, Harina y Agua del inventario. Al confirmar una alimentación se registran las salidas de harina y agua, el descarte y el aumento de masa madre. No se modifica nada por abrir esta pantalla. La próxima revisión aparece al abrir Paniko; no se envían recordatorios automáticos.</p></div>
             <details class="panel action-details" id="sourdough-create-details"><summary><span class="action-icon accent-olive"><svg class="icon"><use href="#i-plus"/></svg></span><span><strong>Agregar una masa madre</strong><small>Nombre, ubicación y frecuencia de revisión</small></span><svg class="icon arrow"><use href="#i-chevron"/></svg></summary>
               <form id="starter-create-form" class="form-stack inset-form"><label>Nombre de tu masa madre<input name="name" required maxlength="100" placeholder="Ej. Masa madre principal"/></label>
                 <div class="input-pair"><label>¿Dónde la guardas?<select name="location"><option value="ambiente">Temperatura ambiente</option><option value="refrigerador">Refrigerador</option></select></label><label>Revisar cada cuántas horas<input name="feedEveryHours" type="number" min="1" max="336" step="1" value="24" required/></label></div>

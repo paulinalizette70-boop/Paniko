@@ -11,6 +11,12 @@
  function message(text,error=false){const p=$('sourdough-message');if(p){p.textContent=text;p.className=error?'warning':'good';}}
  const dateText=value=>value?new Date(value).toLocaleString('es-MX',{dateStyle:'medium',timeStyle:'short'}):'No registrada';
  const format=n=>new Intl.NumberFormat('es-MX',{maximumFractionDigits:2}).format(n);
+ let inventoryIngredients=[];
+ function ingredientSelect(name,units,chosen){
+   const items=inventoryIngredients.filter(x=>units.includes(x.unit));
+   const choices=[['','Elige un ingrediente'],...items.map(x=>[x.id,`${x.name} · ${format(x.stock)} ${x.unit}`])];
+   return select(name,choices,chosen||'');
+ } 
  function nextText(starter){
    if(!starter.lastFedAt)return 'Sin alimentación registrada';
    const next=new Date(starter.lastFedAt).getTime()+starter.feedEveryHours*3600000;
@@ -24,7 +30,31 @@
     const box=node('div',undefined,'starter-metric');box.append(node('small',label),node('strong',value));metrics.append(box);
   }card.append(metrics);
   if(starter.notes)card.append(node('p',starter.notes,'hint'));
-  const details=node('details');details.append(node('summary','Registrar alimentación'));
+  const linked=node('p',starter.inventoryLinked?'Conectada al inventario: las alimentaciones descuentan harina y agua y actualizan masa madre.':'Sin conectar a Inventario: vincula los tres ingredientes antes de registrar una alimentación.',starter.inventoryLinked?'good':'warning');
+  card.append(linked);
+  const connection=node('details');connection.append(node('summary',starter.inventoryLinked?'Ver vinculación de ingredientes':'Conectar con inventario'));
+  const cf=node('form',undefined,'form-stack');
+  const starterSelect=ingredientSelect('starterIngredientId',['g','kg'],starter.starterIngredientId);
+  const flourSelect=ingredientSelect('flourIngredientId',['g','kg'],starter.flourIngredientId);
+  const waterSelect=ingredientSelect('waterIngredientId',['g','kg','ml','l'],starter.waterIngredientId);
+  if(starter.inventoryLinked){starterSelect.disabled=true;}
+  const explain=node('p','Se utilizará la existencia ACTUAL de «Masa madre» en Inventario como peso de referencia; vincular no modificará existencias. Si falta algún ingrediente, regístralo primero en Ingredientes.','hint');
+  const connect=node('button',starter.inventoryLinked?'Actualizar harina y agua vinculadas':'Conectar ingredientes','btn-soft');connect.type='submit';
+  append(cf,field('Masa madre del inventario (g o kg)',starterSelect),field('Harina que utilizas (g o kg)',flourSelect),field('Agua que utilizas (g, kg, ml o l)',waterSelect),explain,connect);
+  cf.addEventListener('submit',async e=>{e.preventDefault();connect.disabled=true;
+    try{
+      const ids={starterIngredientId:starterSelect.value,flourIngredientId:flourSelect.value,waterIngredientId:waterSelect.value};
+      if(new Set(Object.values(ids)).size!==3||Object.values(ids).some(x=>!x))throw Error('Elige tres ingredientes distintos.');
+      const previous=starter.currentWeightGrams;
+      const actual=inventoryIngredients.find(i=>i.id===ids.starterIngredientId);
+      const actualGrams=actual?actual.stock*(actual.unit==='kg'?1000:1):null;
+      if(actualGrams!==null&&previous!==null&&Math.abs(actualGrams-previous)>0.01&&!confirm(`El inventario registra ${format(actualGrams)} g de masa madre y el panel tenía ${format(previous)} g. Se usará la cantidad del inventario, sin modificarla. ¿Continuar?`)){connect.disabled=false;return;}
+      await api(`/api/sourdough/starters/${starter.id}/link-inventory`,'POST',ids);
+      await refresh();message('Masa madre conectada. Las siguientes alimentaciones actualizarán Ingredientes automáticamente.');
+    }catch(err){message(err.message,true);connect.disabled=false;}
+  });connection.append(cf);card.append(connection);
+  if(!starter.inventoryLinked)return card;
+  const details=node('details');details.append(node('summary','Registrar alimentación y actualizar inventario'));
   const form=node('form',undefined,'form-stack');
   const before=input('number','beforeGrams',starter.currentWeightGrams,{min:'0',max:'1000000',step:'0.01',required:''});
   const discard=input('number','discardedGrams','0',{min:'0',max:'1000000',step:'0.01',required:''});
@@ -35,7 +65,8 @@
   append(form,field('Masa madre antes de alimentar (g)',before),field('Cantidad descartada (g)',discard),field('Harina agregada (g)',flour),field('Agua agregada (g)',water),field('Observaciones',notes),save);
   form.addEventListener('submit',async e=>{e.preventDefault();save.disabled=true;
     try{const result=await api(`/api/sourdough/starters/${starter.id}/feed`,'POST',{beforeGrams:Number(before.value),discardedGrams:Number(discard.value),flourGrams:Number(flour.value),waterGrams:Number(water.value),notes:notes.value});
-      await refresh();message(`Alimentación registrada: ${format(result.afterGrams)} g resultantes; agua/harina añadidas: ${format(result.feedHydrationPercent)} %.`);
+      await refresh();message(`Inventario actualizado: ${format(result.afterGrams)} g de masa madre; se descontaron ${format(result.flourGrams)} g de harina y ${format(result.waterGrams)} g de agua.`);
+      window.PanikoRefreshInventory?.();
     }catch(e){message(e.message,true);save.disabled=false;}
   });details.append(form);card.append(details);
   const settings=node('details');settings.append(node('summary','Cambiar ubicación o frecuencia'));
@@ -48,12 +79,12 @@
   const history=node('details');history.append(node('summary','Ver las últimas 50 alimentaciones'));
   history.addEventListener('toggle',async()=>{if(!history.open)return;const existing=history.querySelector('.starter-logs');if(existing)existing.remove();const result=node('div',undefined,'starter-logs');history.append(result);
     try{const list=await api(`/api/sourdough/starters/${starter.id}/feedings`);if(!list.length)result.append(node('p','Todavía no hay alimentaciones registradas.','muted'));
-      for(const f of list){const entry=node('div');entry.append(node('strong',dateText(f.fedAt)),node('p',`${format(f.beforeGrams)} g antes − ${format(f.discardedGrams)} g descartados + ${format(f.flourGrams)} g harina + ${format(f.waterGrams)} g agua = ${format(f.afterGrams)} g. Hidratación de la alimentación: ${format(f.feedHydrationPercent)} %`));if(f.notes)entry.append(node('p',f.notes,'muted'));result.append(entry);}}
+      for(const f of list){const entry=node('div');entry.append(node('strong',dateText(f.fedAt)),node('p',`${format(f.beforeGrams)} g antes − ${format(f.discardedGrams)} g descartados + ${format(f.flourGrams)} g harina + ${format(f.waterGrams)} g agua = ${format(f.afterGrams)} g. Hidratación de la alimentación: ${format(f.feedHydrationPercent)} %`));if(f.notes)entry.append(node('p',f.notes,'muted'));entry.append(node('small',f.inventoryUpdated?'Inventario actualizado':'Registro anterior sin actualización de inventario','hint'));result.append(entry);}}
     catch(e){result.replaceChildren(node('p',e.message,'warning'));}
   });card.append(history);return card;
  }
  async function refresh(){root.replaceChildren(node('p','Cargando tus masas madre…','muted'));
-  try{const list=await api('/api/sourdough/starters');root.replaceChildren();if(!list.length)root.append(node('p','Agrega tu primera masa madre para comenzar a llevar el registro.','muted'));for(const starter of list)root.append(starterCard(starter));}
+  try{const [list,ings]=await Promise.all([api('/api/sourdough/starters'),api('/api/ingredients')]);inventoryIngredients=ings;root.replaceChildren();if(!list.length)root.append(node('p','Agrega tu primera masa madre para comenzar a llevar el registro.','muted'));for(const starter of list)root.append(starterCard(starter));}
   catch(e){root.replaceChildren(node('p',e.message,'warning'));}
  }
  $('starter-create-form').addEventListener('submit',async e=>{e.preventDefault();const f=e.currentTarget;

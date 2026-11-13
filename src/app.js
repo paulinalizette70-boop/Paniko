@@ -150,10 +150,11 @@ function createApp({store, auth = null, products = null, finance = null, sourdou
           if(req.method==='GET')return respond(200,await sourdough.listStarters());
           if(req.method==='POST')return respond(201,await sourdough.createStarter(await bodyAsJson(req)));
         }
-        const starterAction=pathname.match(/^\/api\/sourdough\/starters\/([a-f\d-]{36})\/(update|feed|feedings)$/i);
+        const starterAction=pathname.match(/^\/api\/sourdough\/starters\/([a-f\d-]{36})\/(update|feed|feedings|link-inventory)$/i);
         if(starterAction){
           const [,id,action]=starterAction;
           if(action==='update'&&req.method==='POST')return respond(200,await sourdough.updateStarter(id,await bodyAsJson(req)));
+          if(action==='link-inventory'&&req.method==='POST')return respond(200,await sourdough.linkInventory(id,await bodyAsJson(req)));
           if(action==='feed'&&req.method==='POST')return respond(201,await sourdough.feed(id,await bodyAsJson(req)));
           if(action==='feedings'&&req.method==='GET')return respond(200,await sourdough.feedings(id));
         }

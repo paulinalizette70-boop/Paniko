@@ -279,3 +279,5 @@ h3{font-size:1rem;font-weight:750}
 .calendar-new summary{cursor:pointer;list-style:none;display:block;text-align:center}.calendar-new .form-stack{margin-top:15px}.calendar-new input,.calendar-new select,.calendar-new textarea{width:100%}
 @media(max-width:850px){.calendar-bottom{grid-template-columns:1fr}}
 @media(max-width:540px){.calendar-grid{gap:3px}.calendar-day{min-height:54px;padding:6px;border-radius:8px}.calendar-day.selected{padding:5px}.calendar-weekday{font-size:.66rem}.calendar-toolbar strong{min-width:110px}.calendar-agenda-item{flex-direction:column;align-items:stretch}.calendar-actions{justify-content:flex-start}.calendar-day .cal-dot{width:6px;height:6px}}
+
+.starter-card .warning{background:#fff5e8;padding:12px;border-radius:10px}.starter-card .good{background:#edf6eb;padding:12px;border-radius:10px}
