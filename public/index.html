@@ -58,7 +58,7 @@
           <button class="nav-link" type="button" data-view-target="history"><svg class="icon"><use href="#i-clock"/></svg><span>Historial</span></button>
           <button class="nav-link admin-nav" type="button" data-view-target="finance" hidden><svg class="icon"><use href="#i-lock"/></svg><span>Finanzas</span></button>
         </nav>
-        <div class="sidebar-bottom"><span class="sidebar-motto">Un día a la vez,<br/>un pan a la vez.</span><span class="version-label">Versión 0.8.0</span></div>
+        <div class="sidebar-bottom"><span class="sidebar-motto">Un día a la vez,<br/>un pan a la vez.</span><span class="version-label">Versión 0.8.1</span></div>
       </aside>
 
       <div class="main-column">
@@ -80,6 +80,25 @@
               <div class="stat-card"><span class="stat-icon accent-peach"><svg class="icon"><use href="#i-book"/></svg></span><div><span class="stat-label">Recetas disponibles</span><strong id="dashboard-recipes">—</strong><small>Fichas de producción</small></div></div>
               <div class="stat-card"><span class="stat-icon accent-sand"><svg class="icon"><use href="#i-bread"/></svg></span><div><span class="stat-label">Lotes recientes</span><strong id="dashboard-batches">—</strong><small>En el historial consultado</small></div></div>
             </div>
+            <section class="panel dashboard-calendar" aria-labelledby="calendar-title">
+              <div class="section-heading"><div><span class="eyebrow">TU SEMANA EN ORDEN</span><h2 id="calendar-title">Calendario de la panadería</h2><p class="hint">Pendientes y producción planeada; los lotes confirmados aparecen automáticamente en su día.</p></div>
+                <div class="calendar-toolbar"><button type="button" id="calendar-prev" class="btn-soft" aria-label="Mes anterior">‹</button><strong id="calendar-month-label">Mes</strong><button type="button" id="calendar-next" class="btn-soft" aria-label="Mes siguiente">›</button><button type="button" id="calendar-today" class="btn-soft">Hoy</button></div>
+              </div>
+              <div class="calendar-legend"><span><i class="cal-dot pending"></i>Pendiente</span><span><i class="cal-dot planned"></i>Producción planeada</span><span><i class="cal-dot actual"></i>Producido</span></div>
+              <div id="calendar-grid" class="calendar-grid" aria-label="Calendario mensual"></div>
+              <p id="calendar-status" class="hint" role="status" aria-live="polite"></p>
+              <div class="calendar-bottom">
+                <div class="calendar-agenda"><h3 id="calendar-day-title">Selecciona una fecha</h3><div id="calendar-day-items">Aquí se mostrarán tus pendientes y lo producido.</div></div>
+                <details class="calendar-new" id="calendar-new-details"><summary class="btn-soft">+ Añadir pendiente o producción planeada</summary>
+                  <form id="calendar-form" class="form-stack"><label>Fecha<input name="eventDate" type="date" required/></label><label>Tipo<select name="kind"><option value="pendiente">Pendiente</option><option value="produccion">Producción planeada</option></select></label>
+                  <label>¿Qué hay que hacer?<input name="title" maxlength="120" placeholder="Ej. Preparar mermelada de higo" required/></label>
+                  <label>Receta (opcional para producción)<select name="recipeId"><option value="">Sin receta vinculada</option></select></label>
+                  <label>Cantidad prevista (opcional, en la unidad de la receta)<input name="plannedQuantity" type="number" min="1" max="1000000000" step="1" placeholder="No es obligatorio"/></label>
+                  <label>Notas<textarea name="notes" maxlength="300" rows="2" placeholder="Horario, encargos, recordatorios…"></textarea></label>
+                  <p class="hint">La planificación NO descuenta inventario. Solo una producción confirmada lo hace.</p><button class="btn-primary" type="submit">Guardar en calendario</button></form>
+                </details>
+              </div>
+            </section>
             <div class="section-heading quick-title"><div><span class="eyebrow">ACCESOS RÁPIDOS</span><h2>¿Qué necesitas hacer hoy?</h2></div></div>
             <div class="quick-grid">
               <button class="quick-card" type="button" data-view-target="production"><span class="quick-icon q-production"><svg class="icon"><use href="#i-bread"/></svg></span><strong>Producir pan</strong><small>Calcula cantidades y registra una tanda.</small><span class="quick-more">Ir a producción <svg class="icon"><use href="#i-arrow"/></svg></span></button>
@@ -93,10 +112,10 @@
             <div class="page-heading"><span class="eyebrow">MANOS A LA MASA</span><h1 id="production-title">Nueva producción</h1><p>Prepara una tanda en tres pasos. El inventario no cambiará hasta que confirmes.</p></div>
             <div class="work-grid production-layout">
               <article class="panel primary-panel">
-                <div class="panel-title"><span class="step">01</span><div><h2>¿Qué vamos a hornear?</h2><p>Elige la receta y las piezas que necesitas.</p></div></div>
+                <div class="panel-title"><span class="step">01</span><div><h2>¿Qué vamos a hornear?</h2><p>Elige la receta y la cantidad que necesitas: piezas, gramos o mililitros.</p></div></div>
                 <form id="scale-form" class="form-stack">
                   <label>Receta a preparar<select name="recipe" required></select></label>
-                  <label>Cantidad de piezas que quieres hacer<input type="number" name="desiredYield" min="1" step="1" value="20" required/></label>
+                  <label><span id="production-amount-label">Cantidad que quieres preparar (piezas)</span><input type="number" name="desiredYield" min="1" step="1" value="20" required/></label>
                   <label>Producto terminado (opcional)<select name="finishedProduct" id="finished-product-selector"><option value="">Sin producto vinculado; solo descuenta ingredientes</option></select></label>
                   <p class="hint">Si el producto está vinculado con esta receta, sus piezas se sumarán automáticamente al inventario terminado.</p>
                   <button type="submit" class="btn-primary">Calcular ingredientes <svg class="icon"><use href="#i-arrow"/></svg></button>
@@ -144,7 +163,7 @@
               <button id="refresh-recipe-catalog" type="button" class="btn-soft">Actualizar preparaciones</button>
             </div>
             <details class="panel action-details add-new-details" id="recipe-create-details"><summary><span class="action-icon accent-peach"><svg class="icon"><use href="#i-plus"/></svg></span><span><strong>Crear una ficha de producción</strong><small>Indica ingredientes y rendimiento base</small></span><svg class="icon arrow"><use href="#i-chevron"/></svg></summary>
-              <form id="recipe-form" class="form-stack inset-form"><p id="recipe-edit-hint" class="hint" hidden>Estás editando una ficha guardada. Los lotes producidos anteriormente y el inventario no cambiarán.</p><div class="input-pair"><label>Nombre de la receta<input name="name" maxlength="100" required placeholder="Ej. Conchas"/></label><label>Rendimiento base (piezas)<input name="yield" type="number" min="1" step="1" required value="10"/></label></div><div class="recipe-ingredients-head"><h3>Ingredientes para ese rendimiento</h3><p class="hint">Especifica la cantidad y unidad de cada ingrediente.</p></div><div id="recipe-items"></div><button type="button" id="add-item" class="btn-soft"><svg class="icon"><use href="#i-plus"/></svg> Añadir otro ingrediente</button><button type="button" id="baker-preview-button" class="btn-soft">Calcular % panadero</button><div id="baker-form-preview" class="baker-detail" aria-live="polite" hidden></div><div class="recipe-actions"><button type="submit" id="recipe-save-button" class="btn-primary">Guardar ficha técnica</button><button type="button" id="recipe-cancel-button" class="btn-soft" hidden>Cancelar edición</button></div></form>
+              <form id="recipe-form" class="form-stack inset-form"><p id="recipe-edit-hint" class="hint" hidden>Estás editando una ficha guardada. Los lotes producidos anteriormente y el inventario no cambiarán.</p><div class="input-pair"><label>Nombre de la receta<input name="name" maxlength="100" required placeholder="Ej. Conchas"/></label><label>Rendimiento del lote<input name="yield" type="number" min="1" step="1" required value="10"/></label><label>Unidad del rendimiento<select name="yieldUnit"><option value="pieza">Piezas</option><option value="g">Gramos (g)</option><option value="ml">Mililitros (ml)</option></select></label></div><div class="recipe-ingredients-head"><h3>Ingredientes para ese rendimiento</h3><p class="hint">Especifica la cantidad y unidad de cada ingrediente.</p></div><div id="recipe-items"></div><button type="button" id="add-item" class="btn-soft"><svg class="icon"><use href="#i-plus"/></svg> Añadir otro ingrediente</button><button type="button" id="baker-preview-button" class="btn-soft">Calcular % panadero</button><div id="baker-form-preview" class="baker-detail" aria-live="polite" hidden></div><div class="recipe-actions"><button type="submit" id="recipe-save-button" class="btn-primary">Guardar ficha técnica</button><button type="button" id="recipe-cancel-button" class="btn-soft" hidden>Cancelar edición</button></div></form>
             </details>
           </section>
 
@@ -215,5 +234,6 @@
   <script src="/app.js" defer></script>
   <script src="/products.js" defer></script>
   <script src="/sourdough.js" defer></script>
+  <script src="/calendar.js" defer></script>
 </body>
 </html>

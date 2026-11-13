@@ -93,6 +93,8 @@ function validateRecipe(raw, ingredients) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new ValidationError('Receta inválida');
   const name = textField(raw.name, 'Nombre de receta');
   const baseYield = numberField(raw.baseYield, 'Rendimiento base', {positive: true, integer: true});
+  const yieldUnit = raw.yieldUnit ?? 'pieza';
+  if(!['pieza','g','ml'].includes(yieldUnit))throw new ValidationError('El rendimiento debe expresarse en piezas, gramos o mililitros');
   if (!Array.isArray(raw.items) || !raw.items.length || raw.items.length > 100) {
     throw new ValidationError('Agrega al menos un ingrediente a la receta');
   }
@@ -106,7 +108,7 @@ function validateRecipe(raw, ingredients) {
     const quantity=convertIngredientQuantity(item.quantity,item.unit ?? ingredient.unit,ingredient.unit,ingredient.name);
     return {ingredientId:item.ingredientId,quantity};
   });
-  return {name, baseYield, items};
+  return {name, baseYield, yieldUnit, items};
 }
 
 
@@ -198,6 +200,7 @@ function scaleRecipe(recipe, ingredients, desiredYield) {
     recipeId: recipe.id,
     recipeName: recipe.name,
     desiredYield,
+    yieldUnit:recipe.yieldUnit||'pieza',
     factor,
     bakers,
     lines,

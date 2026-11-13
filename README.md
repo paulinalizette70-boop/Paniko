@@ -267,3 +267,11 @@ El **panel de Finanzas** permite a administración visualizar ventas con importe
 **Mi masa madre** es una bitácora para el equipo: cultivos, ubicación, revisiones configurables, peso previo, descartes, harina y agua añadidas, peso resultante, observaciones e historial. El porcentaje de hidratación corresponde solo a la alimentación registrada, no necesariamente al cultivo completo. No se descuentan ingredientes del inventario por estas anotaciones.
 
 Instalación conservadora desde **0.7.4**: exportar primero MySQL desde Workbench y utilizar `INSTALAR_PANIKO_080.ps1`. La migración `scripts/migrate-finance-and-starter.js` crea cuatro tablas adicionales sin modificar las recetas, existencias ni ventas anteriores. [Detalles de versión](docs/releases/Paniko-0.8.0-finanzas-y-masa-madre.md).
+
+## Paniko 0.8.1: calendario visual y rendimiento en peso
+
+En Inicio, el calendario mensual distingue pendientes, producción planeada y lotes **confirmados**. Puedes programar y completar tareas sin descontar inventario; solo las producciones realmente confirmadas se incorporan automáticamente al calendario.
+
+Las fichas técnicas permiten rendimiento en **piezas**, **gramos** o **mililitros**. Si una fórmula original expresa rendimiento en kg/l, Paniko lo convierte internamente a g/ml; no inventa un número de piezas para crumble, rellenos ni mermeladas. Se conserva el porcentaje panadero cuando hay harina en la fórmula.
+
+Para instalaciones 0.7.4 o 0.8.0: usar `INSTALAR_PANIKO_081.ps1` tras exportar respaldo de MySQL desde Workbench. El instalador respalda el código, aplica únicamente migraciones aditivas y ejecuta pruebas. Mantiene `.env`, `private/`, `data/`, `node_modules/` y no modifica existencias, recetas ni precios al instalar. [Ver notas de la versión](docs/releases/Paniko-0.8.1-calendario-fichas-por-peso.md).

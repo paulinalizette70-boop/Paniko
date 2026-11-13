@@ -19,7 +19,7 @@ function operationalData(value){
 }
 
 
-function createApp({store, auth = null, products = null, finance = null, sourdough = null, dataFile = path.join(__dirname, '..', 'data', 'paniko.json')} = {}) {
+function createApp({store, auth = null, products = null, finance = null, sourdough = null, calendar = null, dataFile = path.join(__dirname, '..', 'data', 'paniko.json')} = {}) {
   store = store || createStore(dataFile);
   const assets = {
     '/': ['index.html', 'text/html; charset=utf-8'],
@@ -27,6 +27,7 @@ function createApp({store, auth = null, products = null, finance = null, sourdou
     '/app.js': ['app.js', 'application/javascript; charset=utf-8'],
     '/products.js': ['products.js', 'application/javascript; charset=utf-8'],
     '/sourdough.js': ['sourdough.js', 'application/javascript; charset=utf-8'],
+    '/calendar.js': ['calendar.js', 'application/javascript; charset=utf-8'],
   };
   async function bodyAsJson(req) {
     let size = 0; const chunks=[];
@@ -125,6 +126,21 @@ function createApp({store, auth = null, products = null, finance = null, sourdou
         if(move&&req.method==='POST')return respond(201,await products.recordMovement(move[1],await bodyAsJson(req)));
         return respond(404,{error:'Ruta de productos no encontrada'});
       }
+      // Calendario de trabajo: los planes son distintos de las producciones confirmadas.
+      if(pathname==='/api/calendar'&&req.method==='GET'){
+        if(!auth||!loggedInUser||!calendar)return respond(503,{error:'Calendario no disponible: verifica MySQL y la migración'});
+        return respond(200,await calendar.month(url.searchParams.get('month')));
+      }
+      if(pathname==='/api/calendar/events'&&req.method==='POST'){
+        if(!auth||!loggedInUser||!calendar)return respond(503,{error:'Calendario no disponible'});
+        return respond(201,await calendar.create(await bodyAsJson(req)));
+      }
+      const calendarEvent=pathname.match(/^\/api\/calendar\/events\/([a-f\d-]{36})\/(status|delete)$/i);
+      if(calendarEvent&&req.method==='POST'){
+        if(!auth||!loggedInUser||!calendar)return respond(503,{error:'Calendario no disponible'});
+        if(calendarEvent[2]==='status')return respond(200,await calendar.setStatus(calendarEvent[1],(await bodyAsJson(req)).status));
+        return respond(200,await calendar.remove(calendarEvent[1]));
+      }
       // Seguimiento de masa madre: lectura y alimentación para personal con sesión.
       // No descuenta ingredientes del inventario automáticamente.
       if(pathname.startsWith('/api/sourdough/')){
@@ -200,7 +216,7 @@ function createApp({store, auth = null, products = null, finance = null, sourdou
         const source=await auth.getCatalogRecipe(fromCatalog[1]);
         if(!source)return respond(404,{error:'Receta original no encontrada'});
         const input=await bodyAsJson(req);
-        const result=await store.importCatalogRecipe(source,input?.baseYield??null);
+        const result=await store.importCatalogRecipe(source,input?.baseYield??null,input?.yieldUnit??null);
         return respond(result.existing?200:201,result);
       }
       if (req.method === 'GET' && pathname === '/api/recipes') return respond( 200, await store.listRecipes());

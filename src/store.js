@@ -112,7 +112,7 @@ function createStore(filePath) {
       const recipe = data.recipes.find(r => r.id === id);
       if (!recipe) throw new ValidationError('Receta no encontrada', 404);
       const preview = validateProduction(recipe, data.ingredients, desiredYield);
-      const batch = {id:crypto.randomUUID(), recipeId:recipe.id, recipeName:recipe.name, desiredYield, estimatedTotalCost:preview.estimatedTotalCost, createdAt:new Date().toISOString(), lines:preview.lines.map(line => ({ingredientId:line.ingredientId, name:line.name, unit:line.unit, quantity:line.required, estimatedCost:line.estimatedCost}))};
+      const batch = {id:crypto.randomUUID(), recipeId:recipe.id, recipeName:recipe.name, desiredYield,yieldUnit:recipe.yieldUnit||'pieza', estimatedTotalCost:preview.estimatedTotalCost, createdAt:new Date().toISOString(), lines:preview.lines.map(line => ({ingredientId:line.ingredientId, name:line.name, unit:line.unit, quantity:line.required, estimatedCost:line.estimatedCost}))};
       for (const line of preview.lines) {
         const ingredient = data.ingredients.find(i => i.id === line.ingredientId);
         const before = ingredient.stock;
