@@ -138,7 +138,7 @@ Esta actualización exige partir de la versión 0.6.3. Si tienes otra versión, 
 
 Ale Sánchez probó **Paniko v0.4** en el periodo del **4 al 7 de noviembre de 2026**, con **tres días de uso reportados**. Reportó que el sistema le ayudó, pero que una pantalla con toda la información resultaba confusa; también solicitó un resumen **semanal** de ventas, ganancias, inversión y pérdidas.
 
-Ale también reportó que Paniko v0.4 no identificaba correctamente la equivalencia entre cantidades en **gramos y kilogramos** en una operación que intentó realizar. La conversión `g↔kg` existe en el código y cuenta con pruebas automatizadas, pero falta comprobar el flujo completo que presentó problemas. [Seguimiento de conversión #11](https://github.com/paulinalizette70-boop/Paniko/issues/11).
+Ale también reportó que Paniko v0.4 no identificaba correctamente la equivalencia entre **gramos y kilogramos al crear fichas técnicas**, cuando un ingrediente existente se utilizaba en una unidad diferente. La conversión `g↔kg` existe en el código y cuenta con pruebas automatizadas, pero falta comprobar el flujo completo que presentó problemas. [Seguimiento de conversión #11](https://github.com/paulinalizette70-boop/Paniko/issues/11).
 
 El rediseño v0.7.0/0.7.1 reorganiza las tareas en secciones independientes. Esto **aún debe revalidarse con Ale**; no se atribuye a la usuaria una prueba de v0.7.1.
 
