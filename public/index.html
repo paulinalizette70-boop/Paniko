@@ -58,7 +58,7 @@
           <button class="nav-link" type="button" data-view-target="history"><svg class="icon"><use href="#i-clock"/></svg><span>Historial</span></button>
           <button class="nav-link admin-nav" type="button" data-view-target="finance" hidden><svg class="icon"><use href="#i-lock"/></svg><span>Finanzas</span></button>
         </nav>
-        <div class="sidebar-bottom"><span class="sidebar-motto">Un día a la vez,<br/>un pan a la vez.</span><span class="version-label">Versión 0.8.2</span></div>
+        <div class="sidebar-bottom"><span class="sidebar-motto">Un día a la vez,<br/>un pan a la vez.</span><span class="version-label">Versión 0.8.3 · mejoras visuales en desarrollo</span></div>
       </aside>
 
       <div class="main-column">
@@ -80,6 +80,11 @@
               <div class="stat-card"><span class="stat-icon accent-peach"><svg class="icon"><use href="#i-book"/></svg></span><div><span class="stat-label">Recetas disponibles</span><strong id="dashboard-recipes">—</strong><small>Fichas de producción</small></div></div>
               <div class="stat-card"><span class="stat-icon accent-sand"><svg class="icon"><use href="#i-bread"/></svg></span><div><span class="stat-label">Lotes recientes</span><strong id="dashboard-batches">—</strong><small>En el historial consultado</small></div></div>
             </div>
+            <section class="panel starter-home" id="sourdough-home" aria-labelledby="sourdough-home-title">
+              <div class="starter-home-art" aria-hidden="true">✿</div>
+              <div class="starter-home-content"><span class="eyebrow">UN CUIDADO A TIEMPO</span><h2 id="sourdough-home-title">Tus masas madre</h2><p id="sourdough-home-summary" aria-live="polite">Revisando tus cultivos…</p><div id="sourdough-home-items" class="starter-home-items"></div></div>
+              <button type="button" class="btn-soft starter-home-open" data-view-target="sourdough">Ver mis cultivos</button>
+            </section>
             <section class="panel dashboard-calendar" aria-labelledby="calendar-title">
               <div class="section-heading"><div><span class="eyebrow">TU SEMANA EN ORDEN</span><h2 id="calendar-title">Calendario de la panadería</h2><p class="hint">Pendientes y producción planeada; los lotes confirmados aparecen automáticamente en su día.</p></div>
                 <div class="calendar-toolbar"><button type="button" id="calendar-prev" class="btn-soft" aria-label="Mes anterior">‹</button><strong id="calendar-month-label">Mes</strong><button type="button" id="calendar-next" class="btn-soft" aria-label="Mes siguiente">›</button><button type="button" id="calendar-today" class="btn-soft">Hoy</button></div>
@@ -177,7 +182,7 @@
 
           <section class="view" data-view="sourdough" aria-labelledby="sourdough-title" hidden>
             <div class="page-heading"><span class="eyebrow">CUIDA TU CULTIVO</span><h1 id="sourdough-title">Mi masa madre</h1><p>Registra cada alimentación, lleva el peso de tu masa madre y consulta cuándo quieres revisarla de nuevo.</p></div>
-            <div class="panel sourdough-intro"><h2>Tu bitácora de masa madre</h2><p>La hidratación que mostramos corresponde a <strong>la harina y el agua añadidas en cada alimentación</strong>, no necesariamente a la hidratación total del cultivo. Tú decides el intervalo de revisión según tu rutina y las condiciones reales.</p><p class="hint">Vincula cada cultivo con los ingredientes Masa madre, Harina y Agua del inventario. Al confirmar una alimentación se registran las salidas de harina y agua, el descarte y el aumento de masa madre. No se modifica nada por abrir esta pantalla. La próxima revisión aparece al abrir Paniko; no se envían recordatorios automáticos.</p></div>
+            <div class="panel sourdough-intro"><h2>Un rincón para tus cultivos 🌾</h2><p>Visualiza tus cuidados, encuentra cuándo corresponde revisar y registra una alimentación sin salir del panel. El peso proviene de <strong>Inventario</strong> cuando el cultivo está vinculado.</p><p class="hint">Los estados se basan solo en el horario que configuraste; no miden actividad real ni indican que sea seguro hornear. La hidratación que se muestra en el historial pertenece a cada alimentación, no a toda la masa madre. Los avisos funcionan dentro de Paniko mientras esté abierto o al volver a entrar; no se envían notificaciones externas.</p></div>
             <details class="panel action-details" id="sourdough-create-details"><summary><span class="action-icon accent-olive"><svg class="icon"><use href="#i-plus"/></svg></span><span><strong>Agregar una masa madre</strong><small>Nombre, ubicación y frecuencia de revisión</small></span><svg class="icon arrow"><use href="#i-chevron"/></svg></summary>
               <form id="starter-create-form" class="form-stack inset-form"><label>Nombre de tu masa madre<input name="name" required maxlength="100" placeholder="Ej. Masa madre principal"/></label>
                 <div class="input-pair"><label>¿Dónde la guardas?<select name="location"><option value="ambiente">Temperatura ambiente</option><option value="refrigerador">Refrigerador</option></select></label><label>Revisar cada cuántas horas<input name="feedEveryHours" type="number" min="1" max="336" step="1" value="24" required/></label></div>
@@ -233,6 +238,7 @@
   </div>
   <script src="/app.js" defer></script>
   <script src="/products.js" defer></script>
+  <script src="/starter-status.js" defer></script>
   <script src="/sourdough.js" defer></script>
   <script src="/calendar.js" defer></script>
 </body>

@@ -281,3 +281,63 @@ h3{font-size:1rem;font-weight:750}
 @media(max-width:540px){.calendar-grid{gap:3px}.calendar-day{min-height:54px;padding:6px;border-radius:8px}.calendar-day.selected{padding:5px}.calendar-weekday{font-size:.66rem}.calendar-toolbar strong{min-width:110px}.calendar-agenda-item{flex-direction:column;align-items:stretch}.calendar-actions{justify-content:flex-start}.calendar-day .cal-dot{width:6px;height:6px}}
 
 .starter-card .warning{background:#fff5e8;padding:12px;border-radius:10px}.starter-card .good{background:#edf6eb;padding:12px;border-radius:10px}
+
+/* Mi masa madre · panel visual de cuidados (sin modificar el modelo de inventario). */
+.starter-home{position:relative;overflow:hidden;display:flex;align-items:center;gap:20px;margin:22px 0 27px;padding:24px 27px;background:linear-gradient(112deg,#f5ede0,#f7f5ec 77%);border-color:#e9dfcf}
+.starter-home-art{font-family:Georgia,serif;font-size:5rem;color:#c5a67e;line-height:1;opacity:.8;flex:none}
+.starter-home-content{min-width:0;flex:1}.starter-home-content h2{margin:2px 0 8px}.starter-home-content p{color:#776956;margin:0 0 11px;font-size:.88rem}
+.starter-home-items{display:grid;gap:7px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.starter-home-item{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid #e6dbcb;border-radius:11px;background:#fffdf8;padding:10px 12px}
+.starter-home-item>div{min-width:0;display:grid;gap:3px}.starter-home-item strong{font-size:.88rem;overflow-wrap:anywhere}.starter-home-item small{font-size:.75rem;color:#776f63}
+.starter-home-item button{padding:8px 11px;font-size:.76rem;white-space:nowrap}.starter-home-open{flex:none;align-self:flex-start}
+.sourdough-intro{background:#f0f3e8!important;border-color:#dce4d4}.sourdough-intro h2{color:#465e48}
+.sourdough-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:20px;margin-top:18px}
+.starter-care-card{max-width:1160px;width:100%;margin:0 auto;padding:clamp(18px,2.7vw,30px);gap:18px;border:1px solid #e9e2d6;border-radius:22px;background:#fffefa;box-shadow:0 12px 38px #523c2810}
+.starter-care-card header.starter-care-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.starter-care-header .eyebrow{color:#a6876b}.starter-care-header h2{margin:2px 0;font-size:clamp(1.5rem,2.8vw,2rem);color:#584435;overflow-wrap:anywhere}
+.starter-care-badge{display:inline-flex;align-items:center;gap:5px;font-size:.79rem;font-weight:780;padding:8px 12px;border-radius:99px;border:1px solid transparent}
+.starter-care-badge.care-ontrack{background:#e6f1e5;color:#386442;border-color:#d0e7cf}
+.starter-care-badge.care-cold{background:#e7eff4;color:#426b84;border-color:#d2e2ed}
+.starter-care-badge.care-soon{background:#fbefd2;color:#926819;border-color:#f0dba8}
+.starter-care-badge.care-overdue{background:#fbdfd9;color:#9c443b;border-color:#f0c5be}
+.starter-care-badge.care-unfed,.starter-care-badge.care-unlinked{background:#f6eadb;color:#956a37;border-color:#e9d3b5}
+.starter-care-badge.care-paused{background:#eeeae4;color:#6d6760;border-color:#dfd9d1}
+.starter-care-hero{display:grid;grid-template-columns:165px minmax(0,1fr);gap:clamp(16px,3vw,34px);align-items:center;background:#f9f6ef;border-radius:19px;padding:20px 23px}
+.starter-care-jar-wrap{display:flex;align-items:center;flex-direction:column;justify-content:center;align-self:center;padding-top:8px}
+.starter-care-lid{display:block;width:120px;height:16px;background:linear-gradient(#a18b76,#786551);border-radius:7px 7px 3px 3px;box-shadow:0 2px 3px #664e2c30;z-index:1}
+.starter-care-jar{position:relative;width:113px;height:147px;overflow:hidden;border:4px solid #b8ad9b;border-top:0;background:linear-gradient(90deg,#f6ede1,#fff9f0 65%);border-radius:0 0 17px 17px}
+.starter-care-jar:after{content:'';position:absolute;top:4px;left:8px;width:6px;height:73%;border-radius:10px;background:#ffffff80}
+.starter-care-fill{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(175deg,#efd5ac,#cfaa7a);border-radius:13px 13px 0 0;transition:height .25s}
+.starter-care-bubble{position:absolute;border:2px solid #fff8e4aa;border-radius:50%}.starter-care-bubble.bubble-one{width:14px;height:14px;top:18%;left:20%}.starter-care-bubble.bubble-two{width:9px;height:9px;right:20%;top:38%}.starter-care-bubble.bubble-three{width:11px;height:11px;bottom:18%;left:49%}
+.starter-jar-caption{margin-top:6px;color:#9c8d78;font-size:.65rem}
+.starter-care-info{min-width:0}.starter-weight-big{display:block;font-family:Georgia,serif;font-size:clamp(2.1rem,4vw,3.25rem);color:#4d6045;margin:2px 0 5px;line-height:1.1}
+.starter-care-info>.muted{font-size:.81rem;line-height:1.4;margin-bottom:13px}
+.starter-care-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.starter-care-meta .starter-metric{padding:12px;background:#fffefa;border:1px solid #ece7db;border-radius:12px;gap:6px}
+.starter-care-meta .starter-metric small{font-size:.7rem}.starter-care-meta .starter-metric strong{font-size:.84rem;color:#5a5547;line-height:1.3}
+.starter-reminder{border-radius:14px;border:1px solid #dce7d6;background:#edf5eb;padding:17px 19px;display:grid;gap:6px}
+.starter-reminder strong{color:#4e6548}.starter-reminder p{font-size:.87rem;color:#5d6859;margin:0;line-height:1.45}
+.starter-reminder.care-cold{border-color:#cfdee5;background:#eef5f8}.starter-reminder.care-cold strong{color:#4f7386}
+.starter-reminder.care-soon,.starter-reminder.care-unfed,.starter-reminder.care-unlinked{border-color:#ebd8b2;background:#fff7e6}.starter-reminder.care-soon strong,.starter-reminder.care-unfed strong,.starter-reminder.care-unlinked strong{color:#926a27}
+.starter-reminder.care-overdue{border-color:#efc7bf;background:#fff1ed}.starter-reminder.care-overdue strong{color:#a34b3d}
+.starter-reminder.care-paused{background:#f3f2ef;border-color:#e5e1da}
+.starter-care-elapsed{font-size:.75rem;color:#8a826f}
+.starter-care-progress{height:9px;overflow:hidden;border-radius:30px;background:#dddcd3;margin:4px 0}
+.starter-care-progress>span{display:block;height:100%;border-radius:30px;background:#84a57a;max-width:100%;transition:width .25s}
+.starter-reminder.care-soon .starter-care-progress>span{background:#d2aa65}.starter-reminder.care-overdue .starter-care-progress>span{background:#cb7869}.starter-reminder.care-cold .starter-care-progress>span{background:#8eb2c4}
+.starter-quick-actions{display:flex;flex-wrap:wrap;gap:10px}.starter-quick-actions button{min-width:132px}
+.starter-connection{font-size:.82rem;padding:10px 13px;background:#f2f5ef;border-radius:11px}.starter-connection.warning{background:#fff3e7}
+.starter-care-card .starter-linked-stock{display:flex;flex-wrap:wrap;gap:6px 14px}.starter-care-card .starter-linked-stock p{font-size:.77rem;margin:0}
+.starter-care-card details.starter-tech-details,.starter-care-card details.starter-feed-details{border:1px solid #e8e5dc;border-radius:13px;padding:13px 15px;background:#fff}
+.starter-care-card details.starter-feed-details{background:#fffaf0;border-color:#eadccc}
+.starter-care-card details summary{list-style-position:inside;color:#57684f}.starter-care-card details[open] summary{margin-bottom:10px}
+.starter-feed-preview{border-radius:10px;background:#eef2e5;color:#4d6142;padding:12px;font-size:.87rem;line-height:1.45;font-weight:670}
+.starter-history{border-top:1px solid #ede6da;padding-top:17px}.starter-history h3{font-size:1.02rem;margin:0 0 13px}
+.starter-history-list{display:grid;gap:10px}.starter-time-item{display:grid;grid-template-columns:22px minmax(0,1fr);align-items:start;gap:10px}
+.starter-time-dot{height:22px;width:22px;display:grid;place-items:center;color:#a18868;background:#f5ecd9;border-radius:50%;font-size:13px}
+.starter-time-item>div{border-left:2px solid #ece6da;padding:1px 0 10px 13px}.starter-time-item strong{font-size:.85rem;color:#4f5d48}
+.starter-time-item p{font-size:.81rem;margin:5px 0;line-height:1.5;color:#766b5f}
+.starter-history-more{margin-top:13px}.starter-history-more .starter-history-list{margin-top:9px}
+.starter-notes{font-size:.82rem}
+@media(max-width:760px){.starter-home{flex-wrap:wrap}.starter-home-open{margin-left:auto}.starter-care-hero{grid-template-columns:125px minmax(0,1fr);padding:14px;gap:12px}.starter-care-meta{grid-template-columns:1fr}.starter-care-meta .starter-metric{padding:9px}}
+@media(max-width:470px){.starter-home{padding:16px}.starter-home-art{font-size:3rem}.starter-care-hero{grid-template-columns:1fr}.starter-care-meta{grid-template-columns:1fr 1fr}.starter-care-meta .starter-metric:last-child{grid-column:1/-1}.starter-quick-actions button{flex:1;min-width:118px}}

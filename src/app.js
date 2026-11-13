@@ -27,6 +27,7 @@ function createApp({store, auth = null, products = null, finance = null, sourdou
     '/app.js': ['app.js', 'application/javascript; charset=utf-8'],
     '/products.js': ['products.js', 'application/javascript; charset=utf-8'],
     '/sourdough.js': ['sourdough.js', 'application/javascript; charset=utf-8'],
+    '/starter-status.js': ['starter-status.js', 'application/javascript; charset=utf-8'],
     '/calendar.js': ['calendar.js', 'application/javascript; charset=utf-8'],
   };
   async function bodyAsJson(req) {
