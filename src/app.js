@@ -141,8 +141,7 @@ function createApp({store, auth = null, products = null, finance = null, sourdou
         if(calendarEvent[2]==='status')return respond(200,await calendar.setStatus(calendarEvent[1],(await bodyAsJson(req)).status));
         return respond(200,await calendar.remove(calendarEvent[1]));
       }
-      // Seguimiento de masa madre: lectura y alimentación para personal con sesión.
-      // No descuenta ingredientes del inventario automáticamente.
+      // Seguimiento de masa madre: vinculación, conteo físico y alimentaciones transaccionales.
       if(pathname.startsWith('/api/sourdough/')){
         if(!auth||!sourdough)return respond(503,{error:'Módulo de masa madre no disponible: verifica la migración MySQL'});
         if(!loggedInUser)return respond(401,{error:'Inicia sesión para continuar'});
@@ -150,11 +149,12 @@ function createApp({store, auth = null, products = null, finance = null, sourdou
           if(req.method==='GET')return respond(200,await sourdough.listStarters());
           if(req.method==='POST')return respond(201,await sourdough.createStarter(await bodyAsJson(req)));
         }
-        const starterAction=pathname.match(/^\/api\/sourdough\/starters\/([a-f\d-]{36})\/(update|feed|feedings|link-inventory)$/i);
+        const starterAction=pathname.match(/^\/api\/sourdough\/starters\/([a-f\d-]{36})\/(update|feed|feedings|link-inventory|reconcile-inventory)$/i);
         if(starterAction){
           const [,id,action]=starterAction;
           if(action==='update'&&req.method==='POST')return respond(200,await sourdough.updateStarter(id,await bodyAsJson(req)));
           if(action==='link-inventory'&&req.method==='POST')return respond(200,await sourdough.linkInventory(id,await bodyAsJson(req)));
+          if(action==='reconcile-inventory'&&req.method==='POST')return respond(200,await sourdough.reconcileInventory(id,await bodyAsJson(req)));
           if(action==='feed'&&req.method==='POST')return respond(201,await sourdough.feed(id,await bodyAsJson(req)));
           if(action==='feedings'&&req.method==='GET')return respond(200,await sourdough.feedings(id));
         }

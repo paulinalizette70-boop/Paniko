@@ -23,7 +23,7 @@ test('UNIDAD-02 agua g/ml y kg/l, sin extender densidad a otros alimentos',()=>{
   assert.equal(convertIngredientQuantity(0.75,'l','g','Agua'),750);
   assert.equal(convertIngredientQuantity(1,'kg','l','Agua purificada'),1);
   assert.equal(convertIngredientQuantity(250,'ml','kg','Agua'),0.25);
-  assert.throws(()=>convertIngredientQuantity(500,'g','ml','Leche'),/equivalencia/i);
+  assert.equal(convertIngredientQuantity(500,'g','ml','Leche'),485.436893); // leche ≈1.03 g/ml
   assert.throws(()=>convertIngredientQuantity(1,'pieza','g','Manzana'),/equivalencia/i);
   assert.throws(()=>convertIngredientQuantity(1,'pieza','g','Mantequilla'),/equivalencia/i);
   assert.throws(()=>convertIngredientQuantity(1,'pieza','ml','Huevo'),/equivalencia/i);
@@ -104,4 +104,20 @@ test('UNIDAD-06 ficha sin stock se crea y producción es la que revisa existenci
   assert.equal(first.existing,false);
   assert.equal(pool.state.recipeItems[0].quantity,2);
   assert.equal(pool.state.ingredients[0].stock,0);
+});
+
+test('UNIDAD-083-01 importación de brioche ficticio reutiliza leche almacenada en litros sin alterar stock',async()=>{
+ const milkId=randomUUID(),flourId=randomUUID();
+ const pool=fakePool([
+  {id:milkId,name:'Leche',unit:'l',cost_per_unit:23,stock:4},
+  {id:flourId,name:'Harina de trigo',unit:'kg',cost_per_unit:18,stock:5}
+ ]);
+ const raw=formula('Brioche ficticio con leche',[{ingrediente:'Leche',cantidad:103,unidad:'g'},
+   {ingrediente:'Harina de trigo',cantidad:600,unidad:'g'}]);
+ const result=await promoteCatalogRecipe(pool,raw);
+ assert.equal(result.existing,false);assert.deepEqual(result.createdIngredients,[]);
+ const milkLine=pool.state.recipeItems.find(i=>i.ingredientId===milkId);
+ assert.equal(milkLine.quantity,0.1);
+ assert.equal(pool.state.ingredients[0].stock,4);
+ assert.equal(pool.state.ingredients[0].cost_per_unit,23);
 });

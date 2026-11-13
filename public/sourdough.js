@@ -32,15 +32,29 @@
   if(starter.notes)card.append(node('p',starter.notes,'hint'));
   const linked=node('p',starter.inventoryLinked?'Conectada al inventario: las alimentaciones descuentan harina y agua y actualizan masa madre.':'Sin conectar a Inventario: vincula los tres ingredientes antes de registrar una alimentación.',starter.inventoryLinked?'good':'warning');
   card.append(linked);
+  if(starter.inventoryLinked){
+    const names=[['Masa madre',starter.starterIngredientId],['Harina',starter.flourIngredientId],['Agua',starter.waterIngredientId]];
+    const links=node('div',undefined,'starter-linked-stock');
+    for(const [label,id] of names){
+      const item=inventoryIngredients.find(i=>i.id===id);
+      links.append(node('p',item?`${label}: ${item.name} · ${format(item.stock)} ${item.unit}`:`${label}: ingrediente no disponible`,'hint'));
+    }
+    card.append(links);
+  }
+  if(!starter.inventoryLinked)card.append(node('p','Para sincronizar la cantidad inicial, elige si conservar el peso de Inventario o usar el peso registrado en esta masa madre. El segundo caso modifica Inventario con un movimiento auditable.','hint'));
   const connection=node('details');connection.append(node('summary',starter.inventoryLinked?'Ver vinculación de ingredientes':'Conectar con inventario'));
   const cf=node('form',undefined,'form-stack');
   const starterSelect=ingredientSelect('starterIngredientId',['g','kg'],starter.starterIngredientId);
   const flourSelect=ingredientSelect('flourIngredientId',['g','kg'],starter.flourIngredientId);
   const waterSelect=ingredientSelect('waterIngredientId',['g','kg','ml','l'],starter.waterIngredientId);
   if(starter.inventoryLinked){starterSelect.disabled=true;}
-  const explain=node('p','Se utilizará la existencia ACTUAL de «Masa madre» en Inventario como peso de referencia; vincular no modificará existencias. Si falta algún ingrediente, regístralo primero en Ingredientes.','hint');
+  const syncMode=select('syncMode',[[ 'inventory','Conservar existencias actuales de Inventario (sin ajuste)' ],[ 'starter','Sincronizar Inventario con el peso registrado en Mi masa madre (con movimiento)' ]],'inventory');
+  if(starter.inventoryLinked)syncMode.disabled=true;
+  const explain=node('p','Si tu masa madre ya tiene un peso registrado pero el ingrediente en Inventario aparece en cero, elige la segunda opción para igualarlos. Solo se permite durante el primer vínculo; queda registrado como ajuste. Si falta un ingrediente, regístralo primero en Ingredientes.','hint');
   const connect=node('button',starter.inventoryLinked?'Actualizar harina y agua vinculadas':'Conectar ingredientes','btn-soft');connect.type='submit';
-  append(cf,field('Masa madre del inventario (g o kg)',starterSelect),field('Harina que utilizas (g o kg)',flourSelect),field('Agua que utilizas (g, kg, ml o l)',waterSelect),explain,connect);
+  append(cf,field('Masa madre del inventario (g o kg)',starterSelect),field('Harina que utilizas (g o kg)',flourSelect),field('Agua que utilizas (g, kg, ml o l)',waterSelect));
+  if(!starter.inventoryLinked)cf.append(field('¿Qué cantidad inicial quieres conservar?',syncMode));
+  append(cf,explain,connect);
   cf.addEventListener('submit',async e=>{e.preventDefault();connect.disabled=true;
     try{
       const ids={starterIngredientId:starterSelect.value,flourIngredientId:flourSelect.value,waterIngredientId:waterSelect.value};
@@ -48,12 +62,38 @@
       const previous=starter.currentWeightGrams;
       const actual=inventoryIngredients.find(i=>i.id===ids.starterIngredientId);
       const actualGrams=actual?actual.stock*(actual.unit==='kg'?1000:1):null;
-      if(actualGrams!==null&&previous!==null&&Math.abs(actualGrams-previous)>0.01&&!confirm(`El inventario registra ${format(actualGrams)} g de masa madre y el panel tenía ${format(previous)} g. Se usará la cantidad del inventario, sin modificarla. ¿Continuar?`)){connect.disabled=false;return;}
-      await api(`/api/sourdough/starters/${starter.id}/link-inventory`,'POST',ids);
-      await refresh();message('Masa madre conectada. Las siguientes alimentaciones actualizarán Ingredientes automáticamente.');
+      const mode=starter.inventoryLinked?'inventory':syncMode.value;
+      if(actualGrams===null)throw Error('Selecciona un ingrediente de masa madre válido.');
+      if(mode==='starter'&&previous===null)throw Error('Primero registra el peso de tu masa madre para sincronizarlo.');
+      const description=mode==='starter'
+        ?`El peso de la bitácora es ${format(previous)} g. Inventario registra ${format(actualGrams)} g. ¿CONFIRMAS actualizar Inventario y registrar la diferencia como movimiento?`
+        :`Inventario registra ${format(actualGrams)} g de masa madre${previous===null?'':` y la bitácora ${format(previous)} g`}. Se utilizará Inventario como referencia, sin modificar las existencias. ¿Continuar?`;
+      if(!confirm(description)){connect.disabled=false;return;}
+      const result=await api(`/api/sourdough/starters/${starter.id}/link-inventory`,'POST',{...ids,syncMode:mode,expectedInventoryGrams:actualGrams});
+      await refresh();window.PanikoRefreshInventory?.();
+      message(result.inventoryUpdated
+        ?`Inventario sincronizado: ahora tienes ${format(result.currentWeightGrams)} g de masa madre. El ajuste quedó registrado en movimientos.`
+        :`Vinculación guardada: se usarán ${format(result.currentWeightGrams)} g registrados en Inventario. Las alimentaciones posteriores actualizarán sus existencias.`);
     }catch(err){message(err.message,true);connect.disabled=false;}
   });connection.append(cf);card.append(connection);
   if(!starter.inventoryLinked)return card;
+  const reconcile=node('details');reconcile.append(node('summary','Corregir existencias de masa madre (conteo físico)'));
+  const rf=node('form',undefined,'form-stack');
+  const counted=input('number','realWeightGrams',starter.currentWeightGrams,{min:'0',max:'1000000',step:'0.01',required:''});
+  const countedText=node('p','Úsalo si la vinculación anterior dejó las existencias en 0 o en otra cantidad incorrecta. Pesa la masa madre y registra el valor real. Este ajuste solo afecta la existencia de Masa madre; NO descuenta harina ni agua y quedará en el historial de movimientos.','hint');
+  const reconcileSave=node('button','Guardar conteo físico en Inventario','btn-soft');reconcileSave.type='submit';
+  rf.append(field('Peso real de masa madre (g)',counted),countedText,reconcileSave);
+  rf.addEventListener('submit',async e=>{e.preventDefault();reconcileSave.disabled=true;
+    try{
+      const realWeightGrams=Number(counted.value);
+      const beforeGrams=starter.currentWeightGrams;
+      if(!Number.isFinite(realWeightGrams)||realWeightGrams<0)throw Error('Escribe el peso real en gramos.');
+      if(!confirm(`Inventario registra ${format(beforeGrams)} g. ¿Confirmas que realmente tienes ${format(realWeightGrams)} g? Se ajustará el inventario y se guardará el movimiento, pero no se registrará una alimentación.`)){reconcileSave.disabled=false;return;}
+      const result=await api(`/api/sourdough/starters/${starter.id}/reconcile-inventory`,'POST',{realWeightGrams,expectedInventoryGrams:beforeGrams});
+      await refresh();window.PanikoRefreshInventory?.();
+      message(result.inventoryUpdated?`Conteo guardado. Inventario registra ahora ${format(result.currentWeightGrams)} g de masa madre.`:'Las existencias ya coincidían. No fue necesario registrar movimiento.');
+    }catch(err){message(err.message,true);reconcileSave.disabled=false;}
+  });reconcile.append(rf);card.append(reconcile);
   const details=node('details');details.append(node('summary','Registrar alimentación y actualizar inventario'));
   const form=node('form',undefined,'form-stack');
   const before=input('number','beforeGrams',starter.currentWeightGrams,{min:'0',max:'1000000',step:'0.01',required:''});

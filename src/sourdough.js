@@ -50,6 +50,7 @@ function fromRow(r){
    stockWeight=gramStock(r.inventory_stock,r.inventory_unit);
  return {id:r.id,name:r.name,location:r.location,feedEveryHours:Number(r.feed_every_hours),
   currentWeightGrams:stockWeight??(r.current_weight_g===null?null:Number(r.current_weight_g)),
+  registeredWeightGrams:r.current_weight_g===null?null:Number(r.current_weight_g),
   lastFedAt:r.last_fed_at||null,notes:r.notes,active:Boolean(r.active),inventoryLinked:linked,
   starterIngredientId:r.starter_ingredient_id||null,flourIngredientId:r.flour_ingredient_id||null,waterIngredientId:r.water_ingredient_id||null};
 }
@@ -75,13 +76,19 @@ function createSourdoughStore(pool){
  }
  async function linkInventory(id,raw){
   if(!isUUID(id))throw new ValidationError('Masa madre inválida');
-  const mapping=linkData(raw),c=await pool.getConnection();
+  const mapping=linkData(raw),syncMode=raw?.syncMode??'inventory';
+  if(!['inventory','starter'].includes(syncMode))throw new ValidationError('Selecciona cómo sincronizar masa madre e inventario');
+  if(syncMode==='starter'&&(typeof raw?.expectedInventoryGrams!=='number'||!Number.isFinite(raw.expectedInventoryGrams)))
+    throw new ValidationError('Revisa las existencias actuales de masa madre antes de sincronizar');
+  const c=await pool.getConnection();
   try{
    await c.beginTransaction();
-   const [starters]=await c.execute('SELECT id,starter_ingredient_id FROM sourdough_starters WHERE id=? FOR UPDATE',[id]);
+   const [starters]=await c.execute('SELECT id,starter_ingredient_id,current_weight_g,name FROM sourdough_starters WHERE id=? FOR UPDATE',[id]);
    if(!starters.length)throw new ValidationError('Masa madre no encontrada',404);
    if(starters[0].starter_ingredient_id && starters[0].starter_ingredient_id!==mapping.starterIngredientId)
      throw new ValidationError('La masa madre ya está vinculada a otro ingrediente. No se puede cambiar sin reconciliar existencias',409);
+   if(syncMode==='starter'&&starters[0].starter_ingredient_id)
+     throw new ValidationError('La sincronización inicial solo se permite antes del primer vínculo. Revisa Inventario para ajustes posteriores',409);
    const items=new Map();
    for(const ingredientId of Object.values(mapping).sort()){
     const [rows]=await c.execute('SELECT id,name,unit,stock FROM ingredients WHERE id=? FOR UPDATE',[ingredientId]);
@@ -91,15 +98,71 @@ function createSourdoughStore(pool){
    const stockItem=items.get(mapping.starterIngredientId),flour=items.get(mapping.flourIngredientId),water=items.get(mapping.waterIngredientId);
    if(!['g','kg'].includes(stockItem.unit)||!['g','kg'].includes(flour.unit)||!['g','kg','ml','l'].includes(water.unit))
      throw new ValidationError('Masa madre y harina deben estar en g/kg; agua puede estar en g/kg/ml/l');
-   const available=gramStock(stockItem.stock,stockItem.unit,true);
-   // No crear ni ajustar existencias durante el enlace. Inventario será la referencia.
+   let available=gramStock(stockItem.stock,stockItem.unit,true);
+   // La opción por defecto mantiene Inventario como referencia: nunca tocar stock en silencio.
+   // Si se elige el peso de la bitácora, registrar un ajuste inicial con movimiento auditado.
+   if(syncMode==='starter'){
+     if(Math.abs(raw.expectedInventoryGrams-available)>0.001)
+       throw new ValidationError('La existencia de masa madre cambió. Actualiza la pantalla antes de sincronizar',409);
+     const recorded=starters[0].current_weight_g;
+     if(recorded===null||recorded===undefined)
+       throw new ValidationError('Primero registra el peso real de tu masa madre en la bitácora',409);
+     const grams=weight(Number(recorded),'Peso registrado');
+     const converted=grams===0?0:convertIngredientQuantity(grams,'g',stockItem.unit,stockItem.name);
+     if(Math.abs(gramStock(converted,stockItem.unit,true)-grams)>0.001)
+       throw new ValidationError('No se puede representar el peso en la unidad del inventario sin perder precisión',409);
+     const stockBefore=Number(stockItem.stock);
+     const difference=Math.round(Math.abs(converted-stockBefore)*1e6)/1e6;
+     if(difference>0){
+       const [updated]=await c.execute('UPDATE ingredients SET stock=? WHERE id=? AND stock=?',[converted,stockItem.id,stockBefore]);
+       if(updated.affectedRows!==1)throw new ValidationError('El inventario cambió. Actualiza la pantalla antes de sincronizar',409);
+       await c.execute('INSERT INTO inventory_movements (id,ingredient_id,movement_type,quantity,stock_before,stock_after,reason) VALUES (?,?,?,?,?,?,?)',
+         [crypto.randomUUID(),stockItem.id,converted>stockBefore?'entrada':'salida',difference,stockBefore,converted,
+           (`Sincronización inicial masa madre: ${starters[0].name}`).slice(0,150)]);
+     }
+     available=grams;
+   }
    const [claimed]=await c.execute('SELECT id FROM sourdough_starters WHERE starter_ingredient_id=? AND id<>? LIMIT 1',[mapping.starterIngredientId,id]);
    if(claimed.length)throw new ValidationError('Ese ingrediente de masa madre ya está vinculado a otro cultivo',409);
    await c.execute('UPDATE sourdough_starters SET starter_ingredient_id=?,flour_ingredient_id=?,water_ingredient_id=?,current_weight_g=? WHERE id=?',
     [mapping.starterIngredientId,mapping.flourIngredientId,mapping.waterIngredientId,available,id]);
-   await c.commit();return {id,...mapping,currentWeightGrams:available,inventoryLinked:true};
+   await c.commit();return {id,...mapping,currentWeightGrams:available,inventoryLinked:true,inventoryUpdated:syncMode==='starter'};
   }catch(e){try{await c.rollback();}catch(_){}if(e?.code==='ER_DUP_ENTRY')throw new ValidationError('Ese ingrediente de masa madre ya está vinculado a otro cultivo',409);throw e;}
   finally{c.release();}
+ }
+ async function reconcileInventory(id,raw){
+  if(!isUUID(id))throw new ValidationError('Masa madre inválida');
+  const realWeightGrams=weight(raw?.realWeightGrams,'Conteo real de masa madre');
+  if(typeof raw?.expectedInventoryGrams!=='number'||!Number.isFinite(raw.expectedInventoryGrams))
+    throw new ValidationError('Actualiza la pantalla y revisa las existencias antes de ajustar');
+  const c=await pool.getConnection();
+  try{
+   await c.beginTransaction();
+   const [cultures]=await c.execute('SELECT id,name,starter_ingredient_id FROM sourdough_starters WHERE id=? FOR UPDATE',[id]);
+   if(!cultures.length)throw new ValidationError('Masa madre no encontrada',404);
+   const culture=cultures[0];
+   if(!culture.starter_ingredient_id)throw new ValidationError('Conecta primero la masa madre con Inventario',409);
+   const [ingredients]=await c.execute('SELECT id,name,unit,stock FROM ingredients WHERE id=? FOR UPDATE',[culture.starter_ingredient_id]);
+   if(!ingredients.length)throw new ValidationError('El ingrediente de masa madre vinculado ya no existe',409);
+   const stockItem=ingredients[0];
+   const stockBefore=Number(stockItem.stock),beforeGrams=gramStock(stockBefore,stockItem.unit,true);
+   if(Math.abs(beforeGrams-raw.expectedInventoryGrams)>0.001)
+     throw new ValidationError('La existencia de masa madre cambió en Inventario. Actualiza la pantalla antes de ajustar',409);
+   const converted=realWeightGrams===0?0:convertIngredientQuantity(realWeightGrams,'g',stockItem.unit,stockItem.name);
+   if(Math.abs(gramStock(converted,stockItem.unit,true)-realWeightGrams)>0.001)
+     throw new ValidationError('Este peso no se puede registrar sin perder precisión en la unidad del inventario',409);
+   const difference=Math.round(Math.abs(converted-stockBefore)*1e6)/1e6;
+   if(difference>0){
+     const [updated]=await c.execute('UPDATE ingredients SET stock=? WHERE id=? AND stock=?',[converted,stockItem.id,stockBefore]);
+     if(updated.affectedRows!==1)throw new ValidationError('Inventario cambió durante el ajuste. Actualiza la pantalla',409);
+     const reason=`Conteo físico de masa madre: ${culture.name}`.slice(0,150);
+     await c.execute('INSERT INTO inventory_movements (id,ingredient_id,movement_type,quantity,stock_before,stock_after,reason) VALUES (?,?,?,?,?,?,?)',
+       [crypto.randomUUID(),stockItem.id,converted>stockBefore?'entrada':'salida',difference,stockBefore,converted,reason]);
+   }
+   await c.execute('UPDATE sourdough_starters SET current_weight_g=? WHERE id=?',[realWeightGrams,id]);
+   await c.commit();
+   return {id,currentWeightGrams:realWeightGrams,inventoryUpdated:difference>0,adjustmentGrams:realWeightGrams-beforeGrams};
+  }catch(e){try{await c.rollback();}catch(_){}throw e;}finally{c.release();}
  }
  async function feed(id,raw){
   if(!isUUID(id))throw new ValidationError('Masa madre inválida');
@@ -158,6 +221,6 @@ function createSourdoughStore(pool){
   const [rows]=await pool.execute('SELECT id,starter_id,before_g,discarded_g,flour_g,water_g,after_g,notes,fed_at,inventory_synced FROM sourdough_feedings WHERE starter_id=? ORDER BY fed_at DESC,id DESC LIMIT 50',[id]);
   return rows.map(r=>({id:r.id,starterId:r.starter_id,beforeGrams:Number(r.before_g),discardedGrams:Number(r.discarded_g),flourGrams:Number(r.flour_g),waterGrams:Number(r.water_g),afterGrams:Number(r.after_g),feedHydrationPercent:Math.round(Number(r.water_g)/Number(r.flour_g)*10000)/100,notes:r.notes,fedAt:r.fed_at,inventoryUpdated:Boolean(r.inventory_synced)}));
  }
- return{listStarters,createStarter,updateStarter,linkInventory,feed,feedings};
+ return{listStarters,createStarter,updateStarter,linkInventory,reconcileInventory,feed,feedings};
 }
 module.exports={createSourdoughStore,starterForm,planFeeding,gramStock,linkData};
