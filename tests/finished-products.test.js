@@ -20,17 +20,18 @@ test('FP-01 validaciones de inventario terminado: cantidades, precio, IDs y text
 });
 
 test('FP-02 registro de venta utiliza transacción y rechaza stock negativo',async()=>{
-  let state=5,commits=0,rollbacks=0,movements=0;
+  let state=5,commits=0,rollbacks=0,movements=0,financialRows=0;
   const conn={async beginTransaction(){},async commit(){commits++;},async rollback(){rollbacks++;},release(){},
     async execute(sql,values){
-      if(sql.startsWith('SELECT id,name,stock'))return [[{id:validId,name:'Producto ficticio',stock:state,active:1}]];
+      if(sql.startsWith('SELECT id,name,stock'))return [[{id:validId,name:'Producto ficticio',stock:state,active:1,sale_price:'48.00',unit_cost:'24.00'}]];
       if(sql.startsWith('UPDATE finished_products')){state=values[0];return [{affectedRows:1}];}
       if(sql.startsWith('INSERT INTO finished_product_movements')){movements++;return [{affectedRows:1}];}
+      if(sql.startsWith('INSERT INTO sale_financial_snapshots')){financialRows++;assert.deepEqual(values.slice(2),['Producto ficticio',2,'48.00','24.00']);return [{affectedRows:1}];}
       throw Error('SQL no esperado: '+sql);
     }};
   const store=createFinishedProductStore({getConnection:async()=>conn});
   const result=await store.recordMovement(validId,{type:'venta',quantity:2,reason:'Prueba de venta ficticia'});
-  assert.equal(result.after,3);assert.equal(state,3);assert.equal(movements,1);assert.equal(commits,1);
+  assert.equal(result.after,3);assert.equal(state,3);assert.equal(movements,1);assert.equal(commits,1);assert.equal(financialRows,1);
   await assert.rejects(()=>store.recordMovement(validId,{type:'merma',quantity:4,reason:'Prueba ficticia'}),/insuficientes/);
   assert.equal(state,3);assert.equal(commits,1);assert.equal(rollbacks,1);
 });

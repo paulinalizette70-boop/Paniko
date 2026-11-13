@@ -259,3 +259,11 @@ La API comprueba permisos: \`GET /api/finance/products\` y \`POST /api/finance/p
 Hay una **migración aditiva** \`scripts/migrate-product-cost.js\`: verifica si existe la columna \`finished_products.unit_cost\` y la agrega si falta, sin alterar productos, ventas ni existencias. Para instalaciones locales, **respaldar MySQL antes de aplicar**. El instalador \`INSTALAR_FINANZAS_074.ps1\` conserva \`.env\`, \`private/\`, \`data/\` y \`node_modules/\` y respalda el código anterior.
 
 No se publican fórmulas reales ni archivos privados.
+
+## Paniko 0.8.0 — ganancias y masa madre
+
+El **panel de Finanzas** permite a administración visualizar ventas con importes registrados, ingresos, costo de lo vendido, gastos capturados, utilidad bruta y utilidad neta por 7, 30, 90 o 365 días. Se guardan instantáneas de precio y costo en cada venta nueva. Las ventas anteriores sin importe verificable se indican como incompletas y no se les inventa ganancia.
+
+**Mi masa madre** es una bitácora para el equipo: cultivos, ubicación, revisiones configurables, peso previo, descartes, harina y agua añadidas, peso resultante, observaciones e historial. El porcentaje de hidratación corresponde solo a la alimentación registrada, no necesariamente al cultivo completo. No se descuentan ingredientes del inventario por estas anotaciones.
+
+Instalación conservadora desde **0.7.4**: exportar primero MySQL desde Workbench y utilizar `INSTALAR_PANIKO_080.ps1`. La migración `scripts/migrate-finance-and-starter.js` crea cuatro tablas adicionales sin modificar las recetas, existencias ni ventas anteriores. [Detalles de versión](docs/releases/Paniko-0.8.0-finanzas-y-masa-madre.md).

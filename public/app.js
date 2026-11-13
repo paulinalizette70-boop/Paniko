@@ -16,7 +16,7 @@ function notify(message, failed=false) {
   element.className=failed?'toast warning':'toast good';element.hidden=false;
 }
 const normalizeSearch=(value)=>String(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('es');
-const VIEWS={dashboard:'Inicio',production:'Producción',ingredients:'Ingredientes',recipes:'Recetas',products:'Productos y ventas',history:'Historial',finance:'Finanzas'};
+const VIEWS={dashboard:'Inicio',production:'Producción',ingredients:'Ingredientes',recipes:'Recetas',products:'Productos y ventas',sourdough:'Mi masa madre',history:'Historial',finance:'Finanzas'};
 let currentUser=null;
 let currentView='dashboard';
 function navigateTo(view,{focus=false}={}) {
@@ -25,6 +25,7 @@ function navigateTo(view,{focus=false}={}) {
   currentView=view;
   if(view==='recipes')void loadCatalog();
   if(view==='finance')void loadFinances();
+  if(view==='sourdough')window.PanikoSourdough?.refresh?.();
   for(const section of document.querySelectorAll('[data-view]'))section.hidden=section.dataset.view!==view;
   for(const button of document.querySelectorAll('.nav-link')){
     const selected=button.dataset.viewTarget===view;
@@ -658,7 +659,7 @@ async function loadFinances(){
       root.append(form);
     }
   }catch(error){root.replaceChildren(make('p',error.message,'warning'));}
-  await loadProductFinances();
+  await Promise.all([loadProductFinances(),loadFinanceDashboard()]);
 }
 
 async function loadProductFinances(){
@@ -689,7 +690,7 @@ async function loadProductFinances(){
           await post(`/api/finance/products/${item.id}/pricing`,{
             unitCost:cost.value===''?null:Number(cost.value),
             salePrice:price.value===''?null:Number(price.value)});
-          await loadProductFinances();await window.PanikoFinishedProducts?.refresh?.();
+          await Promise.all([loadProductFinances(),loadFinanceDashboard()]);await window.PanikoFinishedProducts?.refresh?.();
           notify(`Costos y precio de ${item.name} actualizados.`);
         }catch(error){notify(error.message,true);save.disabled=false;}
       });
@@ -697,6 +698,33 @@ async function loadProductFinances(){
     }
   }catch(error){root.replaceChildren(make('p',error.message,'warning'));}
 }
+
+async function loadFinanceDashboard(){
+  if(currentUser?.role!=='admin')return;
+  const info=$('finance-summary-note');info.textContent='Calculando resumen…';
+  try{
+    const days=Number($('finance-period').value),r=await api(`/api/finance/dashboard?days=${days}`);
+    for(const [id,value] of [['finance-revenue',r.knownRevenue],['finance-cogs',r.knownCostOfSales],['finance-expenses',r.expenses],['finance-gross',r.grossProfit],['finance-net',r.netProfit]])
+      $(id).textContent=value===null?'Sin calcular':money(value);
+    info.textContent=`${r.transactions} ventas desde el registro financiero · ${r.unitsSold} piezas. `+(r.legacySales?`${r.legacySales} ventas anteriores sin importe registrado. `:'')+(r.unpricedSales?`${r.unpricedSales} ventas sin precio. `:'')+(r.unknownCostSales?`${r.unknownCostSales} ventas sin costo. `:'')+r.note;
+    info.className='hint'+(r.complete?'':' warning');
+    const list=$('finance-recent-list');list.replaceChildren();
+    const entries=[...r.sales.map(s=>({when:s.soldAt,title:`Venta · ${s.productName}`,detail:`${s.quantity} piezas · ${s.unitPrice===null?'Precio sin definir':money(s.quantity*s.unitPrice)}${s.unitCost===null?' · costo pendiente':''}`})),
+      ...r.expenseList.map(e=>({when:e.expenseDate,title:`Gasto · ${e.category}`,detail:`${e.description} · ${money(e.amount)}`}))].sort((a,b)=>String(b.when).localeCompare(String(a.when))).slice(0,25);
+    if(!entries.length)list.append(make('p','Todavía no hay ventas o gastos nuevos en este periodo.','muted'));
+    for(const e of entries){const row=make('div',undefined,'finance-history-row');row.append(make('strong',e.title),make('small',e.detail),make('small',new Date(e.when).toLocaleDateString('es-MX')));list.append(row);}
+  }catch(e){info.textContent=e.message;info.className='hint warning';}
+}
+$('finance-period').addEventListener('change',loadFinanceDashboard);
+$('finance-expense-date').value=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
+$('finance-expense-form').addEventListener('submit',async event=>{
+  event.preventDefault();if(currentUser?.role!=='admin')return;
+  const f=event.currentTarget,save=f.querySelector('[type=submit]');save.disabled=true;try{
+    await post('/api/finance/expenses',{category:f.elements.category.value,description:f.elements.description.value,
+      amount:Number(f.elements.amount.value),expenseDate:f.elements.expenseDate.value});
+    f.elements.description.value='';f.elements.amount.value='';await loadFinanceDashboard();notify('Gasto guardado en el panel financiero.');
+  }catch(e){notify(e.message,true);}finally{save.disabled=false;}
+});
 
 async function initializePaniko(){
   addRecipeItem();showAuthUI(null,true);

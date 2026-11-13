@@ -130,7 +130,7 @@ function createFinishedProductStore(pool){
     const qty=quantity(raw?.quantity);
     const reason=text(raw?.reason,'Motivo');
     return tx(pool,async c=>{
-      const [rows]=await c.execute('SELECT id,name,stock,active FROM finished_products WHERE id=? FOR UPDATE',[id]);
+      const [rows]=await c.execute('SELECT id,name,stock,active,sale_price,unit_cost FROM finished_products WHERE id=? FOR UPDATE',[id]);
       if(!rows.length)throw new ValidationError('Producto no encontrado',404);
       if(!rows[0].active)throw new ValidationError('No se permiten movimientos de un producto inactivo',409);
       const before=Number(rows[0].stock);
@@ -142,6 +142,11 @@ function createFinishedProductStore(pool){
       const movementId=crypto.randomUUID();
       await c.execute('INSERT INTO finished_product_movements (id,product_id,movement_type,quantity,stock_before,stock_after,reason) VALUES (?,?,?,?,?,?,?)',
         [movementId,id,type,qty,before,after,reason]);
+      // Congelar importes al vender: cambiar los precios mañana NO reescribe las ventas de hoy.
+      // Un precio/costo no capturado permanece NULL, nunca se inventa un importe.
+      if(type==='venta')await c.execute(`INSERT INTO sale_financial_snapshots
+        (movement_id,product_id,product_name,quantity,unit_price,unit_cost) VALUES (?,?,?,?,?,?)`,
+        [movementId,id,rows[0].name,qty,rows[0].sale_price??null,rows[0].unit_cost??null]);
       return {id:movementId,productId:id,name:rows[0].name,type,quantity:qty,before,after,reason};
     });
   }
