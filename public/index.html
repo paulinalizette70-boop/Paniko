@@ -1,100 +1,170 @@
 <!doctype html>
-<html lang="es"><head>
-<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Paniko | Producción artesanal</title><link rel="stylesheet" href="/styles.css"/>
-</head><body>
-<header><div class="brand">Paniko<span> · MVP 0.6.3</span></div><p>Fichas técnicas e inventario de producción artesanal.</p></header>
-<main>
-<section id="auth-panel" class="panel auth-panel" hidden><h2>Acceso a Paniko</h2>
-  <form id="login-form">
-    <label>Usuario <input name="username" required maxlength="50" autocomplete="username"/></label>
-    <label>Contraseña <input name="password" required type="password" autocomplete="current-password"/></label>
-    <button>Iniciar sesión</button>
-  </form><p id="auth-message" role="status"></p>
-</section>
-<section id="auth-bar" class="auth-bar" hidden><span id="auth-user"></span><button id="logout-button" type="button" class="secondary">Cerrar sesión</button></section>
-<section id="private-recipes-panel" class="panel" hidden><h2>Recetas y rellenos privados (administración)</h2><p class="muted tiny">Las recetas de preparación no descuentan inventario automáticamente.</p><button id="load-private-button" type="button" class="secondary">Consultar recetas privadas</button><div id="private-recipes-list"></div></section>
-<div id="workspace">
-<section class="notice">Prototipo académico: almacenamiento en MySQL y movimientos de inventario. Uso local con inicio de sesión; sigue siendo un prototipo y no debe exponerse a Internet.</section>
-<section id="finished-inventory" class="panel">
-  <h2>Productos terminados · Inventario</h2>
-  <p class="muted tiny">Separado de las recetas: aquí se registran piezas terminadas, precios, ventas, mermas y entradas. Las existencias nuevas comienzan en 0 hasta registrar el conteo real.</p>
-  <div id="finished-inventory-content"></div>
-</section>
-<section class="columns">
-  <article class="panel"><h2>1. Registrar ingrediente</h2>
-    <form id="ingredient-form">
-      <label>Nombre <input name="name" required maxlength="100" placeholder="Harina de trigo"/></label>
-      <label>Unidad <select name="unit"><option>kg</option><option>g</option><option>l</option><option>ml</option><option>pieza</option></select></label>
-      <label>Costo por unidad (MXN) <input name="cost" type="number" min="0" step="0.0001" required placeholder="25"/></label>
-      <label>Existencia inicial (en la misma unidad) <input name="stock" type="number" min="0" step="0.000001" required value="0"/></label>
-      <button>Guardar ingrediente</button>
-    </form>
-  </article>
-  <article class="panel"><h2>2. Crear ficha técnica</h2>
-    <form id="recipe-form">
-      <label>Nombre de receta <input name="name" maxlength="100" required placeholder="Nombre de receta"/></label>
-      <label>Rendimiento base (piezas) <input name="yield" type="number" min="1" step="1" required value="10"/></label>
-      <div id="recipe-items"></div>
-      <button type="button" id="add-item" class="secondary">Añadir ingrediente</button>
-      <button>Guardar ficha técnica</button>
-    </form>
-    <p class="muted tiny">Selecciona g o kg, y ml o l, según el ingrediente. Paniko convierte a la unidad registrada en inventario.</p>
-  </article>
-</section>
-<section class="columns">
-  <article class="panel"><h2>3. Existencias y entradas de inventario</h2>
-    <div id="ingredient-list">Sin registros.</div>
-    <h3>Registrar entrada</h3>
-    <form id="stock-in-form">
-      <label>Ingrediente <select name="ingredient" required></select></label>
-      <label>Cantidad recibida <input name="quantity" type="number" min="0.000001" step="0.000001" required placeholder="2"/></label>
-      <label>Unidad recibida <select name="unit" required></select></label>
-      <label>Motivo <input name="reason" maxlength="150" value="Reposición de inventario" required/></label>
-      <button>Registrar entrada</button>
-    </form>
-    <h3>Registrar salida de ingrediente</h3>
-    <form id="stock-out-form">
-      <label>Ingrediente <select name="ingredient" required></select></label>
-      <label>Cantidad retirada <input name="quantity" type="number" min="0.000001" step="0.000001" required/></label>
-      <label>Unidad <select name="unit" required></select></label>
-      <label>Motivo <input name="reason" maxlength="150" value="Consumo no asociado a producción" required/></label>
-      <button type="submit">Registrar salida</button>
-    </form>
-    <div id="stock-adjust-panel">
-      <h3>Ajustar por conteo físico (administración)</h3>
-      <form id="adjust-stock-form">
-        <label>Ingrediente <select name="ingredient" required></select></label>
-        <label>Existencia real (<span id="adjust-unit-label">unidad</span>)
-          <input name="newStock" type="number" min="0" step="0.000001" required/></label>
-        <label>Motivo del ajuste <input name="reason" maxlength="142" required placeholder="Conteo físico o corrección"/></label>
-        <button type="submit">Guardar ajuste</button>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="theme-color" content="#f8f6f1"/>
+  <meta name="description" content="Paniko: inventario, recetas y producción para panaderías artesanales."/>
+  <title>Paniko · Mi panadería</title>
+  <link rel="stylesheet" href="/styles.css"/>
+</head>
+<body>
+  <svg xmlns="http://www.w3.org/2000/svg" class="svg-sprite" aria-hidden="true" focusable="false">
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></symbol>
+    <symbol id="i-bread" viewBox="0 0 24 24"><path d="M6 19a4 4 0 0 1-3-4V9a5 5 0 0 1 8.5-3.5A5 5 0 0 1 20 9v6a4 4 0 0 1-3 4z"/><path d="M9 10v6m6-6v6"/></symbol>
+    <symbol id="i-box" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="14" rx="2"/><path d="M3 11h18M8 7V4h8v3"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M5 3h14v17H7a3 3 0 0 0-3 1V6a3 3 0 0 1 3-3z"/><path d="M4 18a3 3 0 0 1 3-3h12M9 8h6m-6 4h4"/></symbol>
+    <symbol id="i-cart" viewBox="0 0 24 24"><path d="M3 4h2l2.5 12h12L22 8H6"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 2 2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5z"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m4 12 5 5L20 6"/></symbol>
+  </svg>
+
+  <section id="auth-panel" class="login-page" hidden>
+    <div class="login-illustration" aria-hidden="true"><span class="logo-emblem">✳</span><span class="login-decor">PANIKO</span><p>Hecho para quienes<br/>hacen pan todos los días.</p></div>
+    <div class="login-card">
+      <span class="eyebrow">Tu espacio de trabajo</span>
+      <h1>Hola, qué gusto verte.</h1>
+      <p class="muted">Ingresa para continuar con tu inventario, recetas y producción.</p>
+      <form id="login-form" class="form-stack">
+        <label>Usuario <input name="username" required maxlength="50" autocomplete="username" placeholder="Tu usuario"/></label>
+        <label>Contraseña <input name="password" required type="password" autocomplete="current-password" placeholder="Tu contraseña"/></label>
+        <button type="submit" class="btn-primary">Entrar a Paniko <svg class="icon"><use href="#i-arrow"/></svg></button>
       </form>
+      <p id="auth-message" role="status" class="warning"></p>
+      <p class="tiny muted">Un sistema privado para tu panadería. Tus datos siguen en tu propia computadora.</p>
     </div>
-    <p class="muted tiny">Los ajustes quedan identificados como «Ajuste» en el historial.</p>
-    <h3>Movimientos recientes</h3><div id="movement-list" aria-live="polite"></div>
-  </article>
-  <article class="panel"><h2>4. Escalar y producir</h2>
-    <form id="scale-form">
-      <label>Receta <select name="recipe" required></select></label>
-      <label>Producto terminado a ingresar (opcional) <select name="finishedProduct" id="finished-product-selector"><option value="">Sin producto vinculado; solo descuenta ingredientes</option></select></label>
-      <p class="muted tiny">Para sumar producto automáticamente, un administrador debe vincularlo primero con esta receta operativa.</p>
-      <label>Producción deseada (piezas) <input type="number" name="desiredYield" min="1" step="1" value="20" required/></label>
-      <button type="submit" class="secondary">Calcular vista previa (no descuenta)</button>
-      <button type="button" class="secondary" id="max-production-button" disabled>Usar máximo disponible</button>
-      <button type="button" id="produce-button">Confirmar producción y descontar ingredientes</button>
-    </form>
-    <div id="scale-results" aria-live="polite"></div>
-    <h3>Fichas registradas</h3><div id="recipe-list">Sin recetas.</div>
-    <h3>Historial de lotes de producción</h3>
-    <label>Filtrar por receta <select id="production-filter"><option value="">Todas las recetas</option></select></label>
-    <p class="muted tiny">Últimos 100 lotes registrados. Puedes revisar los ingredientes consumidos y las piezas añadidas al inventario terminado sin modificar existencias.</p>
-    <div id="production-list"></div>
-  </article>
-</section>
-<p id="notification" role="status" aria-live="polite"></p>
-</div>
-</main><footer>Proyecto académico · Universidad de Guadalajara · Versión 0.6.3</footer>
-<script src="/app.js" defer></script>
-<script src="/products.js" defer></script>
-</body></html>
+  </section>
+
+  <div id="workspace" hidden>
+    <div class="app-layout">
+      <aside class="sidebar" aria-label="Navegación principal">
+        <div class="sidebar-top">
+          <div class="logo-mark" aria-hidden="true">✳</div>
+          <div><div class="logo-text">paniko<span>.</span></div><div class="logo-caption">MI PANADERÍA</div></div>
+        </div>
+        <nav class="nav-list" aria-label="Secciones">
+          <button class="nav-link active" type="button" data-view-target="dashboard" aria-current="page"><svg class="icon"><use href="#i-home"/></svg><span>Inicio</span></button>
+          <button class="nav-link" type="button" data-view-target="production"><svg class="icon"><use href="#i-bread"/></svg><span>Producción</span></button>
+          <button class="nav-link" type="button" data-view-target="ingredients"><svg class="icon"><use href="#i-box"/></svg><span>Ingredientes</span></button>
+          <button class="nav-link" type="button" data-view-target="recipes"><svg class="icon"><use href="#i-book"/></svg><span>Recetas</span></button>
+          <button class="nav-link" type="button" data-view-target="products"><svg class="icon"><use href="#i-cart"/></svg><span>Productos y ventas</span></button>
+          <button class="nav-link" type="button" data-view-target="history"><svg class="icon"><use href="#i-clock"/></svg><span>Historial</span></button>
+          <button class="nav-link admin-nav" type="button" data-view-target="private" hidden><svg class="icon"><use href="#i-lock"/></svg><span>Recetas privadas</span></button>
+        </nav>
+        <div class="sidebar-bottom"><span class="sidebar-motto">Un día a la vez,<br/>un pan a la vez.</span><span class="version-label">Versión 0.7.0</span></div>
+      </aside>
+
+      <div class="main-column">
+        <header class="topbar">
+          <div class="breadcrumb"><span>MI PANADERÍA</span><svg class="icon small"><use href="#i-chevron"/></svg><strong id="current-view-name">Inicio</strong></div>
+          <div id="auth-bar" class="auth-bar" hidden><span class="avatar" aria-hidden="true">P</span><span id="auth-user"></span><button id="logout-button" class="text-button" type="button">Salir</button></div>
+        </header>
+        <main class="content-area" id="main-content">
+          <div id="notification" class="toast" role="status" aria-live="polite" hidden></div>
+          <section class="view" data-view="dashboard" aria-labelledby="dashboard-title">
+            <div class="welcome-banner">
+              <div><span class="eyebrow light">TU PANADERÍA, EN ORDEN</span><h1 id="dashboard-title">Todo empieza<br/>con buen pan.</h1><p>Consulta lo importante y continúa con tu día, sin complicaciones.</p>
+              <button class="btn-cream" type="button" data-view-target="production">Comenzar producción <svg class="icon"><use href="#i-arrow"/></svg></button></div>
+              <div class="banner-art" aria-hidden="true"><span class="sun-circle"></span><span class="bread-illustration">✳</span><span class="banner-stamp">HECHO CON<br/>CARIÑO</span></div>
+            </div>
+            <div class="section-heading"><div><span class="eyebrow">DE UN VISTAZO</span><h2>Así va tu panadería</h2></div><span class="heading-note">Información de tu inventario actual</span></div>
+            <div class="stats-grid">
+              <div class="stat-card"><span class="stat-icon accent-olive"><svg class="icon"><use href="#i-box"/></svg></span><div><span class="stat-label">Ingredientes registrados</span><strong id="dashboard-ingredients">—</strong><small>En tu almacén</small></div></div>
+              <div class="stat-card"><span class="stat-icon accent-peach"><svg class="icon"><use href="#i-book"/></svg></span><div><span class="stat-label">Recetas disponibles</span><strong id="dashboard-recipes">—</strong><small>Fichas de producción</small></div></div>
+              <div class="stat-card"><span class="stat-icon accent-sand"><svg class="icon"><use href="#i-bread"/></svg></span><div><span class="stat-label">Lotes recientes</span><strong id="dashboard-batches">—</strong><small>En el historial consultado</small></div></div>
+            </div>
+            <div class="section-heading quick-title"><div><span class="eyebrow">ACCESOS RÁPIDOS</span><h2>¿Qué necesitas hacer hoy?</h2></div></div>
+            <div class="quick-grid">
+              <button class="quick-card" type="button" data-view-target="production"><span class="quick-icon q-production"><svg class="icon"><use href="#i-bread"/></svg></span><strong>Producir pan</strong><small>Calcula cantidades y registra una tanda.</small><span class="quick-more">Ir a producción <svg class="icon"><use href="#i-arrow"/></svg></span></button>
+              <button class="quick-card" type="button" data-view-target="ingredients"><span class="quick-icon q-ingredients"><svg class="icon"><use href="#i-box"/></svg></span><strong>Revisar ingredientes</strong><small>Consulta existencias o registra una entrada.</small><span class="quick-more">Ver ingredientes <svg class="icon"><use href="#i-arrow"/></svg></span></button>
+              <button class="quick-card" type="button" data-view-target="products"><span class="quick-icon q-products"><svg class="icon"><use href="#i-cart"/></svg></span><strong>Registrar una venta</strong><small>Actualiza las piezas terminadas disponibles.</small><span class="quick-more">Ir a productos <svg class="icon"><use href="#i-arrow"/></svg></span></button>
+            </div>
+            <div class="help-strip"><svg class="icon"><use href="#i-spark"/></svg><p><strong>Un consejo:</strong> empieza por registrar tus ingredientes y recetas. Después podrás producir y Paniko descontará las cantidades automáticamente.</p></div>
+          </section>
+
+          <section class="view" data-view="production" aria-labelledby="production-title" hidden>
+            <div class="page-heading"><span class="eyebrow">MANOS A LA MASA</span><h1 id="production-title">Nueva producción</h1><p>Prepara una tanda en tres pasos. El inventario no cambiará hasta que confirmes.</p></div>
+            <div class="work-grid production-layout">
+              <article class="panel primary-panel">
+                <div class="panel-title"><span class="step">01</span><div><h2>¿Qué vamos a hornear?</h2><p>Elige la receta y las piezas que necesitas.</p></div></div>
+                <form id="scale-form" class="form-stack">
+                  <label>Receta a preparar<select name="recipe" required></select></label>
+                  <label>Cantidad de piezas que quieres hacer<input type="number" name="desiredYield" min="1" step="1" value="20" required/></label>
+                  <label>Producto terminado (opcional)<select name="finishedProduct" id="finished-product-selector"><option value="">Sin producto vinculado; solo descuenta ingredientes</option></select></label>
+                  <p class="hint">Si el producto está vinculado con esta receta, sus piezas se sumarán automáticamente al inventario terminado.</p>
+                  <button type="submit" class="btn-primary">Calcular ingredientes <svg class="icon"><use href="#i-arrow"/></svg></button>
+                </form>
+              </article>
+              <article class="panel preview-panel">
+                <div class="panel-title"><span class="step">02</span><div><h2>Revisa antes de producir</h2><p>Verifica los insumos y cantidades necesarias.</p></div></div>
+                <div id="scale-results" class="preview-results" aria-live="polite"><div class="empty-state"><svg class="icon"><use href="#i-spark"/></svg><strong>Tu cálculo aparecerá aquí</strong><p>Selecciona una receta y pulsa «Calcular ingredientes».</p></div></div>
+                <button type="button" class="btn-soft" id="max-production-button" disabled>Usar máximo disponible</button>
+                <div class="divider"></div>
+                <div class="panel-title compact"><span class="step">03</span><div><h2>Confirma tu tanda</h2><p>Solo al confirmar se descuentan ingredientes.</p></div></div>
+                <button type="button" id="produce-button" class="btn-primary full-width" disabled>Confirmar producción <svg class="icon"><use href="#i-check"/></svg></button>
+                <p class="hint center">Te pediremos una última confirmación.</p>
+              </article>
+            </div>
+          </section>
+
+          <section class="view" data-view="ingredients" aria-labelledby="ingredients-title" hidden>
+            <div class="page-heading"><span class="eyebrow">TU ALMACÉN</span><h1 id="ingredients-title">Ingredientes</h1><p>Revisa lo que tienes y mantén las existencias al día.</p></div>
+            <div class="panel"><div class="section-heading panel-heading"><div><h2>Existencias actuales</h2><p class="muted">Las cantidades reflejan tu inventario registrado.</p></div><label class="search-field"><span class="visually-hidden">Buscar ingrediente</span><input id="ingredient-search" type="search" placeholder="Buscar ingrediente…" autocomplete="off"/></label></div><div id="ingredient-list" class="inventory-list">Sin registros.</div></div>
+            <div class="section-heading sub-section"><div><span class="eyebrow">MOVIMIENTOS</span><h2>¿Qué quieres registrar?</h2></div></div>
+            <div class="accordion-grid">
+              <details class="panel action-details"><summary><span class="action-icon accent-olive"><svg class="icon"><use href="#i-plus"/></svg></span><span><strong>Entrada de ingredientes</strong><small>Compras o reposiciones de almacén</small></span><svg class="icon arrow"><use href="#i-chevron"/></svg></summary>
+                <form id="stock-in-form" class="form-stack inset-form"><label>Ingrediente<select name="ingredient" required></select></label><div class="input-pair"><label>Cantidad recibida<input name="quantity" type="number" min="0.000001" step="0.000001" required placeholder="2"/></label><label>Unidad<select name="unit" required></select></label></div><label>Motivo<input name="reason" maxlength="150" value="Reposición de inventario" required/></label><button type="submit" class="btn-primary">Guardar entrada</button></form>
+              </details>
+              <details class="panel action-details"><summary><span class="action-icon accent-peach"><svg class="icon"><use href="#i-arrow"/></svg></span><span><strong>Salida de ingredientes</strong><small>Retirar insumos fuera de una producción</small></span><svg class="icon arrow"><use href="#i-chevron"/></svg></summary>
+                <form id="stock-out-form" class="form-stack inset-form"><label>Ingrediente<select name="ingredient" required></select></label><div class="input-pair"><label>Cantidad retirada<input name="quantity" type="number" min="0.000001" step="0.000001" required/></label><label>Unidad<select name="unit" required></select></label></div><label>Motivo<input name="reason" maxlength="150" value="Consumo no asociado a producción" required/></label><button type="submit" class="btn-primary">Guardar salida</button></form>
+              </details>
+              <details class="panel action-details" id="stock-adjust-panel"><summary><span class="action-icon accent-sand"><svg class="icon"><use href="#i-box"/></svg></span><span><strong>Corregir existencias</strong><small>Conteo físico · Solo administración</small></span><svg class="icon arrow"><use href="#i-chevron"/></svg></summary>
+                <form id="adjust-stock-form" class="form-stack inset-form"><label>Ingrediente<select name="ingredient" required></select></label><label>Existencia real (<span id="adjust-unit-label">unidad</span>)<input name="newStock" type="number" min="0" step="0.000001" required/></label><label>Motivo<input name="reason" maxlength="142" required placeholder="Conteo físico o corrección"/></label><button type="submit" class="btn-primary">Guardar corrección</button></form>
+              </details>
+            </div>
+            <details class="panel action-details add-new-details" id="ingredient-create-details"><summary><span class="action-icon accent-olive"><svg class="icon"><use href="#i-plus"/></svg></span><span><strong>Agregar un ingrediente nuevo</strong><small>Solo si todavía no está en tu catálogo</small></span><svg class="icon arrow"><use href="#i-chevron"/></svg></summary>
+              <form id="ingredient-form" class="form-stack inset-form"><label>Nombre del ingrediente<input name="name" required maxlength="100" placeholder="Harina de trigo"/></label><div class="input-pair"><label>Unidad<select name="unit"><option>kg</option><option>g</option><option>l</option><option>ml</option><option>pieza</option></select></label><label>Costo por unidad (MXN)<input name="cost" type="number" min="0" step="0.0001" required placeholder="25"/></label></div><label>Existencia inicial<input name="stock" type="number" min="0" step="0.000001" required value="0"/></label><button type="submit" class="btn-primary">Guardar ingrediente</button></form>
+            </details>
+          </section>
+
+          <section class="view" data-view="recipes" aria-labelledby="recipes-title" hidden>
+            <div class="page-heading"><span class="eyebrow">TUS FÓRMULAS DE TRABAJO</span><h1 id="recipes-title">Recetas operativas</h1><p>Consulta las fichas que Paniko utiliza para calcular y descontar ingredientes.</p></div>
+            <div class="panel"><div class="section-heading panel-heading"><div><h2>Mis recetas</h2><p class="muted">Aquí solo aparecen las fichas operativas registradas.</p></div><label class="search-field"><span class="visually-hidden">Buscar receta</span><input id="recipe-search" type="search" placeholder="Buscar receta…" autocomplete="off"/></label></div><div id="recipe-list" class="inventory-list">Sin recetas.</div></div>
+            <details class="panel action-details add-new-details" id="recipe-create-details"><summary><span class="action-icon accent-peach"><svg class="icon"><use href="#i-plus"/></svg></span><span><strong>Crear una ficha de producción</strong><small>Indica ingredientes y rendimiento base</small></span><svg class="icon arrow"><use href="#i-chevron"/></svg></summary>
+              <form id="recipe-form" class="form-stack inset-form"><div class="input-pair"><label>Nombre de la receta<input name="name" maxlength="100" required placeholder="Ej. Conchas"/></label><label>Rendimiento base (piezas)<input name="yield" type="number" min="1" step="1" required value="10"/></label></div><div class="recipe-ingredients-head"><h3>Ingredientes para ese rendimiento</h3><p class="hint">Especifica la cantidad y unidad de cada ingrediente.</p></div><div id="recipe-items"></div><button type="button" id="add-item" class="btn-soft"><svg class="icon"><use href="#i-plus"/></svg> Añadir otro ingrediente</button><button type="submit" class="btn-primary">Guardar ficha técnica</button></form>
+            </details>
+          </section>
+
+          <section class="view" data-view="products" aria-labelledby="products-title" hidden>
+            <div class="page-heading"><span class="eyebrow">LISTO PARA MOSTRADOR</span><h1 id="products-title">Productos y ventas</h1><p>Controla cuántas piezas terminadas tienes, registra ventas y revisa tus existencias.</p></div>
+            <section id="finished-inventory" class="panel"><div class="section-heading panel-heading"><div><h2>Inventario de productos</h2><p class="muted">Los productos son diferentes de las recetas: aquí controlas piezas disponibles para vender.</p></div></div>
+              <div class="finished-filter-row"><label class="search-field"><span class="visually-hidden">Buscar producto</span><input id="finished-search" type="search" placeholder="Buscar producto…" autocomplete="off"/></label><label class="filter-checkbox"><input type="checkbox" id="finished-low-only"/> Solo existencias bajas</label></div>
+              <div id="finished-inventory-content"></div>
+            </section>
+          </section>
+
+          <section class="view" data-view="history" aria-labelledby="history-title" hidden>
+            <div class="page-heading"><span class="eyebrow">TODO QUEDA REGISTRADO</span><h1 id="history-title">Historial</h1><p>Consulta lotes y movimientos anteriores sin modificar las existencias.</p></div>
+            <div class="panel"><div class="section-heading panel-heading"><div><h2>Lotes de producción</h2><p class="muted">Últimos 100 lotes registrados.</p></div><label class="filter-field">Filtrar por receta<select id="production-filter"><option value="">Todas las recetas</option></select></label></div><div id="production-list" class="history-list"></div></div>
+            <div class="panel history-movements"><div class="section-heading panel-heading"><div><h2>Movimientos de ingredientes</h2><p class="muted">Entradas, salidas y correcciones recientes.</p></div></div><div id="movement-list" aria-live="polite" class="inventory-list"></div></div>
+          </section>
+
+          <section id="private-recipes-panel" class="view" data-view="private" aria-labelledby="private-title" hidden>
+            <div class="page-heading"><span class="eyebrow">ACCESO DE ADMINISTRACIÓN</span><h1 id="private-title">Recetas privadas</h1><p>Consulta tus recetas de preparación y rellenos. No descuentan ingredientes automáticamente.</p></div>
+            <div class="panel"><button id="load-private-button" type="button" class="btn-primary">Consultar recetas privadas <svg class="icon"><use href="#i-arrow"/></svg></button><div id="private-recipes-list"></div></div>
+          </section>
+
+          <footer class="app-footer">Paniko · Elaborado con cariño para panaderías artesanales <span>Proyecto académico · Uso local</span></footer>
+        </main>
+      </div>
+    </div>
+  </div>
+  <script src="/app.js" defer></script>
+  <script src="/products.js" defer></script>
+</body>
+</html>

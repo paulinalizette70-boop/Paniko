@@ -1,6 +1,6 @@
 # Paniko — Gestión de panadería artesanal
 
-**Versión de integración: 0.6.3 (noviembre de 2026)**  
+**Versión de integración: 0.7.0 (noviembre de 2026)**  
 Proyecto académico de Ingeniería Informática — Universidad de Guadalajara, CU Tlaquepaque.
 
 Este paquete combina el código local **0.6.0** con las operaciones de **salida manual y ajuste físico de ingredientes** desarrolladas en la rama de inventario. No reemplaza automáticamente la base de datos ni las recetas privadas del negocio.
@@ -56,7 +56,7 @@ El comando `node --env-file` funciona con las versiones recientes de Node. Si ya
 npm.cmd test
 ```
 
-La versión 0.6.3 se probó localmente con datos ficticios: **40 pruebas aprobadas, 4 omitidas por requerir MySQL de pruebas, 0 fallidas**. Para las de MySQL, usa solamente una base separada con nombre terminado en `_test` y `MYSQL_TEST=1`. La aprobación de pruebas locales no equivale a una validación de negocio en producción.
+La interfaz 0.7.0 se probó localmente con datos ficticios: **44 pruebas aprobadas, 4 omitidas por requerir MySQL de pruebas, 0 fallidas**. Las pruebas omitidas se ejecutan en GitHub Actions con MySQL aislado. Para las de MySQL, usa solamente una base separada con nombre terminado en `_test` y `MYSQL_TEST=1`. La aprobación de pruebas locales no equivale a una validación de negocio en producción.
 
 ## Privacidad y seguridad
 
@@ -67,8 +67,8 @@ La versión 0.6.3 se probó localmente con datos ficticios: **40 pruebas aprobad
 
 ## Actualización del programa existente y GitHub
 
-- Para actualizar tu instalación **sin reemplazar la conexión a MySQL**, descomprime el ZIP en una carpeta separada y usa `ACTUALIZAR_PROGRAMA.ps1` indicando la ruta de tu Paniko actual. El instalador respalda únicamente los archivos que modifica y no toca `.env`, `private/`, `data/` ni tablas MySQL. Revisa también `ACTUALIZACION_0.6.3.txt`.
-- Se actualiza por separado la rama `integracion/paniko-0.6.1-20261111-1923` de GitHub con la mejora 0.6.3. La rama principal `main` permanece sin cambios hasta aprobar las pruebas y revisar la Pull Request #9.
+- Para actualizar tu instalación **sin reemplazar la conexión a MySQL**, descomprime el ZIP en una carpeta separada y usa `ACTUALIZAR_PROGRAMA.ps1` indicando la ruta de tu Paniko actual. El instalador respalda únicamente los archivos que modifica y no toca `.env`, `private/`, `data/` ni tablas MySQL. Revisa también `ACTUALIZACION_0.7.0.txt`.
+- Se actualiza por separado la rama `integracion/paniko-0.6.1-20261111-1923` de GitHub con la mejora 0.7.0. La rama principal `main` permanece sin cambios hasta aprobar las pruebas y revisar la Pull Request #9.
 - **No hace falta volver a ejecutar** el script de sincronización de la versión anterior.
 
 Repositorio: https://github.com/paulinalizette70-boop/Paniko
@@ -85,3 +85,31 @@ Repositorio: https://github.com/paulinalizette70-boop/Paniko
 - Cada detalle muestra las cantidades de ingredientes realmente descontadas, los saldos antes/después registrados en los movimientos y, cuando corresponda, la incorporación de piezas al inventario de productos terminados. Los costos son estimados al momento de confirmar.
 - Nuevo endpoint autenticado **GET `/api/production/:id`**. No crea, edita ni elimina registros. No se requieren migraciones SQL; la información ya se encontraba en `production_batches`, `production_batch_items`, `inventory_movements` y `finished_product_movements`.
 - Se conserva la conexión a MySQL de la versión anterior y los archivos locales `.env`, `private/` y `data/`.
+
+## Rediseño 0.7.0: una interfaz más fácil de usar
+
+Paniko ahora organiza sus operaciones en secciones independientes: **Inicio**, **Producción**, **Ingredientes**, **Recetas**, **Productos y ventas**, **Historial** y **Recetas privadas** (solo administración).
+
+- **Inicio** ofrece un resumen de ingredientes, recetas y lotes consultados, más accesos directos a las tareas más frecuentes.
+- **Producción** separa seleccionar receta y cantidad, calcular una vista previa, y confirmar. **Confirmar producción** permanece desactivado hasta calcular una vista previa con inventario suficiente. Si cambias receta o cantidad, debes recalcular; el servidor vuelve a validar existencias al confirmar.
+- **Ingredientes y Recetas** incluyen búsquedas sin distinguir acentos y formularios de creación plegables; los formularios de creación y los ajustes quedan ocultos a operadores sin permiso.
+- **Productos y ventas** muestra la acción **Registrar venta**, permite buscar por nombre o categoría y filtrar productos con stock bajo. La venta sigue usando el servicio de movimientos existente.
+- **Historial** agrupa los detalles de lotes y los movimientos de ingredientes, sin cambios en sus APIs.
+- El diseño se adapta a pantallas pequeñas y mantiene etiquetas, avisos de estado, navegación por teclado y compatibilidad con movimiento reducido. No necesita librerías, servicios ni fuentes externas.
+- **No hay cambios de esquema SQL, credenciales, datos, recetas privadas ni APIs del servidor.** Los archivos reemplazados son HTML, CSS, JavaScript de la interfaz, metadatos de versión y documentación.
+
+### Cómo actualizar la instalación existente de Paniko 0.6.3
+
+1. Detén el servidor actual (`Ctrl+C`).
+2. Descomprime el ZIP `Paniko_0.7.0_redisenio_facil.zip` en una carpeta distinta de tu instalación.
+3. En PowerShell dentro de `Paniko-0.7.0`, ejecuta:
+
+   ```powershell
+   powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ACTUALIZAR_PROGRAMA.ps1 -Destino "D:\Paniko-main\Paniko-main"
+   ```
+
+4. Revisa la ruta y confirma escribiendo `ACTUALIZAR`. Se crea una copia de los archivos de código modificados junto a la carpeta actual de Paniko.
+5. Vuelve a la carpeta de Paniko y ejecuta `npm.cmd test` y `node --env-file=.env server.js`.
+6. Abre `http://127.0.0.1:3000` y presiona `Ctrl+F5` para renovar los archivos CSS y JavaScript en el navegador.
+
+Esta actualización exige partir de la versión 0.6.3. Si tienes otra versión, **no la fuerces** y revisa la compatibilidad antes de instalar.

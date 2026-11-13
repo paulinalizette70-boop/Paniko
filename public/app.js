@@ -10,7 +10,66 @@ const make = (tag, content, cls) => {
   return element;
 };
 const money = (value) => new Intl.NumberFormat('es-MX', {style:'currency',currency:'MXN'}).format(value);
-function notify(message, failed = false) { $('notification').textContent = message; $('notification').className = failed ? 'warning' : 'good'; }
+function notify(message, failed=false) {
+  const element=$('notification');element.textContent=message;
+  element.className=failed?'toast warning':'toast good';element.hidden=false;
+}
+const normalizeSearch=(value)=>String(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('es');
+const VIEWS={dashboard:'Inicio',production:'Producción',ingredients:'Ingredientes',recipes:'Recetas',products:'Productos y ventas',history:'Historial',private:'Recetas privadas'};
+let currentView='dashboard';
+function navigateTo(view,{focus=false}={}) {
+  if(!Object.hasOwn(VIEWS,view))return;
+  if(view==='private'&&document.querySelector('[data-view-target="private"]')?.hidden)return;
+  currentView=view;
+  for(const section of document.querySelectorAll('[data-view]'))section.hidden=section.dataset.view!==view;
+  for(const button of document.querySelectorAll('.nav-link')){
+    const selected=button.dataset.viewTarget===view;
+    button.classList.toggle('active',selected);
+    if(selected)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');
+  }
+  $('current-view-name').textContent=VIEWS[view];
+  $('notification').hidden=true;
+  window.scrollTo({top:0,behavior:'instant'});
+  if(focus){const heading=document.querySelector(`[data-view="${view}"] h1`);if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true});}}
+}
+for(const button of document.querySelectorAll('[data-view-target]')){
+  button.addEventListener('click',()=>navigateTo(button.dataset.viewTarget,{focus:true}));
+}
+window.PanikoNavigate=navigateTo;
+function renderIngredientList(){
+  const root=$('ingredient-list'),query=normalizeSearch($('ingredient-search').value.trim());
+  root.replaceChildren();
+  const list=ingredients.filter(i=>normalizeSearch(i.name).includes(query));
+  for(const item of list){
+    const line=make('div',undefined,'inventory-item');
+    const details=make('div');details.append(make('strong',item.name),make('small',`${money(item.costPerUnit)} por ${item.unit}`));
+    const count=make('span',`${item.stock} ${item.unit}`,item.stock<=0?'stock-value zero':'stock-value');
+    line.append(details,count);root.append(line);
+  }
+  if(!list.length)root.append(make('p',ingredients.length?'No se encontraron ingredientes.':'Todavía no hay ingredientes registrados.','muted'));
+}
+function renderRecipeList(){
+  const root=$('recipe-list'),query=normalizeSearch($('recipe-search').value.trim());
+  root.replaceChildren();
+  const list=recipes.filter(r=>normalizeSearch(r.name).includes(query));
+  for(const recipe of list){
+    const line=make('div',undefined,'inventory-item');
+    const details=make('div');details.append(make('strong',recipe.name),make('small',`${recipe.items.length} ingredientes · Rendimiento base: ${recipe.baseYield} piezas`));
+    const use=make('button','Preparar','secondary');use.type='button';
+    use.addEventListener('click',()=>{
+      navigateTo('production');$('scale-form').elements.recipe.value=recipe.id;
+      $('scale-form').elements.recipe.dispatchEvent(new Event('change'));
+      window.PanikoFinishedProducts?.updateProductionOptions?.();
+      $('scale-form').elements.desiredYield.value=String(recipe.baseYield);
+      resetCapacitySuggestion();
+    });
+    line.append(details,use);root.append(line);
+  }
+  if(!list.length)root.append(make('p',recipes.length?'No se encontraron recetas.':'Todavía no hay fichas técnicas.','muted'));
+}
+$('ingredient-search').addEventListener('input',renderIngredientList);
+$('recipe-search').addEventListener('input',renderRecipeList);
+
 async function api(path, options) {
   const response = await fetch(path, options);
   const result = await response.json();
@@ -127,12 +186,10 @@ function syncProductionFilter(){
   if(byRecipe.has(old))select.value=old;
 }
 function render(movements, batches) {
-  $('ingredient-list').replaceChildren();
-  for (const item of ingredients) $('ingredient-list').append(make('div', `${item.name}: ${item.stock} ${item.unit} disponibles · ${money(item.costPerUnit)}/${item.unit}`, 'list-row'));
-  if (!ingredients.length) $('ingredient-list').append(make('p', 'Sin ingredientes.', 'muted'));
-  $('recipe-list').replaceChildren();
-  for (const item of recipes) $('recipe-list').append(make('div', `${item.name} · ${item.baseYield} piezas · ${item.items.length} ingrediente(s)`, 'list-row'));
-  if (!recipes.length) $('recipe-list').append(make('p', 'Sin recetas.', 'muted'));
+  renderIngredientList();renderRecipeList();
+  $('dashboard-ingredients').textContent=String(ingredients.length);
+  $('dashboard-recipes').textContent=String(recipes.length);
+  $('dashboard-batches').textContent=String(batches.length);
   fillSelect($('scale-form').elements.recipe, recipes, 'Crea primero una receta');
   fillSelect($('stock-in-form').elements.ingredient, ingredients, 'Registra primero un ingrediente');
   fillSelect($('stock-out-form').elements.ingredient,ingredients,'Registra primero un ingrediente');
@@ -155,6 +212,8 @@ async function refresh() {
   const [ings,recs,movements,batches]=await Promise.all([
     api('/api/ingredients'),api('/api/recipes'),api('/api/inventory/movements'),api('/api/production')]);
   ingredients=ings;recipes=recs;render(movements,batches);
+  window.PanikoFinishedProducts?.updateProductionOptions?.();
+  resetCapacitySuggestion();
 }
 $('production-filter').addEventListener('change',renderProductionHistory);
 $('add-item').addEventListener('click', addRecipeItem);
@@ -203,6 +262,7 @@ $('adjust-stock-form').addEventListener('submit',async event=>{
 });
 function renderPreview(result) {
   const container=$('scale-results');container.replaceChildren();
+  $('produce-button').disabled=!result.stockAvailable;
   container.append(make('p', `${result.recipeName} · ${result.desiredYield} piezas · costo estimado ${money(result.estimatedTotalCost)}`));
   container.append(make('p', `Capacidad con existencias actuales: hasta ${result.maxProducible} piezas.`, result.maxProducible>0?'good':'warning'));
   if(result.limitingIngredients?.length)container.append(make('p', `Insumo(s) limitante(s): ${result.limitingIngredients.join(', ')}`, 'muted'));
@@ -228,13 +288,14 @@ async function selectedPreview(){
 function resetCapacitySuggestion(){
   const button=$('max-production-button');
   button.disabled=true;delete button.dataset.maximum;delete button.dataset.recipeId;
-  $('scale-results').replaceChildren();
+  $('produce-button').disabled=true;
+  const placeholder=make('div',undefined,'empty-state');
+  const symbol=make('span','✳');symbol.className='preview-symbol';
+  placeholder.append(symbol,make('strong','Tu cálculo aparecerá aquí'),make('p','Selecciona una receta y pulsa «Calcular ingredientes».'));
+  $('scale-results').replaceChildren(placeholder);
 }
 $('scale-form').elements.recipe.addEventListener('change',resetCapacitySuggestion);
-$('scale-form').elements.desiredYield.addEventListener('input',()=>{
-  // La vista previa ya no corresponde a la cantidad editada.
-  $('scale-results').replaceChildren();
-});
+$('scale-form').elements.desiredYield.addEventListener('input',resetCapacitySuggestion);
 $('max-production-button').addEventListener('click',()=>{
   const button=$('max-production-button');
   const form=$('scale-form');
@@ -242,8 +303,7 @@ $('max-production-button').addEventListener('click',()=>{
   if(button.disabled||button.dataset.recipeId!==form.elements.recipe.value||
      !Number.isSafeInteger(maximum)||maximum<1)return;
   form.elements.desiredYield.value=String(maximum);
-  button.disabled=true;
-  $('scale-results').replaceChildren();
+  resetCapacitySuggestion();
   notify(`Cantidad ajustada a ${maximum} piezas. Calcula la vista previa de nuevo para confirmar.`);
 });
 $('scale-form').addEventListener('submit', async(event)=>{
@@ -266,9 +326,15 @@ function showAuthUI(user,required){
   $('workspace').hidden=Boolean(required&&!user);
   $('auth-panel').hidden=Boolean(!required||user);
   $('auth-bar').hidden=Boolean(!required||!user);
-  $('private-recipes-panel').hidden=Boolean(!required||user?.role!=='admin');
-  $('stock-adjust-panel').hidden=Boolean(required&&user?.role!=='admin');
-  if(user)$('auth-user').textContent=user.username+' ('+user.role+')';
+  const admin=Boolean(user?.role==='admin');
+  document.querySelector('[data-view-target="private"]').hidden=!admin;
+  $('stock-adjust-panel').hidden=Boolean(required&&!admin);
+  $('ingredient-create-details').hidden=Boolean(required&&!admin);
+  $('recipe-create-details').hidden=Boolean(required&&!admin);
+  if(user){$('auth-user').textContent=user.username+' ('+(admin?'Administración':'Operación')+')';
+    document.querySelector('.avatar').textContent=user.username.slice(0,1).toUpperCase();}
+  if(!user){$('notification').hidden=true;currentView='dashboard';}
+  navigateTo(currentView==='private'&&!admin?'dashboard':currentView);
   document.dispatchEvent(new CustomEvent('paniko:auth',{detail:{user,required}}));
 }
 $('login-form').addEventListener('submit',async event=>{

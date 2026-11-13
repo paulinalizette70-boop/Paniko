@@ -28,6 +28,12 @@
   const fmtMoney=n=>n===null?'Precio pendiente':new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(n);
   let currentUser=null,products=[],categories=[],recipes=[],movements=[];
   let previousProductionRecipeId=null;
+  let hadLinkedProducts=false;
+  const normalizeSearch=(value)=>String(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('es');
+  const search=document.getElementById('finished-search');
+  const lowOnly=document.getElementById('finished-low-only');
+  search?.addEventListener('input',render);
+  lowOnly?.addEventListener('change',render);
   const isAdmin=()=>currentUser?.role==='admin';
   async function api(route,options){
     const response=await fetch(route,options);
@@ -53,9 +59,10 @@
     }
     // Si hay una sola opción, la seleccionamos al cambiar de receta.
     // Conservar una selección explícita (incluso "ninguna") al actualizar la lista.
-    if(changed&&linked.length===1)recipePicker.value=linked[0].id;
+    if((changed||!hadLinkedProducts)&&linked.length===1)recipePicker.value=linked[0].id;
     else if([...recipePicker.options].some(o=>o.value===old))recipePicker.value=old;
     previousProductionRecipeId=recipeId;
+    hadLinkedProducts=linked.length>0;
   }
   document.getElementById('scale-form')?.elements.recipe?.addEventListener('change',updateProductionOptions);
   function categoryChoices(){return categories.map(c=>({label:c.name,value:c.id}));}
@@ -110,11 +117,15 @@
       root.append(toolbar,newBox,catBox);
     }
     const statusRow=el('p',undefined,'finished-status');statusRow.id='finished-status';root.append(statusRow);
-    if(!products.length){root.append(el('p','Aún no hay productos en inventario. Una administradora puede incorporarlos desde el catálogo privado (sin copiar recetas).','muted'));return;}
-    const groupNames=[...new Set(products.map(p=>p.categoryName))];
+    if(!products.length){root.append(el('p','Aún no hay productos terminados. Administración puede registrarlos aquí.','muted'));return;}
+    const query=normalizeSearch(search?.value.trim()||'')||'';
+    const visible=products.filter(p=>(!query||normalizeSearch(p.name).includes(query)||normalizeSearch(p.categoryName).includes(query))&&
+      (!lowOnly?.checked||(p.minStock!==null&&p.stock<=p.minStock)));
+    if(!visible.length)root.append(el('p','No hay productos que coincidan con los filtros.','muted'));
+    const groupNames=[...new Set(visible.map(p=>p.categoryName))];
     for(const catName of groupNames){
       root.append(el('h3',catName,'finished-category'));
-      for(const p of products.filter(p=>p.categoryName===catName)){
+      for(const p of visible.filter(p=>p.categoryName===catName)){
         const card=el('article',undefined,'finished-item');
         const header=el('header');
         const name=el('strong',p.name);
@@ -143,20 +154,26 @@
           details.append(form);card.append(details);
         }
         if(p.active){
-          // PANIKO_MOVEMENT_BUTTON_VISIBLE_V1
-          const toggle=button('Registrar movimiento de inventario','secondary');
+          const toggle=button('Otros movimientos','secondary');
           toggle.setAttribute('aria-expanded','false');
           const box=el('div');box.hidden=true;
           toggle.addEventListener('click',()=>{
             box.hidden=!box.hidden;
+            box.classList.toggle('movement-form-open',!box.hidden);
             toggle.setAttribute('aria-expanded',String(!box.hidden));
-            toggle.textContent=box.hidden?'Registrar movimiento de inventario':'Ocultar formulario de inventario';
+            toggle.textContent=box.hidden?'Otros movimientos':'Ocultar movimientos';
           });
-          card.append(toggle);
+          const saleButton=button('Registrar venta','sale-button');
+          saleButton.addEventListener('click',()=>{
+            box.hidden=false;box.classList.add('movement-form-open');
+            toggle.setAttribute('aria-expanded','true');toggle.textContent='Ocultar movimientos';
+            type.value='venta';qty.focus();
+          });
+          card.append(saleButton,toggle);
           const form=el('form');form.className='finished-editor';
           const type=select('movementType',[
-            {value:'produccion_manual',label:'Entrada por producción manual (NO descuenta insumos)'},
-            {value:'venta',label:'Salida por venta'},
+            {value:'venta',label:'Venta · restar piezas'},
+            {value:'produccion_manual',label:'Entrada manual (NO descuenta ingredientes)'},
             {value:'merma',label:'Salida por merma'},
             {value:'ajuste_entrada',label:'Ajuste por conteo: sumar'},
             {value:'ajuste_salida',label:'Ajuste por conteo: restar'}]);
