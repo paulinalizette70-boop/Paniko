@@ -10,7 +10,7 @@ $archivos=@(
 'src\app.js','src\finished-products.js','src\finance-dashboard.js','src\sourdough.js',
 'public\app.js','public\index.html','public\styles.css','public\sourdough.js',
 'scripts\init-db.js','scripts\migrate-finance-and-starter.js',
-'tests\finished-products.test.js','tests\finance-dashboard-080.test.js','tests\sourdough-080.test.js','tests\mysql-finance-sourdough-080.test.js',
+'tests\finished-products.test.js','tests\finance-dashboard-080.test.js','tests\sourdough-080.test.js','tests\mysql-finance-sourdough-080.test.js','tests\migration-080.test.js',
 'package.json','package-lock.json','docs\releases\Paniko-0.8.0-finanzas-y-masa-madre.md')
 foreach($archivo in $archivos){if(-not (Test-Path -LiteralPath (Join-Path $raiz $archivo))){throw "El paquete está incompleto: $archivo"}}
 Write-Host "Programa: $Destino"
