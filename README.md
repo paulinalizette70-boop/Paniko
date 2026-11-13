@@ -171,17 +171,19 @@ Las pruebas automatizadas comprueban el comportamiento técnico bajo las condici
 
 ## Capturas de pantalla
 
-**Pendiente:** incorporar capturas reales de la versión 0.7.1, tomadas con una cuenta de demostración y datos ficticios. No hay imágenes publicadas aún y, por ello, este README no muestra capturas inexistentes.
+Estas imágenes corresponden a la interfaz local de Paniko mostrada el **12 de noviembre de 2026** (capturas realizadas en **v0.7.1**). Se publican únicamente vistas que no contienen fórmulas reales ni cifras confidenciales. En Historial se ocultó la información de la operación.
 
-| Captura requerida | Qué debe mostrar |
-| --- | --- |
-| Inicio | Distribución de la nueva interfaz y accesos directos |
-| Ingredientes | Existencias y registro de movimientos |
-| Recetas | Ficha técnica y selección de unidades |
-| Producción | Escalado, vista previa y confirmación |
-| Productos y ventas | Registro de ventas y productos terminados |
-| Historial | Movimientos o detalle de un lote |
-| Finanzas | Solo con datos ficticios, desde la cuenta administradora |
+**Inicio — navegación y panel general**
+
+![Vista de Inicio de Paniko 0.7.1](docs/img/paniko-inicio.webp)
+
+**Historial — consulta de lotes y movimientos (datos ocultos)**
+
+![Vista de Historial de Paniko con datos operativos ocultos](docs/img/paniko-historial.webp)
+
+Las capturas recibidas de Ingredientes, Productos y ventas y Recetas contenían información del negocio. **No se subieron originales con inventarios, precios o fórmulas reales**. Se prepararon versiones anonimizadas para revisión antes de publicar más imágenes.
+
+**Incidencia visible en Recetas:** la creación de una ficha de v0.7.1 mostró el mensaje «La unidad de Agua no coincide con la registrada en Ingredientes» porque la receta utiliza masa (g) y el inventario volumen (l). Es distinto de g↔kg: requiere una equivalencia específica del ingrediente o una conversión guiada. Está documentado en [Issue #12](https://github.com/paulinalizette70-boop/Paniko/issues/12); el código de v0.7.2 incorpora cambios de conversión de agua, **pendientes de comprobar en la instalación local**. La imagen original del error no se publica porque muestra una fórmula real.
 
 ## Evaluación con usuaria real
 
