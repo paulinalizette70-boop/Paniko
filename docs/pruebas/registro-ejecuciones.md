@@ -36,7 +36,7 @@ Las pruebas de v0.2 documentan entradas, salidas, rechazo por inventario insufic
 ## Evaluación formativa con usuaria — versión v0.4 (reportada posteriormente)
 
 - **Usuaria:** Ale Sánchez, responsable de la panadería.
-- **Duración:** tres días de uso de Paniko v0.4. Las fechas exactas no se han registrado.
+- **Periodo:** del 4 al 7 de noviembre de 2026; tres días de uso de Paniko v0.4 reportados dentro de ese intervalo.
 - **Resultado cualitativo comunicado:** Paniko le ayudó bastante durante esos tres días.
 - **Hallazgo:** percibió confusa la pantalla porque la información estaba concentrada en un solo lugar.
 - **Solicitud:** un apartado semanal para visualizar ventas, ganancias, inversión y pérdidas.
