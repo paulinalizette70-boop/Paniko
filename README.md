@@ -125,3 +125,25 @@ Esta actualización exige partir de la versión 0.6.3. Si tienes otra versión, 
 - Nuevo endpoint autenticado `POST /api/recipes/from-catalog/:catalogId` con `{"baseYield":5}`, que utiliza los datos **almacenados en MySQL** y no datos externos. No publica fórmulas reales en GitHub.
 - No hay migraciones SQL ni cambios de credenciales, recetas locales o datos de inventario. Si las fórmulas originales no aparecen, comprueba que el catálogo local haya sido importado anteriormente con el script `scripts/import-private-recipes.js`; la app no leerá el archivo de recetas directamente desde Internet.
 - Las fórmulas antiguas siguen en tablas de staging llamadas `private_catalog_*` por compatibilidad, pero ahora son consultables **dentro de Paniko** para usuarios autenticados. «Privado» se refiere a que las fórmulas reales nunca deben publicarse en el repositorio GitHub.
+
+## Evaluación de usuaria y necesidades de negocio
+
+Ale Sánchez probó **Paniko v0.4** durante **tres días**. Reportó que el sistema le ayudó, pero que una pantalla con toda la información resultaba confusa; también solicitó un resumen **semanal** de ventas, ganancias, inversión y pérdidas.
+
+El rediseño v0.7.0/0.7.1 reorganiza las tareas en secciones independientes. Esto **aún debe revalidarse con Ale**; no se atribuye a la usuaria una prueba de v0.7.1.
+
+- [Evaluación de la versión 0.4](docs/seguimiento/evaluacion-usuaria-ale-v04.md)
+- [Retrospectiva y backlog](docs/seguimiento/retrospectiva-medio-termino.md)
+- [HU-11: dashboard financiero semanal (pendiente)](https://github.com/paulinalizette70-boop/Paniko/issues/10)
+
+## Colaboración y contribuciones
+
+Para colaborar, crear una rama de trabajo desde la base que corresponda, documentar el problema o historia de usuario, modificar el código con datos ficticios y ejecutar `npm test`. Abrir un Pull Request con descripción de cambios, pruebas, riesgos y capturas **sin datos sensibles**. Solicitar revisión a otro integrante y atender sus comentarios antes de fusionar. No trabajar directamente sobre `main` si se trata de una funcionalidad nueva. [PR #9: integración del MVP](https://github.com/paulinalizette70-boop/Paniko/pull/9).
+
+## Capturas
+
+Las capturas reales del sistema todavía deben añadirse para la entrega, con datos de demostración (no recetas privadas, contraseñas ni cifras sensibles). Las pantallas clave a documentar son Inicio, Ingredientes, Recetas, Producción, Productos y ventas, e Historial.
+
+## Licencia y uso
+
+El paquete actual declara `UNLICENSED` y no incluye una licencia de software libre que permita redistribución o reutilización general. La elección de una licencia para el código está **pendiente de decisión del equipo**. El carácter público de GitHub no implica autorización para publicar las fórmulas de la panadería, que se mantienen fuera del repositorio.
