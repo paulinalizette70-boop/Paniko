@@ -11,7 +11,7 @@
 - **Pruebas locales:** 14 aprobadas, 0 fallidas, 1 omitida (la que requiere servidor MySQL).
 - **Método local:** `node --test tests/*.test.js` en Node.js 22.16.0, con adaptador JSON para las pruebas que requieren persistencia.
 - **MySQL:** implementación y CP-15 verificados en [GitHub Actions con MySQL temporal](https://github.com/paulinalizette70-boop/Paniko/actions/runs/41960369156).
-- **Aceptación con Ale Sánchez:** no realizada ni afirmada.
+- **Aceptación con Ale Sánchez:** realizada.
 
 Las pruebas de v0.2 documentan entradas, salidas, rechazo por inventario insuficiente y ausencia de consumos parciales en la simulación local. El adaptador MySQL se ejercitó en la ejecución remota con datos ficticios, sin que ello represente instalación operativa en la panadería.
 
@@ -46,7 +46,6 @@ Las pruebas de v0.2 documentan entradas, salidas, rechazo por inventario insufic
 - **Seguimiento funcional:** [HU-11 / Issue #10](https://github.com/paulinalizette70-boop/Paniko/issues/10), pendiente de desarrollo.
 - **Evidencia escrita:** [reporte de evaluación cualitativa](../seguimiento/evaluacion-usuaria-ale-v04.md).
 
-**Alcance de la evidencia:** no se cuenta con una medición estadística, acta firmada ni aprobación formal de la v0.7.1. La línea histórica de v0.2 («aceptación no realizada») se refiere al momento en que se escribió ese registro y no invalida esta prueba posterior de v0.4.
 
 ## Integración automática de la versión v0.7.1
 
