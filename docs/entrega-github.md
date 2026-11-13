@@ -1,64 +1,81 @@
-# Entrega GitHub — Paniko
-**Seminario de Integración: Desarrollo · Universidad de Guadalajara**  
-**Revisión de documentación:** 4 de noviembre de 2026.  
-**Proyecto:** Sistema de trazabilidad y control de producción para panaderías artesanales.
+# Evidencias de GitHub — Paniko
 
-## 1. Repositorio y README
-- [Repositorio Paniko](https://github.com/paulinalizette70-boop/Paniko)
-- [README documentado](https://github.com/paulinalizette70-boop/Paniko/blob/main/README.md)
+**Seminario de Integración: Desarrollo · Ingeniería Informática · Universidad de Guadalajara, CU Tlaquepaque**
 
-El README describe objetivos, funcionalidades implementadas, límites del MVP, arquitectura, pruebas y enlaces de seguimiento. Las instrucciones de instalación están documentadas por separado y no forman parte de los requisitos de esta entrega.
+En este archivo reuní los enlaces más importantes de nuestro proyecto para que sea más fácil revisar qué hemos desarrollado, cómo llevamos el control de los cambios y qué cosas todavía tenemos pendientes.
 
-## 2. Casos de prueba y evidencia
-- [Catálogo de casos CP-01 a CP-24](https://github.com/paulinalizette70-boop/Paniko/blob/main/docs/pruebas/casos-de-prueba.md).
-- [Bitácora de ejecuciones](https://github.com/paulinalizette70-boop/Paniko/blob/main/docs/pruebas/registro-ejecuciones.md).
-- [GitHub Actions: ejecución v0.4.0 con 24 pruebas aprobadas, 0 fallidas y 0 omitidas](https://github.com/paulinalizette70-boop/Paniko/actions/runs/41968225354).
+## 1. Repositorio y presentación del proyecto
 
-| Tipo | Ubicación | Qué verifica |
-| --- | --- | --- |
-| Unitarias de dominio | [tests/domain.test.js](https://github.com/paulinalizette70-boop/Paniko/blob/main/tests/domain.test.js) | Ingredientes, fichas, escalado y validaciones |
-| Integración HTTP | [tests/integration.test.js](https://github.com/paulinalizette70-boop/Paniko/blob/main/tests/integration.test.js) | Altas, consulta, vista previa y errores de API |
-| Inventario | [tests/inventory.test.js](https://github.com/paulinalizette70-boop/Paniko/blob/main/tests/inventory.test.js) | Entradas, consumo, stock insuficiente y movimientos |
-| Integración MySQL | [tests/mysql.test.js](https://github.com/paulinalizette70-boop/Paniko/blob/main/tests/mysql.test.js) | Transacciones, salidas y rechazo sin descuentos parciales |
-| Catálogo privado (datos ficticios) | [tests/private-catalog.test.js](https://github.com/paulinalizette70-boop/Paniko/blob/main/tests/private-catalog.test.js) | Referencias, datos incompletos y validaciones de importación |
-| Integración del importador MySQL | [tests/private-catalog-mysql.test.js](https://github.com/paulinalizette70-boop/Paniko/blob/main/tests/private-catalog-mysql.test.js) | Importación de prueba, duplicados y aislamiento de API |
+Nuestro repositorio es **[Paniko](https://github.com/paulinalizette70-boop/Paniko)**.
 
-**Aclaración:** los 21 resultados corresponden a subpruebas automatizadas ejecutadas con datos ficticios, no a 21 pruebas de aceptación con usuarios reales. Las recetas privadas no se publicaron ni importaron a una instancia MySQL de la panadería.
+En el [README](https://github.com/paulinalizette70-boop/Paniko/blob/main/README.md) explicamos para qué sirve, cómo está organizado, qué tecnologías utilizamos, cómo se instala y cómo vamos avanzando.
 
-## 3. Bloqueos e incidencias
-- [Registro general de bloqueos](https://github.com/paulinalizette70-boop/Paniko/blob/main/docs/seguimiento/bloqueos.md).
-- [Issue #1: publicación del código — resuelto](https://github.com/paulinalizette70-boop/Paniko/issues/1).
-- [Issue #2: suite inicial de pruebas — resuelto](https://github.com/paulinalizette70-boop/Paniko/issues/2).
-- [Issue #3: escalado, conversiones y cierre de lote — pendiente parcial](https://github.com/paulinalizette70-boop/Paniko/issues/3).
-- [Issue #5: autenticación, mermas y dashboard — pendiente](https://github.com/paulinalizette70-boop/Paniko/issues/5).
-- [Issue #6: acceso protegido a recetas privadas — pendiente](https://github.com/paulinalizette70-boop/Paniko/issues/6).
+Actualmente la versión **0.7.2** está integrada en la rama **`main`**. El proyecto sigue en desarrollo; no estamos presentándolo como un sistema terminado para uso público.
 
-## 4. ADR: decisiones de arquitectura
-- [ADR-001 — Aplicación web](https://github.com/paulinalizette70-boop/Paniko/blob/main/docs/adr/ADR-001-aplicacion-web.md).
-- [ADR-002 — Stack y persistencia previstos](https://github.com/paulinalizette70-boop/Paniko/blob/main/docs/adr/ADR-002-stack-y-persistencia.md).
-- [ADR-003 — JSON temporal](https://github.com/paulinalizette70-boop/Paniko/blob/main/docs/adr/ADR-003-json-provisional.md).
-- [ADR-004 — MySQL y transacciones de inventario](https://github.com/paulinalizette70-boop/Paniko/blob/main/docs/adr/ADR-004-mysql-transacciones-inventario.md).
-- [ADR-005 — Catálogo privado y staging](https://github.com/paulinalizette70-boop/Paniko/blob/main/docs/adr/ADR-005-catalogo-privado.md).
-- [ADR-006 — Conversión de unidades](https://github.com/paulinalizette70-boop/Paniko/blob/main/docs/adr/ADR-006-conversion-unidades.md).
+## 2. Pruebas que tenemos
 
-## 5. Deudas técnicas
-- [Registro de deuda técnica](https://github.com/paulinalizette70-boop/Paniko/blob/main/docs/seguimiento/deuda-tecnica.md).
-- [Issue #4 — MySQL implementado; configuración local y migración pendientes](https://github.com/paulinalizette70-boop/Paniko/issues/4).
-- [Issue #5 — autenticación, mermas y dashboard](https://github.com/paulinalizette70-boop/Paniko/issues/5).
-- [Issue #6 — control de acceso del catálogo privado](https://github.com/paulinalizette70-boop/Paniko/issues/6).
+Guardamos pruebas en la carpeta [`tests/`](https://github.com/paulinalizette70-boop/Paniko/tree/main/tests). Revisan, entre otras cosas, el inventario, las recetas, las conversiones de unidades, los productos, el inicio de sesión y varias operaciones con MySQL.
 
-**Estado de la versión v0.4 al cierre de esa evidencia histórica:** los tests estaban verificados en GitHub Actions. Se recibió una evaluación formativa con Ale sobre v0.4, correspondiente al periodo del **4 al 7 de noviembre de 2026** (tres días de uso reportados); se documenta abajo. No existe aprobación formal de la v0.7.1 ni se declara finalización de módulos pendientes.
+| Evidencia | Enlace |
+| --- | --- |
+| Casos de prueba documentados | [Casos de prueba](pruebas/casos-de-prueba.md) |
+| Historial de resultados | [Registro de ejecuciones](pruebas/registro-ejecuciones.md) |
+| Pruebas unitarias de ingredientes y fichas | [`tests/domain.test.js`](../tests/domain.test.js) |
+| Conversión de agua y huevo | [`tests/unit-conversions-egg-water.test.js`](../tests/unit-conversions-egg-water.test.js) |
+| Porcentaje panadero | [`tests/bakers-percent.test.js`](../tests/bakers-percent.test.js) |
+| Pruebas con MySQL | [`tests/mysql.test.js`](../tests/mysql.test.js) |
+| Workflow que ejecuta las pruebas | [GitHub Actions](../.github/workflows/tests.yml) |
+| Ejecución aprobada después de integrar 0.7.2 | [Resultado de GitHub Actions](https://github.com/paulinalizette70-boop/Paniko/actions/runs/43368734526) |
 
-## 6. Prueba con Ale (4–7 de noviembre de 2026) y hallazgos de usabilidad
+Estas pruebas se ejecutan con **datos ficticios** y una base MySQL de prueba. No significa que hayamos probado o aprobado todas las operaciones con los datos reales de la panadería.
 
-- [Informe de prueba formativa de Paniko v0.4 con Ale](seguimiento/evaluacion-usuaria-ale-v04.md).
-- [Retrospectiva propuesta de medio término](seguimiento/retrospectiva-medio-termino.md).
-- [HU-11 — resumen financiero semanal solicitado por Ale](https://github.com/paulinalizette70-boop/Paniko/issues/10).
-- La usuaria reportó que Paniko le ayudó, pero le resultaba confuso tener toda la información en una sola pantalla. La versión v0.7.0/0.7.1 implementó una reorganización visual cuya aceptación aún debe comprobarse.
-- Esta prueba real de v0.4 **no debe presentarse** como aceptación de v0.7.1.
+## 3. Prueba con Ale
 
-## 7. Integración y PRs
+Del **4 al 7 de noviembre de 2026** le compartí a **Ale Sánchez** la versión **0.4** de Paniko. La utilizó durante tres días dentro de ese periodo.
 
-- [PR #9 — Paniko v0.7.1](https://github.com/paulinalizette70-boop/Paniko/pull/9) permanece como borrador hasta revisión formal de un integrante del equipo y comprobación local.
-- [Última ejecución automatizada v0.7.1 con MySQL](https://github.com/paulinalizette70-boop/Paniko/actions/runs/43344993724): completada satisfactoriamente.
-- Pendiente actualizar README de la rama `main` tras revisar y fusionar el PR, añadir capturas reales y asegurar que ningún archivo privado se publique.
+En general me comentó que el sistema sí le ayudó, pero nos señaló tres cosas importantes: la información estaba muy amontonada en una sola pantalla, tuvo problemas con las unidades g/kg **al crear fichas técnicas** y quería consultar sus ventas, ganancias, inversiones y pérdidas por semana.
+
+De esta experiencia salieron mejoras del diseño y nuevas tareas. No sería correcto decir que Ale aprobó la versión 0.7.2, porque la que probó fue la 0.4.
+
+- [Documento con sus comentarios](seguimiento/evaluacion-usuaria-ale-v04.md)
+- [Lo que aprendimos](seguimiento/retrospectiva-medio-termino.md)
+- [Problema de g/kg — Issue #11](https://github.com/paulinalizette70-boop/Paniko/issues/11)
+- [Resumen semanal solicitado — Issue #10](https://github.com/paulinalizette70-boop/Paniko/issues/10)
+
+También registramos por separado un error local de la versión 0.7.1 con **agua en gramos y litros** ([Issue #12](https://github.com/paulinalizette70-boop/Paniko/issues/12)).
+
+## 4. Issues, bloqueos y cosas pendientes
+
+Los Issues nos sirven para no perder de vista los errores, las mejoras y los asuntos que todavía debemos revisar.
+
+- [Todos los Issues de Paniko](https://github.com/paulinalizette70-boop/Paniko/issues)
+- [Registro de bloqueos](seguimiento/bloqueos.md)
+- [Deuda técnica](seguimiento/deuda-tecnica.md)
+
+Varias incidencias antiguas describen el estado que tenía el proyecto en ese momento. Algunas funciones ya se programaron en versiones posteriores, pero **todavía debemos comprobarlas y actualizar su estado antes de cerrarlas**.
+
+## 5. Decisiones de arquitectura (ADR)
+
+También documentamos por qué tomamos algunas decisiones técnicas. Por ejemplo, elegimos hacer una aplicación web, usar MySQL, conservar las recetas reales fuera del repositorio y permitir conversiones de unidades.
+
+Están en la carpeta [`docs/adr/`](adr/). Actualmente tenemos seis documentos (ADR-001 a ADR-006).
+
+## 6. Ramas, Pull Requests y contribuciones
+
+La mayor integración quedó en el [**Pull Request #9**](https://github.com/paulinalizette70-boop/Paniko/pull/9), que ya se fusionó con `main` y contiene **Paniko 0.7.2**.
+
+Los PRs [#7](https://github.com/paulinalizette70-boop/Paniko/pull/7) y [#8](https://github.com/paulinalizette70-boop/Paniko/pull/8) son trabajos anteriores que todavía necesitamos revisar para decidir si se cierran como superados.
+
+**Pendiente:** guardar la revisión formal del código por otro integrante. Aunque ya integramos el PR #9, no contamos con esa aprobación en GitHub, así que no la marcamos como realizada.
+
+También falta organizar por integrante los commits, tareas y evidencias correspondientes. La participación no debe inventarse; debe revisarse con el trabajo que realmente hizo cada quien.
+
+## 7. Capturas del programa
+
+En el [README](../README.md#capturas-de-paniko) agregamos capturas de Inicio e Historial con información sensible oculta. No publicamos fotos que muestren las fórmulas reales ni las cifras privadas de la panadería.
+
+## 8. Lo que queremos completar
+
+Antes de cerrar la entrega queremos revisar las conversiones al crear fichas en nuestra instalación, añadir la revisión formal de GitHub y terminar la evidencia individual. Después seguiremos con el resumen financiero semanal que nos pidió Ale.
+
+**Estado actual:** `main` contiene **Paniko 0.7.2**; la aplicación y sus pruebas están publicadas, pero todavía hay trabajo por validar y documentar.
