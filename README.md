@@ -6,7 +6,7 @@
 
 Paniko es una aplicación web para organizar el trabajo diario de una panadería artesanal. Reúne **ingredientes, inventario, recetas y fichas técnicas, escalado de preparaciones, producción, productos terminados, ventas e historial**. Busca sustituir registros dispersos por un flujo sencillo y trazable.
 
-> **Estado de publicación:** la versión 0.7.2 está en la rama [de integración](https://github.com/paulinalizette70-boop/Paniko/tree/integracion/paniko-0.6.1-20261111-1923) y en el [Pull Request #9](https://github.com/paulinalizette70-boop/Paniko/pull/9). La rama `main` conserva la versión 0.4.0 hasta revisar y fusionar el PR. Paniko es un prototipo académico de uso local; no se recomienda desplegarlo públicamente sin una revisión de seguridad.
+> **Estado de publicación:** la versión 0.7.2 está en la rama [de integración](https://github.com/paulinalizette70-boop/Paniko/tree/integracion/paniko-0.6.1-20261111-1923) y en el [Pull Request #9](https://github.com/paulinalizette70-boop/Paniko/pull/9). Paniko es un prototipo académico de uso local; no se recomienda desplegarlo públicamente sin una revisión de seguridad.
 
 ## Índice
 
