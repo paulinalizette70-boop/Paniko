@@ -51,7 +51,8 @@
     const old=recipePicker.value;
     const recipeId=document.getElementById('scale-form')?.elements.recipe?.value;
     const changed=recipeId!==previousProductionRecipeId;
-    const linked=products.filter(p=>p.active&&p.operationalRecipeId===recipeId);
+    const recipe=recipes.find(r=>r.id===recipeId);
+    const linked=(recipe?.yieldUnit&&recipe.yieldUnit!=='pieza')?[]:products.filter(p=>p.active&&p.operationalRecipeId===recipeId);
     recipePicker.replaceChildren();
     const empty=el('option','Sin producto vinculado: solo descuenta ingredientes');empty.value='';recipePicker.append(empty);
     for(const product of linked){
@@ -66,7 +67,7 @@
   }
   document.getElementById('scale-form')?.elements.recipe?.addEventListener('change',updateProductionOptions);
   function categoryChoices(){return categories.map(c=>({label:c.name,value:c.id}));}
-  function recipeChoices(){return [{label:'Sin vincular — no suma stock automáticamente',value:''},...recipes.map(r=>({label:r.name+' ('+r.baseYield+' piezas)',value:r.id}))];}
+  function recipeChoices(){return [{label:'Sin vincular — no suma stock automáticamente',value:''},...recipes.map(r=>({label:r.name+' ('+r.baseYield+' '+(r.yieldUnit==='g'?'g':r.yieldUnit==='ml'?'ml':'piezas')+')',value:r.id}))];}
   function render(){
     root.replaceChildren();
     const metrics=el('div',undefined,'finished-metrics');

@@ -15,6 +15,7 @@ async function main(){
     }
     const {migrate}=require('./migrate-finance-and-starter');
     await migrate(connection);
+    await require('./migrate-calendar-yields-081').migrate(connection);
     console.log(`Esquema MySQL listo: ${database}`);
   }finally{await connection.end();}
 }

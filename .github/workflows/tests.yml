@@ -1,9 +1,9 @@
 name: Pruebas Paniko
 on:
   push:
-    branches: [main]
+    branches: [main, feat/paniko-0.8.1-calendario-rendimientos]
   pull_request:
-    branches: [main, feat/finanzas-costos-productos-0.7.4]
+    branches: [main, feat/finanzas-costos-productos-0.7.4, feat/paniko-0.8.0-finanzas-masa-madre]
 jobs:
   tests:
     runs-on: ubuntu-latest
