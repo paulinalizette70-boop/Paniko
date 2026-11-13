@@ -13,16 +13,13 @@ test('MASA-080-02 la alimentación cuadra descartes y agregados; hidratación so
  assert.throws(()=>planFeeding({discardedGrams:101,flourGrams:20,waterGrams:20},100),/descartar/);
  assert.throws(()=>planFeeding({discardedGrams:0,flourGrams:20,waterGrams:20},null),/indica cuántos gramos/);
 });
-test('MASA-080-03 alimentación es transaccional, usa masa madre bloqueada y no toca ingredientes',async()=>{
- let commits=0,rollbacks=0;const actions=[];
- const c={async beginTransaction(){},async commit(){commits++;},async rollback(){rollbacks++;},release(){},async execute(sql,params){actions.push(sql);if(sql.startsWith('SELECT id,active'))return[[{id:ID,active:1,current_weight_g:'100.00'}]];return[{affectedRows:1}];}};
+test('MASA-080-03 no deja registrar alimentaciones desconectadas del inventario',async()=>{
+ let commits=0,rollbacks=0;
+ const c={async beginTransaction(){},async commit(){commits++;},async rollback(){rollbacks++;},release(){},
+  async execute(sql){if(sql.startsWith('SELECT id,name,active,starter_ingredient_id'))return[[{id:ID,name:'Cultivo',active:1,starter_ingredient_id:null}]];return[{affectedRows:1}];}};
  const store=createSourdoughStore({getConnection:async()=>c});
- const f=await store.feed(ID,{discardedGrams:20,flourGrams:60,waterGrams:30,notes:'Prueba'});
- assert.equal(f.afterGrams,170);assert.equal(f.feedHydrationPercent,50);
- assert.equal(commits,1);assert.equal(rollbacks,0);
- assert.ok(actions.every(sql=>!sql.includes('inventory_movements')&&!sql.includes('UPDATE ingredients')));
- await assert.rejects(()=>store.feed(ID,{discardedGrams:200,flourGrams:40,waterGrams:40}),/descartar/);
- assert.equal(commits,1);assert.equal(rollbacks,1);
+ await assert.rejects(()=>store.feed(ID,{discardedGrams:20,flourGrams:60,waterGrams:30}),/Conecta esta masa madre/);
+ assert.equal(commits,0);assert.equal(rollbacks,1);
 });
 test('MASA-080-04 operador puede registrar alimentación pero no consultar finanzas',async t=>{
  let feeds=0,financialReads=0;

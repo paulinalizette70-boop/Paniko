@@ -297,6 +297,7 @@ function render(movements, batches) {
   productionBatches=batches;
   syncProductionFilter();renderProductionHistory();
 }
+window.PanikoRefreshInventory=()=>refresh();
 async function refresh() {
   const [ings,recs,movements,batches]=await Promise.all([
     api('/api/ingredients'),api('/api/recipes'),api('/api/inventory/movements'),api('/api/production')]);
