@@ -37,6 +37,7 @@ function navigateTo(view,{focus=false}={}) {
   if(view==='recipes')void loadCatalog();
   if(view==='finance')void loadFinances();
   if(view==='sourdough')window.PanikoSourdough?.refresh?.();
+  if(view==='dashboard')window.PanikoSourdough?.refreshDashboard?.();
   for(const section of document.querySelectorAll('[data-view]'))section.hidden=section.dataset.view!==view;
   for(const button of document.querySelectorAll('.nav-link')){
     const selected=button.dataset.viewTarget===view;
