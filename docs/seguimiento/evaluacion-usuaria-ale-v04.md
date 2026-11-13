@@ -1,0 +1,44 @@
+# Evaluación formativa con usuaria — Paniko v0.4
+
+**Proyecto:** Paniko, sistema de gestión de panadería artesanal  
+**Usuaria:** Ale Sánchez, responsable de la panadería y stakeholder  
+**Versión probada:** Paniko v0.4 (NO v0.7.1)  
+**Duración:** tres días de uso  
+**Fecha exacta:** por confirmar (retroalimentación reportada en noviembre de 2026)  
+**Tipo de evidencia:** relato cualitativo de la usuaria, comunicado por la Product Owner. No existe en este documento un acta firmada, grabación, métricas verificadas ni encuesta cuantitativa.
+
+## Propósito
+
+Conocer si una persona de la panadería encontraba útil y comprensible el sistema durante actividades de trabajo, identificar dificultades y recopilar solicitudes para el backlog.
+
+## Retroalimentación recibida
+
+| Dimensión | Comentario reportado | Lectura para el producto |
+| --- | --- | --- |
+| Utilidad | El sistema le ayudó bastante durante los tres días que lo utilizó | Señal cualitativa favorable; no permite calcular ahorro de tiempo ni porcentaje de satisfacción |
+| Usabilidad | Le pareció confuso porque toda la información estaba en una sola pantalla | La interfaz v0.4 necesitaba separar funciones y aclarar la navegación |
+| Necesidad de negocio | Solicitó visualizar por semana cuánto vendió, ganó, invirtió y perdió | Se requiere un resumen financiero semanal, con indicadores definidos y acceso solo de administración |
+
+Estas observaciones son una **síntesis de lo reportado**. No son citas textuales grabadas ni pruebas de todas las funciones.
+
+## Hallazgos y seguimiento
+
+**H-UX-01 — Navegación confusa de v0.4.** Reorganizar las tareas para que la persona operadora identifique rápidamente inventario, recetas, producción, productos/ventas e historial.
+
+- **Respuesta de diseño:** en la rama de integración, Paniko v0.7.0 reorganiza la interfaz por secciones y simplifica el flujo de producción. La versión v0.7.1 conserva ese enfoque.
+- **Estado de validación:** la corrección está desarrollada, pero **Ale aún no ha confirmado aquí que la interfaz v0.7.1 sea satisfactoria**.
+
+**H-NEG-01 — Visibilidad financiera semanal.** Crear un apartado de administración con resumen por semana que permita comprender ingresos, compras/inversiones, utilidad y pérdidas.
+
+- **Respuesta de producto:** [HU-11 / Issue #10](https://github.com/paulinalizette70-boop/Paniko/issues/10).
+- **Estado:** pendiente de implementación y de precisar con Ale la definición de los indicadores; no atribuir estos cálculos al módulo existente de costos.
+
+## Límites de esta evidencia
+
+Esta fue una evaluación exploratoria de **v0.4**, no una aceptación formal del MVP actual. No se documentan fechas concretas, participantes adicionales, número de operaciones, tasas de éxito ni importes reales porque no se suministraron esos datos. No es correcto decir que Ale probó o aprobó la v0.7.1 basándonos en estos comentarios.
+
+## Próxima validación sugerida
+
+En una próxima sesión con Ale, usar datos de prueba y pedirle que localice una receta, escale una preparación, consulte existencias y registre una venta; observar si encuentra rápidamente las secciones en v0.7.1. Registrar tareas, resultados y observaciones sin publicar fórmulas reales ni información financiera sensible.
+
+**Trazabilidad:** [PR #9](https://github.com/paulinalizette70-boop/Paniko/pull/9) (rediseño y mejoras); [HU-11](https://github.com/paulinalizette70-boop/Paniko/issues/10) (resumen financiero semanal); [retrospectiva](retrospectiva-medio-termino.md).
