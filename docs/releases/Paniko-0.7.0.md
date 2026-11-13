@@ -16,21 +16,8 @@ CAMBIOS
 IMPORTANTE
 - Es un cambio de interfaz, no cambia tablas ni credenciales MySQL.
 - No se modifican .env, private, data, node_modules, recetas, contrasenas ni respaldos.
-- La instalacion debe hacerse sobre Paniko 0.6.3.
 
-INSTALACION
-1) Cierra el servidor actual (Ctrl+C).
-2) Extrae el ZIP en una carpeta distinta a D:\Paniko-main\Paniko-main.
-3) Abre PowerShell en la carpeta Paniko-0.7.0.
-4) Ejecuta:
-   powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ACTUALIZAR_PROGRAMA.ps1 -Destino "D:\Paniko-main\Paniko-main"
-5) Revisa las rutas y escribe ACTUALIZAR.
-6) Para comprobar la nueva version y las pruebas:
-   cd "D:\Paniko-main\Paniko-main"
-   node -p "require('./package.json').version"
-   npm.cmd test
-7) Para iniciar el programa:
-   node --env-file=.env server.js
+
 8) Abre http://127.0.0.1:3000 y usa Ctrl+F5.
 
 No publiques este ZIP junto con la carpeta privada ni con archivos .env.
