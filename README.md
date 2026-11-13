@@ -128,7 +128,7 @@ Esta actualización exige partir de la versión 0.6.3. Si tienes otra versión, 
 
 ## Evaluación de usuaria y necesidades de negocio
 
-Ale Sánchez probó **Paniko v0.4** durante **tres días**. Reportó que el sistema le ayudó, pero que una pantalla con toda la información resultaba confusa; también solicitó un resumen **semanal** de ventas, ganancias, inversión y pérdidas.
+Ale Sánchez probó **Paniko v0.4** en el periodo del **4 al 7 de noviembre de 2026**, con **tres días de uso reportados**. Reportó que el sistema le ayudó, pero que una pantalla con toda la información resultaba confusa; también solicitó un resumen **semanal** de ventas, ganancias, inversión y pérdidas.
 
 El rediseño v0.7.0/0.7.1 reorganiza las tareas en secciones independientes. Esto **aún debe revalidarse con Ale**; no se atribuye a la usuaria una prueba de v0.7.1.
 
