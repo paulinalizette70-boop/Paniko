@@ -5,6 +5,14 @@ Proyecto académico de Ingeniería Informática — Universidad de Guadalajara, 
 
 Este paquete combina el código local **0.6.0** con las operaciones de **salida manual y ajuste físico de ingredientes** desarrolladas en la rama de inventario. No reemplaza automáticamente la base de datos ni las recetas privadas del negocio.
 
+## Corrección para instalaciones actualizadas desde 0.6.0 (inventario 0.7.1)
+
+**Importante:** El actualizador ZIP 0.7.1 original omitió copiar `src/inventory.js` cuando se instalaba sobre la versión local 0.6.0. Esto deja las operaciones de salida y ajuste físico con el error `TypeError: stockExit is not a function` o `stockAdjustment is not a function`, aunque el servidor MySQL inicie.
+
+La solución es instalar el `src/inventory.js` que ya está incluido en **esta rama de GitHub** y que exporta ambas funciones. Respaldar el archivo local antes de sustituirlo. **No se modifican la base MySQL, `.env`, `private/`, recetas ni existencias.** Después, ejecutar `npm.cmd test` y comprobar que `INV-01`, `INV-02`, `INV-03` aprueben. No registrar movimientos reales hasta entonces.
+
+Para futuras entregas, el instalador desde una versión 0.6.0 **debe incluir también `src/inventory.js`** en su manifiesto. Más detalles en [la nota de corrección](docs/releases/Paniko-0.7.1-correccion-inventario.md).
+
 ## Qué incluye
 
 | Área | Funciones |
