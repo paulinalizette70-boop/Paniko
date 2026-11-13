@@ -1,4 +1,4 @@
-PANIKO 0.7.0 - REDISENIO DE LA PAGINA WEB
+PANIKO 0.7.0 - REDISEÑO DE LA PAGINA WEB
 =======================================
 
 Esta actualizacion mejora la experiencia de uso sin reemplazar la base MySQL.
