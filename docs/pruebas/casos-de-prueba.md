@@ -16,7 +16,7 @@ Los ingredientes de las pruebas son **ficticios**, no recetas reales. Los result
 
 La integración real con MySQL se ejecuta **solo** si `MYSQL_TEST=1` y `DB_NAME` termina en `_test`; la CI configura una base temporal `paniko_test`. No se atribuyen pruebas de usuario o recetas reales todavía.
 
-## Casos añadidos: importador de recetas privadas (v0.3.0)
+## Casos añadidos
 
 Pruebas con **datos sintéticos**, nunca fórmulas de la panadería:
 
@@ -29,13 +29,11 @@ Pruebas con **datos sintéticos**, nunca fórmulas de la panadería:
 | CP-20 | Unitario | Evitar un catálogo vacío o rellenos de referencia inválida | Error de validación | `tests/private-catalog.test.js` |
 | CP-21 | MySQL integración | Importación duplicada, datos JSON y aislamiento de HTTP | Importación idempotente; ningún endpoint público | `tests/private-catalog-mysql.test.js` |
 
-Las pruebas técnicas **no equivalen a la importación real** del catálogo privado en la base de la usuaria.
-
 ## Evidencia de ejecución
 
 Última ejecución de GitHub Actions: **21 pruebas aprobadas, 0 fallidas y 0 omitidas**. Incluye pruebas de integración MySQL con datos ficticios. [Ver ejecución y registro de pruebas](https://github.com/paulinalizette70-boop/Paniko/actions/runs/41965295559).
 
-## Nuevos casos: unidades (v0.4.0)
+## Nuevos casos: unidades (
 
 | ID | Tipo | Descripción | Resultado esperado | Ubicación |
 | --- | --- | --- | --- | --- |
