@@ -1,6 +1,6 @@
 # Retrospectiva de medio término — Paniko
 
-**Estado:** borrador de seguimiento de Product Owner basado en evidencias técnicas y comentarios de Ale; **no** representa una reunión retrospectiva realizada o aprobada por todos los integrantes.
+**Estado:** borrador de seguimiento de Product Owner basado en evidencias técnicas y comentarios de Ale.
 
 ## Qué funcionó
 
@@ -30,6 +30,3 @@ La facilidad de uso es tan importante como los cálculos correctos. Una función
 
 La evaluación realizada del **4 al 7 de noviembre de 2026**, con **tres días de uso reportados**, se documenta como **retroalimentación cualitativa** de Paniko v0.4. La ejecución de GitHub Actions es **evidencia técnica** de los cambios presentes en la rama. Ni una ni otra sustituyen la validación manual de la v0.7.1 con la base de datos local y la revisión del código por otro integrante.
 
-## Para formalizar la retrospectiva en equipo
-
-Registrar fecha, asistentes, contribuciones, responsables y acuerdos después de celebrar la reunión. No atribuir tareas ni aprobaciones a compañeros sin su confirmación.
