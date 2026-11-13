@@ -15,12 +15,15 @@ function notify(message, failed=false) {
   element.className=failed?'toast warning':'toast good';element.hidden=false;
 }
 const normalizeSearch=(value)=>String(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('es');
-const VIEWS={dashboard:'Inicio',production:'Producción',ingredients:'Ingredientes',recipes:'Recetas',products:'Productos y ventas',history:'Historial',private:'Recetas privadas'};
+const VIEWS={dashboard:'Inicio',production:'Producción',ingredients:'Ingredientes',recipes:'Recetas',products:'Productos y ventas',history:'Historial',finance:'Finanzas'};
+let currentUser=null;
 let currentView='dashboard';
 function navigateTo(view,{focus=false}={}) {
   if(!Object.hasOwn(VIEWS,view))return;
-  if(view==='private'&&document.querySelector('[data-view-target="private"]')?.hidden)return;
+  if(view==='finance'&&document.querySelector('[data-view-target="finance"]')?.hidden)return;
   currentView=view;
+  if(view==='recipes')void loadCatalog();
+  if(view==='finance')void loadFinances();
   for(const section of document.querySelectorAll('[data-view]'))section.hidden=section.dataset.view!==view;
   for(const button of document.querySelectorAll('.nav-link')){
     const selected=button.dataset.viewTarget===view;
@@ -42,7 +45,8 @@ function renderIngredientList(){
   const list=ingredients.filter(i=>normalizeSearch(i.name).includes(query));
   for(const item of list){
     const line=make('div',undefined,'inventory-item');
-    const details=make('div');details.append(make('strong',item.name),make('small',`${money(item.costPerUnit)} por ${item.unit}`));
+    const details=make('div');details.append(make('strong',item.name));
+    if(currentUser?.role==='admin')details.append(make('small',`${money(item.costPerUnit)} por ${item.unit}`));
     const count=make('span',`${item.stock} ${item.unit}`,item.stock<=0?'stock-value zero':'stock-value');
     line.append(details,count);root.append(line);
   }
@@ -68,7 +72,7 @@ function renderRecipeList(){
   if(!list.length)root.append(make('p',recipes.length?'No se encontraron recetas.':'Todavía no hay fichas técnicas.','muted'));
 }
 $('ingredient-search').addEventListener('input',renderIngredientList);
-$('recipe-search').addEventListener('input',renderRecipeList);
+$('recipe-search').addEventListener('input',()=>{renderRecipeList();catalogLoaded=false;void loadCatalog(true);});
 
 async function api(path, options) {
   const response = await fetch(path, options);
@@ -136,12 +140,12 @@ function formatProductionDate(value){
 function renderBatchDetail(container,detail){
   container.replaceChildren();
   container.append(make('p',`Lote: ${detail.id}`,'muted'));
-  container.append(make('p',`Confirmado: ${formatProductionDate(detail.createdAt)} · Costo estimado del lote: ${money(detail.estimatedTotalCost)}`));
+  container.append(make('p',`Confirmado: ${formatProductionDate(detail.createdAt)}`+(currentUser?.role==='admin'?` · Costo estimado del lote: ${money(detail.estimatedTotalCost)}`:'')));
   container.append(make('h4','Ingredientes descontados'));
   if(!detail.lines?.length)container.append(make('p','Sin consumos registrados.','muted'));
   for(const line of detail.lines||[]){
     const previous=line.stockBefore===null?'':` · stock ${line.stockBefore} → ${line.stockAfter} ${line.unit}`;
-    container.append(make('div',`${line.name}: ${line.quantity} ${line.unit} · costo estimado ${money(line.estimatedCost)}${previous}`,'list-row'));
+    container.append(make('div',`${line.name}: ${line.quantity} ${line.unit}`+(currentUser?.role==='admin'?` · costo estimado ${money(line.estimatedCost)}`:'')+previous,'list-row'));
   }
   if(detail.finishedProduct){
     const p=detail.finishedProduct;
@@ -156,7 +160,8 @@ function renderProductionHistory(){
   for(const batch of batches){
     const section=make('div',undefined,'list-row');
     const costPerPiece=batch.desiredYield>0?money(batch.estimatedTotalCost/batch.desiredYield):'—';
-    section.append(make('div',`${formatProductionDate(batch.createdAt)} · ${batch.recipeName} · ${batch.desiredYield} piezas · ${money(batch.estimatedTotalCost)} (${costPerPiece}/pieza)`));
+    const finance=currentUser?.role==='admin'?` · ${money(batch.estimatedTotalCost)} (${costPerPiece}/pieza)`:'';
+    section.append(make('div',`${formatProductionDate(batch.createdAt)} · ${batch.recipeName} · ${batch.desiredYield} piezas${finance}`));
     const button=make('button','Ver detalle','secondary');button.type='button';button.setAttribute('aria-expanded','false');
     const detail=make('div',undefined,'production-detail');detail.hidden=true;
     let loaded=false;
@@ -223,7 +228,7 @@ $('adjust-stock-form').elements.ingredient.addEventListener('change',syncAdjustU
 $('ingredient-form').addEventListener('submit', async (event) => {
   event.preventDefault(); const form = event.currentTarget;
   try {
-    await post('/api/ingredients', {name:form.elements.name.value,unit:form.elements.unit.value,costPerUnit:Number(form.elements.cost.value),stock:Number(form.elements.stock.value)});
+    await post('/api/ingredients', {name:form.elements.name.value,unit:form.elements.unit.value,costPerUnit:currentUser?.role==='admin'?Number(form.elements.cost.value||0):0,stock:Number(form.elements.stock.value)});
     form.reset(); await refresh(); notify('Ingrediente registrado.');
   } catch (error) { notify(error.message, true); }
 });
@@ -263,12 +268,12 @@ $('adjust-stock-form').addEventListener('submit',async event=>{
 function renderPreview(result) {
   const container=$('scale-results');container.replaceChildren();
   $('produce-button').disabled=!result.stockAvailable;
-  container.append(make('p', `${result.recipeName} · ${result.desiredYield} piezas · costo estimado ${money(result.estimatedTotalCost)}`));
+  container.append(make('p', `${result.recipeName} · ${result.desiredYield} piezas`+(currentUser?.role==='admin'?` · costo estimado ${money(result.estimatedTotalCost)}`:'')));
   container.append(make('p', `Capacidad con existencias actuales: hasta ${result.maxProducible} piezas.`, result.maxProducible>0?'good':'warning'));
   if(result.limitingIngredients?.length)container.append(make('p', `Insumo(s) limitante(s): ${result.limitingIngredients.join(', ')}`, 'muted'));
   for(const line of result.lines){
     const detail=`${line.name}: necesita ${line.required} ${line.unit} · disponible ${line.stock} ${line.unit}`+
-      (line.shortage>0?` · faltan ${line.shortage} ${line.unit}`:'')+` · ${money(line.estimatedCost)}`;
+      (line.shortage>0?` · faltan ${line.shortage} ${line.unit}`:'')+(currentUser?.role==='admin'?` · ${money(line.estimatedCost)}`:'');
     container.append(make('div',detail,`list-row ${line.sufficient?'':'warning'}`));
   }
   container.append(make('p', result.stockAvailable?'Inventario suficiente para esta producción.':'Inventario insuficiente. No se puede confirmar la producción.', result.stockAvailable?'good':'warning'));
@@ -326,15 +331,17 @@ function showAuthUI(user,required){
   $('workspace').hidden=Boolean(required&&!user);
   $('auth-panel').hidden=Boolean(!required||user);
   $('auth-bar').hidden=Boolean(!required||!user);
+  currentUser=user;
   const admin=Boolean(user?.role==='admin');
-  document.querySelector('[data-view-target="private"]').hidden=!admin;
-  $('stock-adjust-panel').hidden=Boolean(required&&!admin);
-  $('ingredient-create-details').hidden=Boolean(required&&!admin);
-  $('recipe-create-details').hidden=Boolean(required&&!admin);
+  document.querySelector('[data-view-target="finance"]').hidden=!admin;
+  $('ingredient-cost-field').hidden=!admin;
+  $('ingredient-create-details').hidden=false;
+  $('recipe-create-details').hidden=false;
+  $('stock-adjust-panel').hidden=false;
   if(user){$('auth-user').textContent=user.username+' ('+(admin?'Administración':'Operación')+')';
     document.querySelector('.avatar').textContent=user.username.slice(0,1).toUpperCase();}
   if(!user){$('notification').hidden=true;currentView='dashboard';}
-  navigateTo(currentView==='private'&&!admin?'dashboard':currentView);
+  navigateTo(currentView==='finance'&&!admin?'dashboard':currentView);
   document.dispatchEvent(new CustomEvent('paniko:auth',{detail:{user,required}}));
 }
 $('login-form').addEventListener('submit',async event=>{
@@ -347,22 +354,153 @@ $('login-form').addEventListener('submit',async event=>{
 });
 $('logout-button').addEventListener('click',async()=>{
   try{await post('/api/auth/logout',{});}catch(error){notify(error.message,true);}
-  $('private-recipes-list').replaceChildren();showAuthUI(null,true);
+  $('recipe-catalog-list').replaceChildren();catalogLoaded=false;showAuthUI(null,true);
 });
-$('load-private-button').addEventListener('click',async()=>{
- const view=$('private-recipes-list');
- try{
-  const cat=await api('/api/private/catalog');view.replaceChildren();
-  for(const [heading,records] of [['Recetas',cat.recetas||[]],['Rellenos',cat.rellenos||[]]]){
-   view.append(make('h3',heading+' ('+records.length+')'));
-   for(const record of records){
-    const details=make('details');
-    details.append(make('summary',record.title),make('pre',JSON.stringify(record.data,null,2),'recipe-json'));
-    view.append(details);
-   }
-  }
- }catch(error){view.replaceChildren(make('p',error.message,'warning'));}
-});
+let catalogLoaded=false;
+let catalogBusy=false;
+async function loadCatalog(force=false){
+  if(!currentUser || (catalogLoaded&&!force) || catalogBusy)return;
+  catalogBusy=true;
+  const root=$('recipe-catalog-list');root.replaceChildren(make('p','Cargando preparaciones…','muted'));
+  try{
+    const catalog=await api('/api/private/catalog');
+    root.replaceChildren();
+    const all=[...(catalog.recetas||[]).map(record=>({...record,kind:'Preparación'})),
+      ...(catalog.rellenos||[]).map(record=>({...record,kind:'Relleno'}))];
+    if(!all.length)root.append(make('p','Todavía no hay preparaciones adicionales registradas.','muted'));
+    const query=normalizeSearch($('recipe-search').value.trim());
+    const filtered=all.filter(record=>normalizeSearch(record.title).includes(query));
+    const pieceUnits=['pieza','piezas','panes','hogazas','baguettes','panques','placas','bollos','galletas','unidades','porciones','croissants','rollos'];
+    const candidates=all.filter(record=>{
+      const data=record.data||{};
+      return record.kind==='Preparación'&&data.id&&data.estado==='confirmada'&&
+        !data.componentes?.length&&pieceUnits.includes(normalizeSearch(data.rendimiento?.unidad||''))&&
+        Number.isInteger(data.rendimiento?.cantidad)&&data.rendimiento.cantidad>0&&
+        Array.isArray(data.ingredientes)&&data.ingredientes.length>0&&
+        data.ingredientes.every(i=>Number.isFinite(i.cantidad)&&i.cantidad>0&&['g','kg','ml','l','pieza'].includes(i.unidad))&&
+        !recipes.some(r=>normalizeSearch(r.name)===normalizeSearch(record.title));
+    });
+    if(candidates.length){
+      const bulk=make('button',`Crear las ${candidates.length} fichas completas`,'btn-primary');bulk.type='button';
+      bulk.addEventListener('click',async()=>{
+        if(!confirm(`Se crearán ${candidates.length} fichas técnicas a partir de tus recetas, sin descontar inventario. Los ingredientes faltantes se registrarán con existencia y costo cero. ¿Continuar?`))return;
+        bulk.disabled=true;let created=0,errors=[];
+        for(const record of candidates){
+          try{
+            const result=await post(`/api/recipes/from-catalog/${record.data.id}`,{baseYield:record.data.rendimiento.cantidad});
+            if(!result.existing)created++;
+          }catch(error){errors.push(record.title+': '+error.message);}
+        }
+        await refresh();catalogLoaded=false;
+        notify(`${created} fichas técnicas creadas.`+(errors.length?` ${errors.length} pendientes: ${errors.join('; ')}`:''),errors.length>0);
+        void loadCatalog(true);
+      });
+      root.append(bulk,make('p','Solo se incluyen recetas confirmadas con rendimiento en piezas e ingredientes completos.','hint'));
+    }
+    for(const record of filtered){
+      const data=record.data||{};
+      const details=make('details',undefined,'catalog-recipe');
+      const summary=make('summary',undefined);
+      summary.append(make('strong',record.title),make('span',record.kind,'recipe-status'));
+      details.append(summary);
+      const yieldInfo=data.rendimiento;
+      if(yieldInfo&&yieldInfo.cantidad)details.append(make('p',`Rendimiento: ${yieldInfo.cantidad} ${yieldInfo.unidad||''}`,'muted'));
+      if(record.status)details.append(make('p',`Estado: ${record.status}`,'muted'));
+      if(Array.isArray(data.ingredientes)&&data.ingredientes.length){
+        details.append(make('h4','Ingredientes'));
+        for(const ingredient of data.ingredientes){
+          const amount=ingredient.cantidad??(ingredient.minimo!==undefined?`${ingredient.minimo}–${ingredient.maximo}`:'Cantidad por definir');
+          details.append(make('div',`${ingredient.ingrediente}: ${amount} ${ingredient.unidad||''}`,'list-row'));
+        }
+      }
+      if(Array.isArray(data.componentes)&&data.componentes.length){
+        details.append(make('h4','Subpreparaciones'));
+        for(const item of data.componentes)details.append(make('p',item.nombre||item.id||'Componente','muted'));
+      }
+      if(data.observaciones)details.append(make('p',`Notas: ${data.observaciones}`,'muted'));
+      const already=recipes.some(r=>normalizeSearch(r.name)===normalizeSearch(record.title));
+      const canConvert=record.kind==='Preparación' && data.id && /^[a-z][a-z0-9_]{0,99}$/.test(data.id);
+      if(already){
+        details.append(make('p','Ficha técnica disponible. Puedes escalarla en Producción.','good'));
+      }else if(canConvert){
+        const items=Array.isArray(data.ingredientes)?data.ingredientes:[];
+        const problems=[];
+        if(data.estado!=='confirmada')problems.push('Fórmula pendiente de validación');
+        if(data.componentes?.length)problems.push('Tiene subpreparaciones que debes revisar');
+        for(const i of items){
+          if(typeof i.cantidad!=='number'||i.cantidad<=0)problems.push(`${i.ingrediente||'Ingrediente'}: falta cantidad exacta`);
+          if(!['g','kg','ml','l','pieza'].includes(i.unidad))problems.push(`${i.ingrediente||'Ingrediente'}: unidad por definir`);
+        }
+        if(!items.length)problems.push('No tiene ingredientes completos');
+        if(problems.length){
+          details.append(make('p','Ficha pendiente: '+problems.join('; ')+'.','warning'));
+        }else{
+          const yieldUnit=normalizeSearch(data.rendimiento?.unidad||'');
+          const unitMeansPieces=['pieza','piezas','panes','hogazas','baguettes','panques','placas','bollos','galletas','unidades','porciones','croissants','rollos'].includes(yieldUnit);
+          const readyYield=unitMeansPieces&&Number.isInteger(data.rendimiento?.cantidad)&&data.rendimiento.cantidad>0;
+          let yieldField=null;
+          if(!readyYield){
+            const label=make('label','¿Cuántas piezas salen de este lote?');
+            const hint=make('small','Indica el número de piezas, no los gramos de masa.');
+            yieldField=make('input');yieldField.type='number';yieldField.min='1';yieldField.step='1';yieldField.max='1000000000';yieldField.required=true;yieldField.placeholder='Piezas del lote';
+            label.append(yieldField,hint);details.append(label);
+          }
+          const create=make('button','Crear ficha técnica escalable','btn-primary');create.type='button';
+          create.addEventListener('click',async()=>{
+            const baseYield=readyYield?data.rendimiento.cantidad:Number(yieldField?.value);
+            if(!Number.isSafeInteger(baseYield)||baseYield<=0){notify('Especifica las piezas reales que produce el lote.',true);yieldField?.focus();return;}
+            const confirmation=`¿Crear la ficha de ${record.title} para ${baseYield} piezas? Se conectarán los ingredientes existentes. Si falta alguno, se registrará con existencia y costo cero. Esta acción NO descuenta inventario.`;
+            if(!confirm(confirmation))return;
+            create.disabled=true;
+            try{
+              const result=await post(`/api/recipes/from-catalog/${data.id}`,{baseYield});
+              await refresh();catalogLoaded=false;
+              notify(result.existing?'La ficha ya existía; revisa su rendimiento.':`Ficha creada para ${baseYield} piezas. ${result.createdIngredients.length} ingredientes nuevos sin existencias.`);
+              void loadCatalog(true);
+            }catch(error){notify(error.message,true);create.disabled=false;}
+          });
+          details.append(create,make('p','No se modifica el inventario hasta confirmar una producción.','hint'));
+        }
+      }else{
+        details.append(make('p','Relleno de consulta; se utiliza como ingrediente o preparación de otras recetas.','hint'));
+      }
+      root.append(details);
+    }
+    if(!filtered.length&&all.length)root.append(make('p','No hay preparaciones que coincidan con la búsqueda.','muted'));
+    catalogLoaded=true;
+  }catch(error){root.replaceChildren(make('p','No se pudieron cargar las preparaciones: '+error.message,'warning'));}
+  finally{catalogBusy=false;}
+}
+$('refresh-recipe-catalog').addEventListener('click',()=>{catalogLoaded=false;void loadCatalog(true);});
+
+async function loadFinances(){
+  if(currentUser?.role!=='admin')return;
+  const root=$('finance-ingredient-list');root.replaceChildren(make('p','Consultando costos…','muted'));
+  try{
+    const result=await api('/api/finance/overview');
+    $('finance-inventory-value').textContent=money(result.inventoryValue);
+    $('finance-batch-cost').textContent=money(result.recentBatchCost);
+    root.replaceChildren();
+    if(!result.ingredients.length)root.append(make('p','No hay ingredientes registrados.','muted'));
+    for(const item of result.ingredients){
+      const form=make('form',undefined,'finance-cost-row');
+      const description=make('div');description.append(make('strong',item.name),make('small',`${item.stock} ${item.unit} · Valor: ${money(item.inventoryValue)}`));
+      const label=make('label','Costo unitario (MXN)');
+      const input=make('input');input.type='number';input.min='0';input.step='0.0001';input.value=String(item.costPerUnit);input.required=true;
+      label.append(input);
+      const save=make('button','Guardar costo','btn-soft');save.type='submit';
+      form.append(description,label,save);
+      form.addEventListener('submit',async event=>{
+        event.preventDefault();save.disabled=true;
+        try{await post(`/api/finance/ingredients/${item.id}/cost`,{costPerUnit:Number(input.value)});
+          await loadFinances();await refresh();notify(`Costo de ${item.name} actualizado.`);
+        }catch(error){notify(error.message,true);}finally{save.disabled=false;}
+      });
+      root.append(form);
+    }
+  }catch(error){root.replaceChildren(make('p',error.message,'warning'));}
+}
+
 async function initializePaniko(){
   addRecipeItem();showAuthUI(null,true);
   try{

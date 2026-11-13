@@ -55,7 +55,7 @@ test('FP-03 importar catálogo es idempotente y NO modifica existencias',async()
   assert.equal(sqls.filter(x=>x.includes('INSERT INTO finished_products')).length,1);
 });
 
-test('FP-04 API terminados: requiere sesión; operador vende, admin crea y sincroniza',async t=>{
+test('FP-04 API terminados: requiere sesión; equipo administra catálogo y administración fija precios',async t=>{
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'fp-api-'));
   const auth={
     async userForToken(token){if(token==='A'.repeat(43))return{role:'admin'};if(token==='B'.repeat(43))return{role:'operador'};return null;},
@@ -78,14 +78,14 @@ test('FP-04 API terminados: requiere sesión; operador vende, admin crea y sincr
   const base='http://127.0.0.1:'+server.address().port;
   const guest=await fetch(base+'/api/products');assert.equal(guest.status,401);
   const post=async(uri,role='B')=>fetch(base+uri,{method:'POST',headers:{Cookie:'paniko_session='+role.repeat(43),'Content-Type':'application/json'},body:'{}'});
-  assert.equal((await post('/api/products')).status,403);
-  assert.equal((await post('/api/products/import-catalog')).status,403);
-  assert.equal((await post('/api/products/'+validId+'/update')).status,403);
+  assert.equal((await post('/api/products')).status,201);
+  assert.equal((await post('/api/products/import-catalog')).status,200);
+  assert.equal((await post('/api/products/'+validId+'/update')).status,200);
   assert.equal((await post('/api/products/'+validId+'/movements')).status,201);
-  assert.equal(modified,1);assert.equal(created,0);assert.equal(synced,0);
+  assert.equal(modified,1);assert.equal(created,2);assert.equal(synced,1);
   assert.equal((await post('/api/products','A')).status,201);
   assert.equal((await post('/api/products/import-catalog','A')).status,200);
-  assert.equal(created,1);assert.equal(synced,1);
+  assert.equal(created,3);assert.equal(synced,2);
   const csrf=await fetch(base+'/api/products/import-catalog',{method:'POST',headers:{Origin:'https://ejemplo.evil',Cookie:'paniko_session='+'A'.repeat(43)},body:'{}'});
   assert.equal(csrf.status,403);
   const list=await fetch(base+'/api/products',{headers:{Cookie:'paniko_session='+'B'.repeat(43)}});

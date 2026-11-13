@@ -1,0 +1,33 @@
+PANIKO 0.7.1 — RECETAS Y FICHAS TÉCNICAS PARA TODO EL PERSONAL
+==========================================================
+
+- Una sola sección Recetas, visible para administradores y operadores.
+- Se pueden consultar las fórmulas originales y crear fichas técnicas escalables desde ellas.
+- Botón «Crear las fichas completas»: solo recetas confirmadas, con cantidades y rendimiento en piezas verificados.
+- Recetas incompletas permanecen en consulta y muestran qué información falta; no se estiman cantidades.
+- Los ingredientes nuevos se crean con stock=0 y costo=0, sin alterar existencias.
+- Apartado Finanzas visible y accesible únicamente para administración, tanto en la web como en la API.
+- Sin cambios de tablas de MySQL, contraseñas, .env ni recetas guardadas en private/.
+- No se publica ninguna fórmula real en GitHub.
+
+INSTALACIÓN
+1) Cierra el servidor de Paniko (Ctrl+C).
+2) Extrae este ZIP fuera de la carpeta donde funciona Paniko.
+3) Abre PowerShell en la carpeta Paniko-0.7.1.
+4) Ejecuta:
+   powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ACTUALIZAR_PROGRAMA.ps1 -Destino "D:\Paniko-main\Paniko-main"
+5) Revisa el resumen y escribe ACTUALIZAR para confirmar.
+6) Comprueba:
+   cd "D:\Paniko-main\Paniko-main"
+   node -p "require('./package.json').version"
+   npm.cmd test
+   node --env-file=.env server.js
+7) Abre http://127.0.0.1:3000 y presiona Ctrl+F5.
+
+IMPORTANTE
+- El instalador funciona sobre Paniko 0.6.3 O Paniko 0.7.0.
+- No ejecuta ninguna conversión sobre la BD durante la instalación.
+- Abre Recetas y usa «Crear las fichas completas». Revisa antes de confirmar: se crean
+  fichas e ingredientes que falten, pero nunca se descuentan existencias.
+- Si alguna receta falta o marca «pendiente», revisa su rendimiento o cantidades reales.
+- No ejecutes pruebas MYSQL_TEST contra la base real; usa una BD separada *_test.

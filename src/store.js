@@ -21,6 +21,14 @@ function createStore(filePath) {
   return {
     listIngredients: () => read().ingredients,
     listRecipes: () => read().recipes,
+    updateIngredientCost(id,costPerUnit){
+      if(typeof costPerUnit!=='number'||!Number.isFinite(costPerUnit)||costPerUnit<0||costPerUnit>1e9||
+         Math.abs(costPerUnit-Math.round(costPerUnit*1e4)/1e4)>1e-10)
+        throw new ValidationError('Costo inválido: máximo cuatro decimales');
+      const data=read(),item=data.ingredients.find(x=>x.id===id);
+      if(!item)throw new ValidationError('Ingrediente no encontrado',404);
+      item.costPerUnit=costPerUnit;write(data);return {id,costPerUnit};
+    },
     listMovements: () => read().movements.slice().reverse(),
     listProduction: () => read().batches.slice().reverse(),
     getProductionBatch(id) {

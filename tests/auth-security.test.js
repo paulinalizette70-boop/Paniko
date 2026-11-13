@@ -31,10 +31,11 @@ test('AUTH-02 API protege fÃ³rmulas y operaciones mediante permisos (datos sintÃ
  const base='http://127.0.0.1:'+server.address().port;
  const guest=await fetch(base+'/api/private/catalog');assert.equal(guest.status,401);
  const noStock=await fetch(base+'/api/ingredients');assert.equal(noStock.status,401);
- const operator=await fetch(base+'/api/private/catalog',{headers:{Cookie:'paniko_session='+ 'B'.repeat(43)}});assert.equal(operator.status,403);
+ const operator=await fetch(base+'/api/private/catalog',{headers:{Cookie:'paniko_session='+ 'B'.repeat(43)}});assert.equal(operator.status,200);
+ const accessible=await operator.json();assert.equal(accessible.recetas[0].title,'Receta ficticia');
  const admin=await fetch(base+'/api/private/catalog',{headers:{Cookie:'paniko_session='+'A'.repeat(43)}});
  assert.equal(admin.status,200);assert.equal((await admin.json()).recetas[0].title,'Receta ficticia');
- const mutate=await fetch(base+'/api/ingredients',{method:'POST',headers:{Cookie:'paniko_session='+ 'B'.repeat(43),'Content-Type':'application/json'},body:JSON.stringify({name:'No debe crearse',unit:'kg',costPerUnit:10,stock:0})});assert.equal(mutate.status,403);
+ const mutate=await fetch(base+'/api/ingredients',{method:'POST',headers:{Cookie:'paniko_session='+ 'B'.repeat(43),'Content-Type':'application/json'},body:JSON.stringify({name:'No debe crearse',unit:'kg',costPerUnit:10,stock:0})});assert.equal(mutate.status,201);assert.equal(store.listIngredients().find(x=>x.name==='No debe crearse').costPerUnit,0);
  const csrf=await fetch(base+'/api/ingredients',{method:'POST',headers:{Origin:'https://otro.ejemplo',Cookie:'paniko_session='+ 'A'.repeat(43),'Content-Type':'application/json'},body:'{}'});assert.equal(csrf.status,403);
  const login=await fetch(base+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:'admin',password:'ejemplo'})});
  assert.equal(login.status,200);assert.match(login.headers.get('set-cookie'),/HttpOnly/);

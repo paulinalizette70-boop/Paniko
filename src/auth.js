@@ -46,6 +46,13 @@ function makeAuth(pool){
   return rows.length?{id:rows[0].id,username:rows[0].username,role:rows[0].role}:null;
  }
  async function logout(token){if(token)await pool.execute('DELETE FROM auth_sessions WHERE token_hash=?',[tokenHash(token)]);}
+ async function getCatalogRecipe(id){
+  if(typeof id!=='string'||!/^[a-z][a-z0-9_]{0,99}$/.test(id))return null;
+  const [rows]=await pool.execute('SELECT raw_data FROM private_catalog_recipes WHERE catalog_id=? LIMIT 1',[id]);
+  if(!rows.length)return null;
+  const raw=rows[0].raw_data;
+  return typeof raw==='string'?JSON.parse(raw):raw;
+ }
  async function privateCatalog(){
   const [recetas]=await pool.execute('SELECT title,review_status,raw_data FROM private_catalog_recipes ORDER BY title');
   const [productos]=await pool.execute('SELECT title,raw_data FROM private_catalog_products ORDER BY title');
@@ -53,6 +60,6 @@ function makeAuth(pool){
   const parse=value=>typeof value==='string'?JSON.parse(value):value;
   return {recetas:recetas.map(r=>({title:r.title,status:r.review_status,data:parse(r.raw_data)})),productos:productos.map(r=>({title:r.title,data:parse(r.raw_data)})),rellenos:rellenos.map(r=>({title:r.title,type:r.filling_kind,data:parse(r.raw_data)}))};
  }
- return {createUser,login,userForToken,logout,privateCatalog};
+ return {createUser,login,userForToken,logout,privateCatalog,getCatalogRecipe};
 }
 module.exports={makeAuth,userName,validatePassword,passwordHash,getCookieToken,cookieForToken,expiredCookie};

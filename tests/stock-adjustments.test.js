@@ -44,8 +44,8 @@ test('INV-03 API controla autenticación y rol para ajustes de insumos',async t=
   const url='http://127.0.0.1:'+server.address().port+'/api/ingredients/'+ing.id;
   const send=(suffix,token,body)=>fetch(url+suffix,{method:'POST',headers:{'Content-Type':'application/json',...(token?{Cookie:'paniko_session='+token}:{})},body:JSON.stringify(body)});
   assert.equal((await send('/adjust-stock',null,{newStock:1,reason:'Nada'})).status,401);
-  assert.equal((await send('/adjust-stock','B'.repeat(43),{newStock:1,reason:'No autorizado'})).status,403);
-  assert.equal(store.listIngredients()[0].stock,2);
+  assert.equal((await send('/adjust-stock','B'.repeat(43),{newStock:1,reason:'Conteo de operador'})).status,200);
+  assert.equal(store.listIngredients()[0].stock,1);
   assert.equal((await send('/stock-out','B'.repeat(43),{quantity:0.25,unit:'kg',reason:'Consumo'})).status,200);
   assert.equal((await send('/adjust-stock','A'.repeat(43),{newStock:1.5,reason:'Conteo'})).status,200);
   assert.equal(store.listIngredients()[0].stock,1.5);

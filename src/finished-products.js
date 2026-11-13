@@ -78,12 +78,17 @@ function createFinishedProductStore(pool){
     catch(e){throw dbError(e);}
     return {id,name,categoryId:cat,stock:0,salePrice:price,minStock:min,operationalRecipeId:linked,unit:'pieza'};
   }
-  async function updateProduct(id,raw){
+  async function updateProduct(id,raw,{preservePrice=false}={}){
     if(!isUUID(id))throw new ValidationError('Producto no válido');
     const name=text(raw?.name,'Nombre de producto');
     const cat=categoryId(raw?.categoryId);
     if(!cat)throw new ValidationError('Selecciona una categoría');
-    const price=moneyOptional(raw?.salePrice);
+    let price=preservePrice?null:moneyOptional(raw?.salePrice);
+    if(preservePrice){
+      const [existing]=await pool.execute('SELECT sale_price FROM finished_products WHERE id=?',[id]);
+      if(!existing.length)throw new ValidationError('Producto no encontrado',404);
+      price=existing[0].sale_price===null?null:Number(existing[0].sale_price);
+    }
     const min=(raw?.minStock===null||raw?.minStock===undefined||raw?.minStock==='')?null:quantity(raw.minStock,'Stock mínimo',true);
     const linked=recipeId(raw?.operationalRecipeId);
     if(typeof raw?.active!=='boolean')throw new ValidationError('Estado activo inválido');

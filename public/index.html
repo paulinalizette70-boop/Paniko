@@ -54,9 +54,9 @@
           <button class="nav-link" type="button" data-view-target="recipes"><svg class="icon"><use href="#i-book"/></svg><span>Recetas</span></button>
           <button class="nav-link" type="button" data-view-target="products"><svg class="icon"><use href="#i-cart"/></svg><span>Productos y ventas</span></button>
           <button class="nav-link" type="button" data-view-target="history"><svg class="icon"><use href="#i-clock"/></svg><span>Historial</span></button>
-          <button class="nav-link admin-nav" type="button" data-view-target="private" hidden><svg class="icon"><use href="#i-lock"/></svg><span>Recetas privadas</span></button>
+          <button class="nav-link admin-nav" type="button" data-view-target="finance" hidden><svg class="icon"><use href="#i-lock"/></svg><span>Finanzas</span></button>
         </nav>
-        <div class="sidebar-bottom"><span class="sidebar-motto">Un día a la vez,<br/>un pan a la vez.</span><span class="version-label">Versión 0.7.0</span></div>
+        <div class="sidebar-bottom"><span class="sidebar-motto">Un día a la vez,<br/>un pan a la vez.</span><span class="version-label">Versión 0.7.1</span></div>
       </aside>
 
       <div class="main-column">
@@ -123,18 +123,23 @@
               <details class="panel action-details"><summary><span class="action-icon accent-peach"><svg class="icon"><use href="#i-arrow"/></svg></span><span><strong>Salida de ingredientes</strong><small>Retirar insumos fuera de una producción</small></span><svg class="icon arrow"><use href="#i-chevron"/></svg></summary>
                 <form id="stock-out-form" class="form-stack inset-form"><label>Ingrediente<select name="ingredient" required></select></label><div class="input-pair"><label>Cantidad retirada<input name="quantity" type="number" min="0.000001" step="0.000001" required/></label><label>Unidad<select name="unit" required></select></label></div><label>Motivo<input name="reason" maxlength="150" value="Consumo no asociado a producción" required/></label><button type="submit" class="btn-primary">Guardar salida</button></form>
               </details>
-              <details class="panel action-details" id="stock-adjust-panel"><summary><span class="action-icon accent-sand"><svg class="icon"><use href="#i-box"/></svg></span><span><strong>Corregir existencias</strong><small>Conteo físico · Solo administración</small></span><svg class="icon arrow"><use href="#i-chevron"/></svg></summary>
+              <details class="panel action-details" id="stock-adjust-panel"><summary><span class="action-icon accent-sand"><svg class="icon"><use href="#i-box"/></svg></span><span><strong>Corregir existencias</strong><small>Ajusta las existencias tras un conteo</small></span><svg class="icon arrow"><use href="#i-chevron"/></svg></summary>
                 <form id="adjust-stock-form" class="form-stack inset-form"><label>Ingrediente<select name="ingredient" required></select></label><label>Existencia real (<span id="adjust-unit-label">unidad</span>)<input name="newStock" type="number" min="0" step="0.000001" required/></label><label>Motivo<input name="reason" maxlength="142" required placeholder="Conteo físico o corrección"/></label><button type="submit" class="btn-primary">Guardar corrección</button></form>
               </details>
             </div>
             <details class="panel action-details add-new-details" id="ingredient-create-details"><summary><span class="action-icon accent-olive"><svg class="icon"><use href="#i-plus"/></svg></span><span><strong>Agregar un ingrediente nuevo</strong><small>Solo si todavía no está en tu catálogo</small></span><svg class="icon arrow"><use href="#i-chevron"/></svg></summary>
-              <form id="ingredient-form" class="form-stack inset-form"><label>Nombre del ingrediente<input name="name" required maxlength="100" placeholder="Harina de trigo"/></label><div class="input-pair"><label>Unidad<select name="unit"><option>kg</option><option>g</option><option>l</option><option>ml</option><option>pieza</option></select></label><label>Costo por unidad (MXN)<input name="cost" type="number" min="0" step="0.0001" required placeholder="25"/></label></div><label>Existencia inicial<input name="stock" type="number" min="0" step="0.000001" required value="0"/></label><button type="submit" class="btn-primary">Guardar ingrediente</button></form>
+              <form id="ingredient-form" class="form-stack inset-form"><label>Nombre del ingrediente<input name="name" required maxlength="100" placeholder="Harina de trigo"/></label><div class="input-pair"><label>Unidad<select name="unit"><option>kg</option><option>g</option><option>l</option><option>ml</option><option>pieza</option></select></label><label id="ingredient-cost-field" class="admin-only">Costo por unidad (MXN) · administración<input name="cost" type="number" min="0" step="0.0001" placeholder="25"/></label></div><label>Existencia inicial<input name="stock" type="number" min="0" step="0.000001" required value="0"/></label><button type="submit" class="btn-primary">Guardar ingrediente</button></form>
             </details>
           </section>
 
           <section class="view" data-view="recipes" aria-labelledby="recipes-title" hidden>
-            <div class="page-heading"><span class="eyebrow">TUS FÓRMULAS DE TRABAJO</span><h1 id="recipes-title">Recetas operativas</h1><p>Consulta las fichas que Paniko utiliza para calcular y descontar ingredientes.</p></div>
-            <div class="panel"><div class="section-heading panel-heading"><div><h2>Mis recetas</h2><p class="muted">Aquí solo aparecen las fichas operativas registradas.</p></div><label class="search-field"><span class="visually-hidden">Buscar receta</span><input id="recipe-search" type="search" placeholder="Buscar receta…" autocomplete="off"/></label></div><div id="recipe-list" class="inventory-list">Sin recetas.</div></div>
+            <div class="page-heading"><span class="eyebrow">TUS FÓRMULAS DE TRABAJO</span><h1 id="recipes-title">Recetas</h1><p>Aquí encuentras las fórmulas para producir, las preparaciones y los rellenos. Todos los usuarios de Paniko pueden consultarlos.</p></div>
+            <div class="panel"><div class="section-heading panel-heading"><div><h2>Fichas técnicas escalables</h2><p class="muted">Se generan de tus recetas originales y se conectan con el inventario para planear y confirmar producción.</p></div><label class="search-field"><span class="visually-hidden">Buscar receta</span><input id="recipe-search" type="search" placeholder="Buscar receta…" autocomplete="off"/></label></div><div id="recipe-list" class="inventory-list">Sin recetas.</div></div>
+            <div class="panel" id="recipe-catalog-panel">
+              <div class="section-heading panel-heading"><div><h2>Recetas originales y rellenos</h2><p class="muted">A partir de tus fórmulas puedes crear una ficha técnica escalable con un clic cuando tenga todos sus datos. Si falta el rendimiento en piezas, Paniko te lo indicará sin inventarlo.</p></div></div>
+              <div id="recipe-catalog-list" class="inventory-list" aria-live="polite"><p class="muted">Abre Recetas para consultar las preparaciones adicionales.</p></div>
+              <button id="refresh-recipe-catalog" type="button" class="btn-soft">Actualizar preparaciones</button>
+            </div>
             <details class="panel action-details add-new-details" id="recipe-create-details"><summary><span class="action-icon accent-peach"><svg class="icon"><use href="#i-plus"/></svg></span><span><strong>Crear una ficha de producción</strong><small>Indica ingredientes y rendimiento base</small></span><svg class="icon arrow"><use href="#i-chevron"/></svg></summary>
               <form id="recipe-form" class="form-stack inset-form"><div class="input-pair"><label>Nombre de la receta<input name="name" maxlength="100" required placeholder="Ej. Conchas"/></label><label>Rendimiento base (piezas)<input name="yield" type="number" min="1" step="1" required value="10"/></label></div><div class="recipe-ingredients-head"><h3>Ingredientes para ese rendimiento</h3><p class="hint">Especifica la cantidad y unidad de cada ingrediente.</p></div><div id="recipe-items"></div><button type="button" id="add-item" class="btn-soft"><svg class="icon"><use href="#i-plus"/></svg> Añadir otro ingrediente</button><button type="submit" class="btn-primary">Guardar ficha técnica</button></form>
             </details>
@@ -154,9 +159,13 @@
             <div class="panel history-movements"><div class="section-heading panel-heading"><div><h2>Movimientos de ingredientes</h2><p class="muted">Entradas, salidas y correcciones recientes.</p></div></div><div id="movement-list" aria-live="polite" class="inventory-list"></div></div>
           </section>
 
-          <section id="private-recipes-panel" class="view" data-view="private" aria-labelledby="private-title" hidden>
-            <div class="page-heading"><span class="eyebrow">ACCESO DE ADMINISTRACIÓN</span><h1 id="private-title">Recetas privadas</h1><p>Consulta tus recetas de preparación y rellenos. No descuentan ingredientes automáticamente.</p></div>
-            <div class="panel"><button id="load-private-button" type="button" class="btn-primary">Consultar recetas privadas <svg class="icon"><use href="#i-arrow"/></svg></button><div id="private-recipes-list"></div></div>
+          <section id="finance-panel" class="view" data-view="finance" aria-labelledby="finance-title" hidden>
+            <div class="page-heading"><span class="eyebrow">SOLO ADMINISTRACIÓN</span><h1 id="finance-title">Gestión financiera</h1><p>Costos de insumos y valor estimado del inventario. El personal operativo no tiene acceso a esta información.</p></div>
+            <div class="stats-grid finance-metrics">
+              <div class="stat-card"><div><span class="stat-label">Valor estimado de ingredientes</span><strong id="finance-inventory-value">—</strong><small>Existencias × costo unitario</small></div></div>
+              <div class="stat-card"><div><span class="stat-label">Costo estimado de lotes recientes</span><strong id="finance-batch-cost">—</strong><small>Últimos lotes registrados</small></div></div>
+            </div>
+            <div class="panel finance-editor"><div class="section-heading panel-heading"><div><h2>Costos de ingredientes</h2><p class="muted">Solo administración puede consultar o actualizar el costo unitario. Los cambios afectan los cálculos futuros, no los costos registrados en lotes anteriores.</p></div></div><div id="finance-ingredient-list" aria-live="polite"></div></div>
           </section>
 
           <footer class="app-footer">Paniko · Elaborado con cariño para panaderías artesanales <span>Proyecto académico · Uso local</span></footer>

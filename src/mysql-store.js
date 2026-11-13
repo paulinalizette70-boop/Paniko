@@ -1,5 +1,6 @@
 'use strict';
 const crypto = require('node:crypto');
+const {promoteCatalogRecipe} = require('./catalog-to-recipe');
 const {ValidationError, validateIngredient, validateRecipe, scaleRecipe} = require('./domain');
 const {stockEntry, stockExit, stockAdjustment, validateProduction, safeStockSum, roundQuantity} = require('./inventory');
 
@@ -37,6 +38,15 @@ function createMysqlStore(pool) {
     const [rows] = await pool.execute('SELECT id, name, unit, cost_per_unit, stock FROM ingredients ORDER BY name, id');
     return rows.map(ingredientFromRow);
   }
+  async function updateIngredientCost(id,costPerUnit){
+    if(typeof costPerUnit!=='number'||!Number.isFinite(costPerUnit)||costPerUnit<0||costPerUnit>1e9||
+       Math.abs(costPerUnit-Math.round(costPerUnit*1e4)/1e4)>1e-10)
+      throw new ValidationError('Costo inválido: máximo cuatro decimales');
+    const [result]=await pool.execute('UPDATE ingredients SET cost_per_unit=? WHERE id=?',[costPerUnit,id]);
+    if(result.affectedRows!==1)throw new ValidationError('Ingrediente no encontrado',404);
+    return {id,costPerUnit};
+  }
+  async function importCatalogRecipe(source,baseYield){return promoteCatalogRecipe(pool,source,baseYield);}
   async function listRecipes() {
     const [rows] = await pool.execute('SELECT id, name, base_yield FROM recipes ORDER BY name, id');
     const [items] = await pool.execute('SELECT recipe_id, ingredient_id, quantity FROM recipe_items ORDER BY recipe_id, ingredient_id');
@@ -204,6 +214,6 @@ function createMysqlStore(pool) {
         finishedProduct:finished,lines:result.lines.map(line=>({ingredientId:line.ingredientId,name:line.name,unit:line.unit,quantity:line.required,estimatedCost:line.estimatedCost}))};
     });
   }
-  return {listIngredients,listRecipes,getRecipe,addIngredient,addRecipe,preview,listMovements,listProduction,getProductionBatch,stockIn,stockOut,adjustStock,confirmProduction};
+  return {listIngredients,updateIngredientCost,importCatalogRecipe,listRecipes,getRecipe,addIngredient,addRecipe,preview,listMovements,listProduction,getProductionBatch,stockIn,stockOut,adjustStock,confirmProduction};
 }
 module.exports={createMysqlStore};

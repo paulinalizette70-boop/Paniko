@@ -179,3 +179,14 @@ h3{font-size:1rem;font-weight:750}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.view,.quick-card,.btn-primary,.nav-link{animation:none;transition:none}}
 
 .preview-symbol{color:#7d9c72;font-size:1.6rem;line-height:1;margin-bottom:10px}
+
+/* v0.7.1 · Todas las recetas para el equipo; costos exclusivos de administración */
+.catalog-recipe{padding:14px 16px;border:1px solid var(--border);border-radius:13px;background:#fbfbf7;margin-bottom:12px}
+.catalog-recipe summary{display:flex;align-items:center;justify-content:space-between;gap:14px;cursor:pointer;color:#405b42}
+.catalog-recipe summary strong{font-size:.97rem}.catalog-recipe>h4{margin:18px 0 7px}
+.catalog-recipe>p{margin:13px 0 0;font-size:.86rem;line-height:1.6}
+.recipe-status{display:inline-flex;align-items:center;font-size:.72rem;font-weight:750;border-radius:99px;padding:5px 10px;background:#eaf0e3;color:#4f6e4b}
+.finance-metrics{margin-bottom:22px;grid-template-columns:repeat(2,minmax(0,1fr))}
+.finance-editor{margin-top:22px}.finance-cost-row{display:grid;grid-template-columns:minmax(170px,1fr) minmax(150px,200px) auto;align-items:end;gap:16px;padding:16px 0;border-bottom:1px solid var(--border)}
+.finance-cost-row:last-child{border-bottom:0}.finance-cost-row>div{display:grid;gap:5px}.finance-cost-row small{display:block;color:var(--ink-soft)}
+@media(max-width:650px){.finance-cost-row{grid-template-columns:1fr}.finance-metrics{grid-template-columns:1fr}.catalog-recipe summary{flex-wrap:wrap}}

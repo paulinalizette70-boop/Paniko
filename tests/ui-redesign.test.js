@@ -13,7 +13,7 @@ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
 const products=fs.readFileSync(path.join(root,'products.js'),'utf8');
 
 test('UX-01 secciones y formularios existentes conservan sus IDs para no romper operaciones',()=>{
- const expectedViews=['dashboard','production','ingredients','recipes','products','history','private'];
+ const expectedViews=['dashboard','production','ingredients','recipes','products','history','finance'];
  for(const view of expectedViews){
    assert.match(html,new RegExp('data-view="'+view+'"'));
    assert.match(html,new RegExp('data-view-target="'+view+'"'));
@@ -22,7 +22,7 @@ test('UX-01 secciones y formularios existentes conservan sus IDs para no romper 
  for(const id of expectedForms)assert.ok(html.includes('id="'+id+'"'),'Falta formulario '+id);
  const expectedIds=['finished-inventory-content','scale-results','produce-button','max-production-button','finished-product-selector',
    'recipe-items','ingredient-list','recipe-list','production-list','production-filter','movement-list',
-   'auth-panel','auth-bar','auth-user','auth-message','notification','private-recipes-list',
+   'auth-panel','auth-bar','auth-user','auth-message','notification','recipe-catalog-list','finance-ingredient-list',
    'ingredient-search','recipe-search','finished-search','finished-low-only'];
  for(const id of expectedIds)assert.ok(html.includes('id="'+id+'"'),'Falta control '+id);
  const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(x=>x[1]);

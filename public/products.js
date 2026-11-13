@@ -76,10 +76,10 @@
     for(const v of stats)set(metrics,el('span',v,'finished-metric'));
     root.append(metrics);
     const toolbar=el('div',undefined,'finished-toolbar');
-    if(isAdmin()){
-      const importBtn=button('Incorporar productos del catálogo privado','secondary');
+    {
+      const importBtn=button('Incorporar productos del catálogo de preparaciones','secondary');
       importBtn.addEventListener('click',async()=>{
-        if(!confirm('Se agregarán los productos que falten del catálogo privado, con inventario inicial 0. No se modificarán las existencias ni los precios ya registrados. ¿Continuar?'))return;
+        if(!confirm('Se agregarán los productos que falten del catálogo de preparaciones, con inventario inicial 0. No se modificarán las existencias ni los precios ya registrados. ¿Continuar?'))return;
         try{const result=await post('/api/products/import-catalog',{});await refresh();status(`Catálogo revisado: ${result.source} origen, ${result.created} nuevos, ${result.already} ya existentes.`);}
         catch(e){status(e.message,true);}
       });
@@ -94,7 +94,9 @@
       const min=input('number','minStock','',{min:0,step:1,placeholder:'Opcional'});
       const linked=select('operationalRecipeId',recipeChoices());
       const save=el('button','Guardar producto');save.type='submit';
-      set(form,label('Nombre',productName),label('Categoría',cat),label('Precio de venta (MXN)',price),label('Stock mínimo (opcional)',min),label('Receta operativa vinculada (opcional)',linked),save);
+      set(form,label('Nombre',productName),label('Categoría',cat));
+      if(isAdmin())form.append(label('Precio de venta (MXN) · Administración',price));
+      set(form,label('Stock mínimo (opcional)',min),label('Receta operativa vinculada (opcional)',linked),save);
       form.addEventListener('submit',async e=>{
         e.preventDefault();
         try{
@@ -117,7 +119,7 @@
       root.append(toolbar,newBox,catBox);
     }
     const statusRow=el('p',undefined,'finished-status');statusRow.id='finished-status';root.append(statusRow);
-    if(!products.length){root.append(el('p','Aún no hay productos terminados. Administración puede registrarlos aquí.','muted'));return;}
+    if(!products.length){root.append(el('p','Aún no hay productos terminados. Puedes registrarlos aquí.','muted'));return;}
     const query=normalizeSearch(search?.value.trim()||'')||'';
     const visible=products.filter(p=>(!query||normalizeSearch(p.name).includes(query)||normalizeSearch(p.categoryName).includes(query))&&
       (!lowOnly?.checked||(p.minStock!==null&&p.stock<=p.minStock)));
@@ -133,7 +135,7 @@
         const count=el('span',`${p.stock} pieza${p.stock===1?'':'s'}${low?' · stock bajo':''}`,low?'finished-warning':'finished-sale');
         set(header,name,count);card.append(header);
         const subtitle=el('p',`${fmtMoney(p.salePrice)} · ${p.active?'Activo':'Inactivo'} · Stock mínimo: ${p.minStock===null?'sin definir':p.minStock}`,'muted');card.append(subtitle);
-        if(isAdmin()){
+        {
           const details=el('details');set(details,el('summary','Editar producto'));
           const form=el('form');form.className='finished-editor';
           const n=input('text','productName',p.name,{required:'',maxlength:150});
@@ -143,7 +145,9 @@
           const link=select('operationalRecipeId',recipeChoices(),p.operationalRecipeId||'');
           const active=el('input');active.type='checkbox';active.checked=p.active;
           const save=el('button','Guardar cambios');save.type='submit';
-          set(form,label('Nombre',n),label('Categoría',c),label('Precio MXN',price),label('Stock mínimo',minimum),label('Receta operativa vinculada',link),label('Producto activo',active),save);
+          set(form,label('Nombre',n),label('Categoría',c));
+          if(isAdmin())form.append(label('Precio MXN · Administración',price));
+          set(form,label('Stock mínimo',minimum),label('Receta operativa vinculada',link),label('Producto activo',active),save);
           form.addEventListener('submit',async e=>{
             e.preventDefault();
             try{
