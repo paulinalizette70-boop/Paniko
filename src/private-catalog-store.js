@@ -15,8 +15,11 @@ async function importPrivateCatalog(pool, data) {
     for (const receta of valid.recetas) {
       await conn.execute(`INSERT INTO private_catalog_recipes (catalog_id, title, review_status, raw_data, source_hash)
         VALUES (?, ?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE title=VALUES(title), review_status=VALUES(review_status),
-          raw_data=VALUES(raw_data), source_hash=VALUES(source_hash)`,
+        ON DUPLICATE KEY UPDATE
+          title=IF(LEFT(source_hash,7)='manual-',title,VALUES(title)),
+          review_status=IF(LEFT(source_hash,7)='manual-',review_status,VALUES(review_status)),
+          raw_data=IF(LEFT(source_hash,7)='manual-',raw_data,VALUES(raw_data)),
+          source_hash=IF(LEFT(source_hash,7)='manual-',source_hash,VALUES(source_hash))`,
       [receta.id, receta.nombre, receta.estado, JSON.stringify(receta), valid.hash]);
     }
     for (const producto of valid.productos) {

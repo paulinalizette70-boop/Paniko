@@ -60,6 +60,15 @@ function createStore(filePath) {
       write(data);
       return saved;
     },
+    updateRecipe(id,raw){
+      const data=read(),index=data.recipes.findIndex(recipe=>recipe.id===id);
+      if(index<0)throw new ValidationError('Ficha técnica no encontrada',404);
+      const next=validateRecipe(raw,data.ingredients);
+      const updated={id,...next};
+      data.recipes[index]=updated;
+      write(data);
+      return updated;
+    },
     preview(id, desiredYield) {
       const data = read();
       const recipe = data.recipes.find((r) => r.id === id);

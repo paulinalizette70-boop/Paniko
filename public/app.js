@@ -1,6 +1,7 @@
 'use strict';
 let ingredients = [];
 let recipes = [];
+let editingRecipeId=null;
 let productionBatches = [];
 const $ = (id) => document.getElementById(id);
 const make = (tag, content, cls) => {
@@ -107,7 +108,9 @@ function renderRecipeList(){
       }catch(error){detail.replaceChildren(make('p',error.message,'warning'));}
       finally{percentButton.disabled=false;}
     });
-    const actions=make('div',undefined,'recipe-actions');actions.append(percentButton,use);
+    const edit=make('button','Editar ficha','btn-soft');edit.type='button';
+    edit.addEventListener('click',()=>startEditingRecipe(recipe));
+    const actions=make('div',undefined,'recipe-actions');actions.append(edit,percentButton,use);
     line.append(details,actions,detail);root.append(line);
   }
   if(!list.length)root.append(make('p',recipes.length?'No se encontraron recetas.':'Todavía no hay fichas técnicas.','muted'));
@@ -164,7 +167,28 @@ function syncAdjustUnit(){
   const id=$('adjust-stock-form').elements.ingredient.value;
   $('adjust-unit-label').textContent=ingredients.find(i=>i.id===id)?.unit||'unidad';
 }
-function addRecipeItem() {
+function resetRecipeEditor(){
+  editingRecipeId=null;
+  const form=$('recipe-form');form.reset();
+  $('recipe-items').replaceChildren();addRecipeItem();
+  $('recipe-save-button').textContent='Guardar ficha técnica';
+  $('recipe-cancel-button').hidden=true;$('recipe-edit-hint').hidden=true;
+  $('baker-form-preview').hidden=true;$('baker-form-preview').replaceChildren();
+}
+function startEditingRecipe(recipe){
+  editingRecipeId=recipe.id;
+  navigateTo('recipes');$('recipe-create-details').open=true;
+  const form=$('recipe-form');form.elements.name.value=recipe.name;
+  form.elements.yield.value=String(recipe.baseYield);
+  $('recipe-items').replaceChildren();
+  for(const item of recipe.items)addRecipeItem(item);
+  $('recipe-save-button').textContent='Guardar cambios';
+  $('recipe-cancel-button').hidden=false;$('recipe-edit-hint').hidden=false;
+  $('baker-form-preview').hidden=true;$('baker-form-preview').replaceChildren();
+  $('recipe-create-details').scrollIntoView({block:'start',behavior:'smooth'});
+}
+$('recipe-cancel-button').addEventListener('click',resetRecipeEditor);
+function addRecipeItem(defaults=null) {
   const row=make('div',undefined,'item-row');
   const select=make('select');select.setAttribute('aria-label','Ingrediente');
   fillSelect(select,ingredients,'Registra ingredientes antes');
@@ -176,7 +200,9 @@ function addRecipeItem() {
   remove.addEventListener('click',()=>row.remove());
   select.addEventListener('change',()=>setUnitOptions(unit,select.value));
   row.append(select,quantity,unit,remove);$('recipe-items').append(row);
+  if(defaults?.ingredientId){select.value=defaults.ingredientId;quantity.value=String(defaults.quantity);}
   setUnitOptions(unit,select.value);
+  if(defaults?.unit&&[...unit.options].some(o=>o.value===defaults.unit))unit.value=defaults.unit;
 }
 function formatProductionDate(value){
   if(!value)return 'Fecha no disponible';
@@ -299,10 +325,12 @@ $('recipe-form').addEventListener('submit', async (event) => {
   const rows = [...$('recipe-items').children];
   try {
     if (!rows.length) throw new Error('Añade al menos un ingrediente.');
-    await post('/api/recipes', currentRecipeInput(form));
-    form.reset(); $('recipe-items').replaceChildren(); addRecipeItem();
+    const wasEditing=Boolean(editingRecipeId);
+    const url=wasEditing?`/api/recipes/${editingRecipeId}/update`:'/api/recipes';
+    await post(url,currentRecipeInput(form));
+    resetRecipeEditor();
     $('baker-form-preview').hidden=true;$('baker-form-preview').replaceChildren();
-    await refresh(); notify('Ficha técnica guardada.');
+    await refresh(); notify(wasEditing?'Ficha técnica actualizada. No se modificó el inventario.':'Ficha técnica guardada.');
   } catch (error) { notify(error.message, true); }
 });
 $('stock-in-form').addEventListener('submit',async(event)=>{
@@ -429,6 +457,58 @@ $('logout-button').addEventListener('click',async()=>{
 });
 let catalogLoaded=false;
 let catalogBusy=false;
+function catalogEditForm(record,owner){
+  const data=record.data||{},sourceItems=Array.isArray(data.ingredientes)?data.ingredientes:[];
+  const form=make('form',undefined,'form-stack catalog-edit-form');
+  const heading=make('h4','Completar y revisar receta original');
+  const help=make('p','Guardar pendiente conserva los datos aunque falten cantidades. Confirmar valida los datos necesarios para crear una ficha técnica. Ninguna opción descuenta inventario.','hint');
+  const nameLabel=make('label','Nombre de la receta');
+  const nameInput=make('input');nameInput.required=true;nameInput.maxLength=100;nameInput.value=data.nombre||record.title;
+  nameLabel.append(nameInput);
+  const yieldRow=make('div',undefined,'input-pair');
+  const yieldLabel=make('label','Rendimiento del lote');
+  const yieldInput=make('input');yieldInput.type='number';yieldInput.min='0.000001';yieldInput.max='1000000000';yieldInput.step='any';yieldInput.value=data.rendimiento?.cantidad??'';yieldInput.placeholder='Cantidad por confirmar';yieldLabel.append(yieldInput);
+  const yieldUnitLabel=make('label','Unidad del rendimiento');
+  const yieldUnit=make('select');
+  const yieldUnits=[...new Set([data.rendimiento?.unidad,'pieza','piezas','kg','g','l','ml'].filter(Boolean))];
+  for(const item of yieldUnits){const option=make('option',item);option.value=item;yieldUnit.append(option);}
+  yieldUnit.value=data.rendimiento?.unidad||'pieza';yieldUnitLabel.append(yieldUnit);yieldRow.append(yieldLabel,yieldUnitLabel);
+  const itemList=make('div',undefined,'catalog-edit-items');
+  const available=['g','kg','ml','l','pieza'];
+  function addSourceItem(source={}){
+    const row=make('div',undefined,'catalog-edit-item');
+    const name=make('input');name.type='text';name.required=true;name.maxLength=100;name.value=source.ingrediente||'';name.placeholder='Ingrediente';name.setAttribute('aria-label','Nombre del ingrediente');
+    const quantity=make('input');quantity.type='number';quantity.min='0.000001';quantity.max='1000000000';quantity.step='0.000001';quantity.value=source.cantidad??'';quantity.placeholder='Por confirmar';quantity.setAttribute('aria-label','Cantidad del ingrediente');
+    const unit=make('select');unit.setAttribute('aria-label','Unidad del ingrediente');
+    for(const u of [...new Set([source.unidad,...available].filter(Boolean))]){const option=make('option',u);option.value=u;unit.append(option);}
+    unit.value=source.unidad||'g';
+    const remove=make('button','Quitar','secondary');remove.type='button';remove.addEventListener('click',()=>row.remove());
+    row.append(name,quantity,unit,remove);itemList.append(row);
+  }
+  for(const item of sourceItems)addSourceItem(item);
+  const add=make('button','+ Añadir ingrediente','btn-soft');add.type='button';add.addEventListener('click',()=>addSourceItem());
+  const notesLabel=make('label','Observaciones');const notes=make('textarea');notes.maxLength=3000;notes.rows=3;notes.value=data.observaciones||'';notesLabel.append(notes);
+  const actionRow=make('div',undefined,'recipe-actions');
+  const draft=make('button','Guardar pendiente','btn-soft');draft.type='button';
+  const confirmButton=make('button','Confirmar datos','btn-primary');confirmButton.type='button';
+  const cancel=make('button','Cerrar','secondary');cancel.type='button';cancel.addEventListener('click',()=>form.remove());
+  async function save(confirm){
+    const items=[...itemList.children].map(row=>({name:row.children[0].value,quantity:row.children[1].value===''?null:Number(row.children[1].value),unit:row.children[2].value}));
+    if(!form.reportValidity()){notify('Revisa los campos marcados.',true);return;}
+    draft.disabled=true;confirmButton.disabled=true;
+    try{
+      await post(`/api/catalog/recipes/${data.id}/save`,{name:nameInput.value,
+        yieldQuantity:yieldInput.value===''?null:Number(yieldInput.value),yieldUnit:yieldUnit.value,
+        items,notes:notes.value,confirm});
+      catalogLoaded=false;await loadCatalog(true);
+      notify(confirm?'Receta confirmada. Ya puedes crear su ficha técnica.':'Cambios guardados como pendientes.');
+    }catch(error){notify(error.message,true);}finally{draft.disabled=false;confirmButton.disabled=false;}
+  }
+  draft.addEventListener('click',()=>save(false));confirmButton.addEventListener('click',()=>save(true));
+  actionRow.append(draft,confirmButton,cancel);
+  form.append(heading,help,nameLabel,yieldRow,make('h4','Ingredientes'),itemList,add,notesLabel,actionRow);
+  owner.append(form);
+}
 async function loadCatalog(force=false){
   if(!currentUser || (catalogLoaded&&!force) || catalogBusy)return;
   catalogBusy=true;
@@ -489,6 +569,14 @@ async function loadCatalog(force=false){
         for(const item of data.componentes)details.append(make('p',item.nombre||item.id||'Componente','muted'));
       }
       if(data.observaciones)details.append(make('p',`Notas: ${data.observaciones}`,'muted'));
+      if(record.kind==='Preparación'&&data.id){
+        const editOriginal=make('button',data.estado==='confirmada'?'Editar receta original':'Completar receta pendiente','btn-soft');
+        editOriginal.type='button';editOriginal.addEventListener('click',()=>{
+          if(details.querySelector('.catalog-edit-form')){details.querySelector('.catalog-edit-form').remove();return;}
+          catalogEditForm(record,details);
+        });
+        details.append(editOriginal);
+      }
       const already=recipes.some(r=>normalizeSearch(r.name)===normalizeSearch(record.title));
       const canConvert=record.kind==='Preparación' && data.id && /^[a-z][a-z0-9_]{0,99}$/.test(data.id);
       if(already){

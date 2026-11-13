@@ -84,6 +84,19 @@ function createMysqlStore(pool) {
       return {id,...recipe};
     });
   }
+  async function updateRecipe(id,raw){
+    return inTransaction(pool,async conn=>{
+      const [rows]=await conn.execute('SELECT id FROM recipes WHERE id=? FOR UPDATE',[id]);
+      if(!rows.length)throw new ValidationError('Ficha técnica no encontrada',404);
+      const [ingredients]=await conn.execute('SELECT id,name,unit,cost_per_unit,stock FROM ingredients ORDER BY id');
+      const validated=validateRecipe(raw,ingredients.map(ingredientFromRow));
+      await conn.execute('UPDATE recipes SET name=?,base_yield=? WHERE id=?',[validated.name,validated.baseYield,id]);
+      await conn.execute('DELETE FROM recipe_items WHERE recipe_id=?',[id]);
+      for(const item of validated.items)
+        await conn.execute('INSERT INTO recipe_items (recipe_id,ingredient_id,quantity) VALUES (?,?,?)',[id,item.ingredientId,item.quantity]);
+      return {id,...validated};
+    });
+  }
   async function preview(id,desiredYield) {
     const recipe=await getRecipe(id);
     if(!recipe) throw new ValidationError('Receta no encontrada',404);
@@ -214,6 +227,6 @@ function createMysqlStore(pool) {
         finishedProduct:finished,lines:result.lines.map(line=>({ingredientId:line.ingredientId,name:line.name,unit:line.unit,quantity:line.required,estimatedCost:line.estimatedCost}))};
     });
   }
-  return {listIngredients,updateIngredientCost,importCatalogRecipe,listRecipes,getRecipe,addIngredient,addRecipe,preview,listMovements,listProduction,getProductionBatch,stockIn,stockOut,adjustStock,confirmProduction};
+  return {listIngredients,updateIngredientCost,importCatalogRecipe,listRecipes,getRecipe,addIngredient,addRecipe,updateRecipe,preview,listMovements,listProduction,getProductionBatch,stockIn,stockOut,adjustStock,confirmProduction};
 }
 module.exports={createMysqlStore};
