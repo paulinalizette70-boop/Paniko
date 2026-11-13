@@ -2,7 +2,7 @@
 
 Aplicación web académica de **Seminario de Integración: Desarrollo**, Universidad de Guadalajara, Centro Universitario de Tlaquepaque.
 
-**Versión:** 0.4.0 (noviembre de 2026). El MVP incorpora inventario en MySQL e importador local a tablas de preparación. Las fórmulas reales **no están publicadas ni cargadas en el MySQL de la panadería**; su importación y validación operativa continúan pendientes.
+**Versión:** 0.4.0. El MVP incorpora inventario en MySQL e importador local a tablas de preparación. Las fórmulas reales **no están publicadas ni cargadas en el MySQL de la panadería**; su importación y validación operativa continúan pendientes.
 
 ## Qué permite hacer esta versión
 
