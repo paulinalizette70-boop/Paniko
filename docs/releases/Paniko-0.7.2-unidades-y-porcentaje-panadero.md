@@ -13,7 +13,4 @@
 - Simulación de instalación 0.7.1 a 0.7.2: resultados idénticos.
 - Sin cambios a tablas, MySQL Workbench, .env o archivos private.
 
-## Instalación local
-Requiere Paniko 0.7.1. Descomprimir el ZIP Paniko_0.7.2_unidades_y_porcentaje_panadero.zip y abrir PowerShell dentro de Paniko-0.7.2.
-Comando: powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\ACTUALIZAR_PROGRAMA.ps1 -Destino "D:\Paniko-main\Paniko-main"
-Escribir ACTUALIZAR. Después npm.cmd test y node --env-file=.env server.js.
+
