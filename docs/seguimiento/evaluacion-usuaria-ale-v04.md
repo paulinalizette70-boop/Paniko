@@ -1,51 +1,59 @@
-# Evaluación formativa con usuaria — Paniko v0.4
+# Prueba de Paniko con Ale — versión 0.4
 
-**Proyecto:** Paniko, sistema de gestión de panadería artesanal  
-**Usuaria:** Ale Sánchez, responsable de la panadería y stakeholder  
-**Versión probada:** Paniko v0.4 (NO v0.7.1)  
-**Periodo de prueba:** del 4 al 7 de noviembre de 2026  
-**Uso reportado:** tres días durante ese periodo (no necesariamente todos los días calendario)  
-**Tipo de evidencia:** relato cualitativo de la usuaria, comunicado por la Product Owner. No existe en este documento un acta firmada, grabación, métricas verificadas ni encuesta cuantitativa.
+**Periodo:** del 4 al 7 de noviembre de 2026  
+**Tiempo de uso:** tres días dentro de ese periodo  
+**Persona que lo probó:** Ale Sánchez, responsable de la panadería  
+**Versión que le compartí:** Paniko 0.4
 
-## Propósito
+## ¿Cómo fue la prueba?
 
-Conocer si una persona de la panadería encontraba útil y comprensible el sistema durante actividades de trabajo, identificar dificultades y recopilar solicitudes para el backlog.
+Le compartí a Ale una versión de Paniko para que pudiera utilizarla durante sus actividades en la panadería. Quería saber si realmente le resultaba útil y qué cosas debíamos mejorar, porque una cosa es que el programa funcione en nuestras pruebas y otra que sea sencillo para alguien que lo va a usar en su trabajo.
 
-## Retroalimentación recibida
+Ale lo utilizó durante tres días, entre el 4 y el 7 de noviembre de 2026. En general me comentó que **sí le ayudó bastante**, pero también encontró cosas que se le dificultaron y nos hizo algunas sugerencias.
 
-| Dimensión | Comentario reportado | Lectura para el producto |
-| --- | --- | --- |
-| Utilidad | El sistema le ayudó bastante durante los tres días que lo utilizó | Señal cualitativa favorable; no permite calcular ahorro de tiempo ni porcentaje de satisfacción |
-| Usabilidad | Le pareció confuso porque toda la información estaba en una sola pantalla | La interfaz v0.4 necesitaba separar funciones y aclarar la navegación |
-| Unidades de medida | Al **crear fichas técnicas**, encontró problemas cuando el ingrediente estaba expresado en gramos (g) y la ficha utilizaba kilogramos (kg), o viceversa | Verificar selección del ingrediente existente y conversión g↔kg durante la creación de fichas, además del cálculo posterior |
-| Necesidad de negocio | Solicitó visualizar por semana cuánto vendió, ganó, invirtió y perdió | Se requiere un resumen financiero semanal, con indicadores definidos y acceso solo de administración |
+Esta fue una **prueba de uso con comentarios de una usuaria real**. No hicimos una encuesta con puntuaciones ni medimos tiempos, así que no voy a presentar porcentajes de satisfacción o resultados que no registramos.
 
-Estas observaciones son una **síntesis de lo reportado**. No son citas textuales grabadas ni pruebas de todas las funciones.
+## ¿Qué nos comentó?
 
-## Hallazgos y seguimiento
+| Lo que observó Ale | Lo que entendimos que teníamos que mejorar |
+| --- | --- |
+| Le resultaba confuso que casi toda la información estuviera en una sola pantalla. | Separar las funciones y hacer que sea más fácil encontrar cada apartado. |
+| Al **crear fichas técnicas**, tuvo problemas al utilizar un ingrediente en gramos cuando estaba registrado en kilogramos, o al revés. | Revisar que la creación de fichas reconozca las unidades equivalentes y no obligue a duplicar ingredientes. |
+| Quería saber cuánto vendió, ganó, invirtió y perdió durante la semana. | Agregar más adelante un resumen financiero semanal que pueda consultar la administradora. |
+| El sistema le ayudó durante los días que lo usó. | Conservar las funciones que sí le sirvieron y seguir mejorando la experiencia de uso. |
 
-**H-UX-01 — Navegación confusa de v0.4.** Reorganizar las tareas para que la persona operadora identifique rápidamente inventario, recetas, producción, productos/ventas e historial.
+## ¿Qué hicimos con sus comentarios?
 
-- **Respuesta de diseño:** en la rama de integración, Paniko v0.7.0 reorganiza la interfaz por secciones y simplifica el flujo de producción. La versión v0.7.1 conserva ese enfoque.
-- **Estado de validación:** la corrección está desarrollada, pero **Ale aún no ha confirmado aquí que la interfaz v0.7.1 sea satisfactoria**.
+### 1. Organizamos mejor las pantallas
 
-**H-NEG-01 — Visibilidad financiera semanal.** Crear un apartado de administración con resumen por semana que permita comprender ingresos, compras/inversiones, utilidad y pérdidas.
+En la versión 0.4 la información estaba demasiado concentrada. Después trabajamos en un diseño con secciones como **Inicio, Ingredientes, Recetas, Producción, Productos y ventas, Historial y Finanzas**.
 
-- **Respuesta de producto:** [HU-11 / Issue #10](https://github.com/paulinalizette70-boop/Paniko/issues/10).
-- **Estado:** pendiente de implementación y de precisar con Ale la definición de los indicadores; no atribuir estos cálculos al módulo existente de costos.
+La idea es que una persona no tenga que revisar toda la información de golpe para encontrar lo que necesita. **Todavía falta enseñarle la versión más reciente a Ale para confirmar si le resulta más clara.**
 
-**H-FUN-01 — Equivalencia de unidades g↔kg al crear fichas técnicas.** Ale comunicó que la pantalla de creación de fichas no reconocía adecuadamente que gramos y kilogramos son unidades compatibles del mismo ingrediente durante el uso de v0.4.
+### 2. Trabajamos en las conversiones
 
-- **Referencia:** [Incidencia #11 — equivalencia g↔kg](https://github.com/paulinalizette70-boop/Paniko/issues/11); relacionada también con el [Issue #3](https://github.com/paulinalizette70-boop/Paniko/issues/3).
-- **Estado técnico:** el código actual contiene `convertQuantity` y pruebas automatizadas de g↔kg. **No está demostrado** que el flujo exacto con el que tuvo problemas funcione correctamente en v0.7.1. Se necesitan pruebas de extremo a extremo con datos ficticios y revalidación.
-- **Precisión:** la operación afectada fue **crear fichas técnicas**. Aún no se cuenta con el mensaje de error exacto, las cantidades ingresadas ni una reproducción en la versión v0.7.1.
+La dificultad que Ale encontró ocurrió específicamente al **crear una ficha técnica**. Por ejemplo, si la harina ya está en el inventario como `kg`, debería poder seleccionarse en una ficha que utiliza `g`.
 
-## Límites de esta evidencia
+Las conversiones g↔kg ya están programadas y tienen pruebas, pero todavía queremos comprobar ese recorrido completo desde las pantallas. Lo anotamos en el [Issue #11](https://github.com/paulinalizette70-boop/Paniko/issues/11).
 
-Esta fue una evaluación exploratoria de **v0.4**, no una aceptación formal del MVP actual. Se conoce el periodo del 4 al 7 de noviembre de 2026, pero no se documentan los días específicos de uso, participantes adicionales, número de operaciones, tasas de éxito ni importes reales porque no se suministraron esos datos. No es correcto decir que Ale probó o aprobó la v0.7.1 basándonos en estos comentarios.
+**Otro caso distinto:** al probar localmente la versión 0.7.1, encontramos un error porque el **agua** estaba registrada en litros y una receta la utilizaba en gramos. Lo documentamos en el [Issue #12](https://github.com/paulinalizette70-boop/Paniko/issues/12). La versión 0.7.2 contiene una corrección de código para esa equivalencia, pero aún falta revisarla en nuestra instalación. Este segundo caso no se lo atribuimos a la prueba de Ale.
 
-## Próxima validación sugerida
+### 3. Agregamos su sugerencia al backlog
 
-En una próxima sesión con Ale, usar datos de prueba y pedirle que localice una receta, escale una preparación, consulte existencias y registre una venta; observar si encuentra rápidamente las secciones en v0.7.1. Registrar tareas, resultados y observaciones sin publicar fórmulas reales ni información financiera sensible.
+Registramos la idea del **resumen financiero semanal** en la [historia HU-11](https://github.com/paulinalizette70-boop/Paniko/issues/10).
 
-**Trazabilidad:** [Incidencia de conversión #11](https://github.com/paulinalizette70-boop/Paniko/issues/11); [PR #9](https://github.com/paulinalizette70-boop/Paniko/pull/9) (rediseño y mejoras); [HU-11](https://github.com/paulinalizette70-boop/Paniko/issues/10) (resumen financiero semanal); [retrospectiva](retrospectiva-medio-termino.md).
+Queremos que Ale pueda revisar las ventas, inversiones, ganancias y pérdidas de la panadería. Antes de mostrar estos números debemos definir bien de dónde saldrán los datos, para no confundir ingresos con ganancias. **Esta función todavía está pendiente.**
+
+## ¿Qué aprendí de esta prueba?
+
+Me ayudó a darme cuenta de que no basta con tener todas las funciones en el sistema. También importa cómo están acomodadas y si una persona puede utilizarlas sin confundirse.
+
+La prueba nos dio razones concretas para rediseñar la interfaz y para darle prioridad a las conversiones de unidades y al apartado financiero.
+
+## Qué falta comprobar
+
+La evaluación se hizo con **Paniko 0.4**, no con 0.7.2. Todavía necesitamos probar la versión nueva en la instalación de la panadería y volver a pedirle su opinión a Ale.
+
+No tenemos documentados los tres días específicos de uso dentro del 4 al 7 de noviembre, las cantidades exactas que capturó al encontrar el problema ni un acta firmada. Por eso dejamos esta evidencia como los comentarios que recibimos, sin inventar resultados.
+
+**Enlaces relacionados:** [retrospectiva](retrospectiva-medio-termino.md) · [Issue #11](https://github.com/paulinalizette70-boop/Paniko/issues/11) · [Issue #12](https://github.com/paulinalizette70-boop/Paniko/issues/12) · [HU-11](https://github.com/paulinalizette70-boop/Paniko/issues/10)
