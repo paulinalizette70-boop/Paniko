@@ -25,6 +25,11 @@ test('CP-15 MySQL: entrada, descuento transaccional, rechazo por stock y bitáco
     assert.equal(after.find(i=>i.id===sugar.id).stock,1.05);
     const beforeCount=(await store.listProduction()).filter(x=>x.id===batch.id).length;
     assert.equal(beforeCount,1);
+    const detail=await store.getProductionBatch(batch.id);
+    assert.equal(detail.id,batch.id);
+    assert.equal(detail.lines.length,2);
+    assert.equal(detail.finishedProduct,null);
+    assert.equal(detail.lines.find(x=>x.ingredientId===flour.id).stockAfter,0.5);
     const reason=(await store.listMovements()).filter(x=>x.batchId===batch.id);
     assert.equal(reason.length,2);
     await assert.rejects(()=>store.confirmProduction(rec.id,1000),e=>e.status===409);

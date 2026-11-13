@@ -47,4 +47,18 @@ El README describe objetivos, funcionalidades implementadas, límites del MVP, a
 - [Issue #5 — autenticación, mermas y dashboard](https://github.com/paulinalizette70-boop/Paniko/issues/5).
 - [Issue #6 — control de acceso del catálogo privado](https://github.com/paulinalizette70-boop/Paniko/issues/6).
 
-**Estado real:** los tests fueron verificados en GitHub Actions; no se declara aceptación de la dueña, instalación en la panadería ni finalización de módulos pendientes.
+**Estado de la versión v0.4 al cierre de esa evidencia histórica:** los tests estaban verificados en GitHub Actions. Se recibió una evaluación formativa con Ale sobre v0.4, correspondiente al periodo del **4 al 7 de noviembre de 2026** (tres días de uso reportados); se documenta abajo. No existe aprobación formal de la v0.7.1 ni se declara finalización de módulos pendientes.
+
+## 6. Prueba con Ale (4–7 de noviembre de 2026) y hallazgos de usabilidad
+
+- [Informe de prueba formativa de Paniko v0.4 con Ale](seguimiento/evaluacion-usuaria-ale-v04.md).
+- [Retrospectiva propuesta de medio término](seguimiento/retrospectiva-medio-termino.md).
+- [HU-11 — resumen financiero semanal solicitado por Ale](https://github.com/paulinalizette70-boop/Paniko/issues/10).
+- La usuaria reportó que Paniko le ayudó, pero le resultaba confuso tener toda la información en una sola pantalla. La versión v0.7.0/0.7.1 implementó una reorganización visual cuya aceptación aún debe comprobarse.
+- Esta prueba real de v0.4 **no debe presentarse** como aceptación de v0.7.1.
+
+## 7. Integración y PRs
+
+- [PR #9 — Paniko v0.7.1](https://github.com/paulinalizette70-boop/Paniko/pull/9) permanece como borrador hasta revisión formal de un integrante del equipo y comprobación local.
+- [Última ejecución automatizada v0.7.1 con MySQL](https://github.com/paulinalizette70-boop/Paniko/actions/runs/43344993724): completada satisfactoriamente.
+- Pendiente actualizar README de la rama `main` tras revisar y fusionar el PR, añadir capturas reales y asegurar que ningún archivo privado se publique.

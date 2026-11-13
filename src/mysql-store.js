@@ -1,7 +1,8 @@
 'use strict';
 const crypto = require('node:crypto');
+const {promoteCatalogRecipe} = require('./catalog-to-recipe');
 const {ValidationError, validateIngredient, validateRecipe, scaleRecipe} = require('./domain');
-const {stockEntry, validateProduction, safeStockSum, roundQuantity} = require('./inventory');
+const {stockEntry, stockExit, stockAdjustment, validateProduction, safeStockSum, roundQuantity} = require('./inventory');
 
 // mysql2/promise devuelve DECIMAL como cadenas para preservar la precisión.
 function ingredientFromRow(row) {
@@ -37,6 +38,15 @@ function createMysqlStore(pool) {
     const [rows] = await pool.execute('SELECT id, name, unit, cost_per_unit, stock FROM ingredients ORDER BY name, id');
     return rows.map(ingredientFromRow);
   }
+  async function updateIngredientCost(id,costPerUnit){
+    if(typeof costPerUnit!=='number'||!Number.isFinite(costPerUnit)||costPerUnit<0||costPerUnit>1e9||
+       Math.abs(costPerUnit-Math.round(costPerUnit*1e4)/1e4)>1e-10)
+      throw new ValidationError('Costo inválido: máximo cuatro decimales');
+    const [result]=await pool.execute('UPDATE ingredients SET cost_per_unit=? WHERE id=?',[costPerUnit,id]);
+    if(result.affectedRows!==1)throw new ValidationError('Ingrediente no encontrado',404);
+    return {id,costPerUnit};
+  }
+  async function importCatalogRecipe(source,baseYield){return promoteCatalogRecipe(pool,source,baseYield);}
   async function listRecipes() {
     const [rows] = await pool.execute('SELECT id, name, base_yield FROM recipes ORDER BY name, id');
     const [items] = await pool.execute('SELECT recipe_id, ingredient_id, quantity FROM recipe_items ORDER BY recipe_id, ingredient_id');
@@ -87,12 +97,37 @@ function createMysqlStore(pool) {
     const [rows]=await pool.execute('SELECT id,recipe_id,recipe_name,desired_yield,estimated_total_cost,created_at FROM production_batches ORDER BY created_at DESC,id DESC LIMIT 100');
     return rows.map(r=>({id:r.id,recipeId:r.recipe_id,recipeName:r.recipe_name,desiredYield:r.desired_yield,estimatedTotalCost:Number(r.estimated_total_cost),createdAt:r.created_at}));
   }
+  async function getProductionBatch(id) {
+    const [rows]=await pool.execute(
+      'SELECT id,recipe_id,recipe_name,desired_yield,estimated_total_cost,created_at FROM production_batches WHERE id=?', [id]);
+    if(!rows.length)throw new ValidationError('Lote de producción no encontrado',404);
+    const r=rows[0];
+    const [items]=await pool.execute(`SELECT bi.ingredient_id,i.name AS ingredient_name,i.unit,bi.quantity,bi.unit_cost,bi.estimated_cost,
+      m.stock_before,m.stock_after
+      FROM production_batch_items bi
+      JOIN ingredients i ON i.id=bi.ingredient_id
+      LEFT JOIN inventory_movements m ON m.batch_id=bi.batch_id AND m.ingredient_id=bi.ingredient_id
+      WHERE bi.batch_id=? ORDER BY i.name,bi.ingredient_id`,[id]);
+    const [finished]=await pool.execute(`SELECT m.product_id,p.name AS product_name,m.quantity,m.stock_before,m.stock_after
+      FROM finished_product_movements m JOIN finished_products p ON p.id=m.product_id
+      WHERE m.batch_id=? LIMIT 1`,[id]);
+    return {
+      id:r.id,recipeId:r.recipe_id,recipeName:r.recipe_name,desiredYield:Number(r.desired_yield),
+      estimatedTotalCost:Number(r.estimated_total_cost),createdAt:r.created_at,
+      lines:items.map(x=>({ingredientId:x.ingredient_id,name:x.ingredient_name,unit:x.unit,
+        quantity:Number(x.quantity),unitCost:Number(x.unit_cost),estimatedCost:Number(x.estimated_cost),
+        stockBefore:x.stock_before===null?null:Number(x.stock_before),
+        stockAfter:x.stock_after===null?null:Number(x.stock_after)})),
+      finishedProduct:finished.length?{id:finished[0].product_id,name:finished[0].product_name,
+        quantity:Number(finished[0].quantity),before:Number(finished[0].stock_before),after:Number(finished[0].stock_after)}:null
+    };
+  }
   async function stockIn(id,raw) {
     return inTransaction(pool,async c=>{
       const [rows]=await c.execute('SELECT id,name,unit,cost_per_unit,stock FROM ingredients WHERE id=? FOR UPDATE',[id]);
       if(!rows.length) throw new ValidationError('Ingrediente no encontrado',404);
       const ingredient=ingredientFromRow(rows[0]);
-      const {quantity,reason}=stockEntry(raw,ingredient.unit);
+      const {quantity,reason}=stockEntry(raw,ingredient.unit,ingredient.name);
       const stockBefore=ingredient.stock;
       ingredient.stock=safeStockSum(stockBefore,quantity);
       const movementId=crypto.randomUUID();
@@ -101,7 +136,41 @@ function createMysqlStore(pool) {
       return {ingredient,movement:{id:movementId,ingredientId:id,name:ingredient.name,type:'entrada',quantity,stockBefore,stockAfter:ingredient.stock,reason}};
     });
   }
-  async function confirmProduction(id,desiredYield) {
+  async function stockOut(id,raw){
+    return inTransaction(pool,async c=>{
+      const [rows]=await c.execute('SELECT id,name,unit,cost_per_unit,stock FROM ingredients WHERE id=? FOR UPDATE',[id]);
+      if(!rows.length)throw new ValidationError('Ingrediente no encontrado',404);
+      const ingredient=ingredientFromRow(rows[0]);
+      const {quantity,reason}=stockExit(raw,ingredient.unit,ingredient.name),before=ingredient.stock;
+      if(quantity>before)throw new ValidationError('Inventario insuficiente para esta salida',409);
+      const after=roundQuantity(before-quantity);
+      const [updated]=await c.execute('UPDATE ingredients SET stock=? WHERE id=? AND stock>=?',[after,id,quantity]);
+      if(updated.affectedRows!==1)throw new ValidationError('El inventario cambió: vuelve a revisar existencias',409);
+      const movementId=crypto.randomUUID();
+      await c.execute(`INSERT INTO inventory_movements (id,ingredient_id,movement_type,quantity,stock_before,stock_after,reason) VALUES (?,?,'salida',?,?,?,?)`,
+        [movementId,id,quantity,before,after,reason]);
+      ingredient.stock=after;
+      return {ingredient,movement:{id:movementId,ingredientId:id,name:ingredient.name,type:'salida',quantity,stockBefore:before,stockAfter:after,reason}};
+    });
+  }
+  async function adjustStock(id,raw){
+    return inTransaction(pool,async c=>{
+      const [rows]=await c.execute('SELECT id,name,unit,cost_per_unit,stock FROM ingredients WHERE id=? FOR UPDATE',[id]);
+      if(!rows.length)throw new ValidationError('Ingrediente no encontrado',404);
+      const ingredient=ingredientFromRow(rows[0]);
+      const {newStock,reason}=stockAdjustment(raw),before=ingredient.stock;
+      if(newStock===before)throw new ValidationError('La existencia no cambió',400);
+      const type=newStock>before?'entrada':'salida';
+      const quantity=roundQuantity(Math.abs(newStock-before));
+      await c.execute('UPDATE ingredients SET stock=? WHERE id=?',[newStock,id]);
+      const movementId=crypto.randomUUID();
+      await c.execute('INSERT INTO inventory_movements (id,ingredient_id,movement_type,quantity,stock_before,stock_after,reason) VALUES (?,?,?,?,?,?,?)',
+        [movementId,id,type,quantity,before,newStock,reason]);
+      ingredient.stock=newStock;
+      return {ingredient,movement:{id:movementId,ingredientId:id,name:ingredient.name,type,quantity,stockBefore:before,stockAfter:newStock,reason}};
+    });
+  }
+  async function confirmProduction(id,desiredYield,options={}) {
     return inTransaction(pool,async c=>{
       const recipe=await getRecipe(id,c);
       if(!recipe) throw new ValidationError('Receta no encontrada',404);
@@ -113,6 +182,18 @@ function createMysqlStore(pool) {
         ingredients.push(ingredientFromRow(rows[0]));
       }
       const result=validateProduction(recipe,ingredients,desiredYield);
+      const finishedId=options?.productId||null;
+      let finished=null;
+      if(finishedId){
+        if(typeof finishedId!=='string'||!/^[a-f\d]{8}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{12}$/i.test(finishedId))
+          throw new ValidationError('Producto terminado inválido');
+        const [rows]=await c.execute('SELECT id,name,stock FROM finished_products WHERE id=? AND operational_recipe_id=? AND active=1 FOR UPDATE',[finishedId,id]);
+        if(!rows.length)throw new ValidationError('El producto no está vinculado a esta receta operativa',409);
+        const before=Number(rows[0].stock);
+        if(before+desiredYield>100000000)throw new ValidationError('Inventario terminado supera el límite',400);
+        finished={id:finishedId,name:rows[0].name,before,after:before+desiredYield};
+      }
+
       const batchId=crypto.randomUUID();
       await c.execute('INSERT INTO production_batches (id,recipe_id,recipe_name,desired_yield,estimated_total_cost) VALUES (?,?,?,?,?)',[batchId,id,recipe.name,desiredYield,result.estimatedTotalCost]);
       for(const line of result.lines){
@@ -124,9 +205,15 @@ function createMysqlStore(pool) {
         await c.execute(`INSERT INTO inventory_movements (id,ingredient_id,movement_type,quantity,stock_before,stock_after,reason,batch_id) VALUES (?,?,'salida',?,?,?,?,?)`,[crypto.randomUUID(),ingredient.id,line.required,before,after,`Producción ${batchId}`,batchId]);
         await c.execute('INSERT INTO production_batch_items (batch_id,ingredient_id,quantity,unit_cost,estimated_cost) VALUES (?,?,?,?,?)',[batchId,ingredient.id,line.required,ingredient.costPerUnit,line.estimatedCost]);
       }
-      return {id:batchId,recipeId:recipe.id,recipeName:recipe.name,desiredYield,estimatedTotalCost:result.estimatedTotalCost,lines:result.lines.map(line=>({ingredientId:line.ingredientId,name:line.name,unit:line.unit,quantity:line.required,estimatedCost:line.estimatedCost}))};
+      if(finished){
+        await c.execute('UPDATE finished_products SET stock=? WHERE id=?',[finished.after,finished.id]);
+        await c.execute(`INSERT INTO finished_product_movements (id,product_id,movement_type,quantity,stock_before,stock_after,reason,batch_id)
+          VALUES (?,?,'produccion',?,?,?, ?, ?)`,[crypto.randomUUID(),finished.id,desiredYield,finished.before,finished.after,'Producción confirmada desde receta operativa',batchId]);
+      }
+      return {id:batchId,recipeId:recipe.id,recipeName:recipe.name,desiredYield,estimatedTotalCost:result.estimatedTotalCost,
+        finishedProduct:finished,lines:result.lines.map(line=>({ingredientId:line.ingredientId,name:line.name,unit:line.unit,quantity:line.required,estimatedCost:line.estimatedCost}))};
     });
   }
-  return {listIngredients,listRecipes,getRecipe,addIngredient,addRecipe,preview,listMovements,listProduction,stockIn,confirmProduction};
+  return {listIngredients,updateIngredientCost,importCatalogRecipe,listRecipes,getRecipe,addIngredient,addRecipe,preview,listMovements,listProduction,getProductionBatch,stockIn,stockOut,adjustStock,confirmProduction};
 }
 module.exports={createMysqlStore};

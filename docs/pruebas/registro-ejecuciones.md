@@ -32,3 +32,23 @@ Las pruebas de v0.2 documentan entradas, salidas, rechazo por inventario insufic
 - CP-23 verifica movimientos y existencias en la unidad del ingrediente mediante adaptador JSON de pruebas.
 - CP-24 verifica importes y consumos normalizados con transacciones MySQL en una base de prueba aislada.
 - Todas las recetas en estas pruebas son ficticias; no son pruebas de aceptación con usuarios reales.
+
+## Evaluación formativa con usuaria — versión v0.4 (reportada posteriormente)
+
+- **Usuaria:** Ale Sánchez, responsable de la panadería.
+- **Periodo:** del 4 al 7 de noviembre de 2026; tres días de uso de Paniko v0.4 reportados dentro de ese intervalo.
+- **Resultado cualitativo comunicado:** Paniko le ayudó bastante durante esos tres días.
+- **Hallazgo:** percibió confusa la pantalla porque la información estaba concentrada en un solo lugar.
+- **Solicitud:** un apartado semanal para visualizar ventas, ganancias, inversión y pérdidas.
+- **Incidencia funcional comunicada:** al **crear fichas técnicas**, la aplicación no reconocía adecuadamente cantidades equivalentes entre gramos y kilogramos; [Issue #11](https://github.com/paulinalizette70-boop/Paniko/issues/11). No se conserva el mensaje de error concreto.
+- **Seguimiento de diseño:** la interfaz se reorganizó en v0.7.0/0.7.1; pendiente comprobar con Ale si solucionó su dificultad.
+- **Seguimiento de conversión:** CP-22 a CP-24 verifican conversión técnica con datos ficticios; pendiente comprobar específicamente la **creación y guardado de fichas técnicas** con un ingrediente existente en kg y una cantidad en g (y viceversa) en v0.7.1, y revalidarlo con Ale.
+- **Seguimiento funcional:** [HU-11 / Issue #10](https://github.com/paulinalizette70-boop/Paniko/issues/10), pendiente de desarrollo.
+- **Evidencia escrita:** [reporte de evaluación cualitativa](../seguimiento/evaluacion-usuaria-ale-v04.md).
+
+**Alcance de la evidencia:** no se cuenta con una medición estadística, acta firmada ni aprobación formal de la v0.7.1. La línea histórica de v0.2 («aceptación no realizada») se refiere al momento en que se escribió ese registro y no invalida esta prueba posterior de v0.4.
+
+## Integración automática de la versión v0.7.1
+
+- [GitHub Actions — commit `1bae5759`](https://github.com/paulinalizette70-boop/Paniko/actions/runs/43344993724): workflow finalizado correctamente con Node.js, inicialización de MySQL aislado y pruebas automatizadas.
+- Esto es evidencia de pruebas de código, **no** de aceptación por Ale de la versión v0.7.1.

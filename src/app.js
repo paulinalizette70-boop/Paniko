@@ -2,16 +2,30 @@
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
-const {ValidationError} = require('./domain');
+const {ValidationError,bakerPercentages,validateRecipe} = require('./domain');
 const {createStore} = require('./store');
 const {getCookieToken,cookieForToken,expiredCookie}=require('./auth');
 
-function createApp({store, auth = null, dataFile = path.join(__dirname, '..', 'data', 'paniko.json')} = {}) {
+// Los costos y el presupuesto son información de administración, no del equipo operativo.
+// Filtrar también los campos anidados: ocultar botones NO protege la API.
+const FINANCIAL_KEYS=/^(costPerUnit|unitCost|estimatedCost|estimatedTotalCost|cost(?:s|_.*)?|costo(?:s|_.*)?|precio(?:$|[_-].*)|price(?:$|[_-].*)|presupuesto|margen|utilidad|ganancia|gasto(?:s|_.*)?|ingreso(?:s|_.*)?|inversion|inversión|valorInventario)$/i;
+function operationalData(value){
+  if(Array.isArray(value))return value.map(operationalData);
+  if(value&&typeof value==='object'&&!(value instanceof Date)){
+    return Object.fromEntries(Object.entries(value).filter(([key])=>!FINANCIAL_KEYS.test(key))
+      .map(([key,entry])=>[key,operationalData(entry)]));
+  }
+  return value;
+}
+
+
+function createApp({store, auth = null, products = null, dataFile = path.join(__dirname, '..', 'data', 'paniko.json')} = {}) {
   store = store || createStore(dataFile);
   const assets = {
     '/': ['index.html', 'text/html; charset=utf-8'],
     '/styles.css': ['styles.css', 'text/css; charset=utf-8'],
     '/app.js': ['app.js', 'application/javascript; charset=utf-8'],
+    '/products.js': ['products.js', 'application/javascript; charset=utf-8'],
   };
   async function bodyAsJson(req) {
     let size = 0; const chunks=[];
@@ -28,6 +42,9 @@ function createApp({store, auth = null, dataFile = path.join(__dirname, '..', 'd
     res.end(JSON.stringify(data));
   };
   return http.createServer(async (req, res) => {
+    let loggedInUser=null;
+    const respond=(status,data,extraHeaders={})=>send(res,status,
+      loggedInUser?.role==='operador'?operationalData(data):data,extraHeaders);
     try {
       const url = new URL(req.url, 'http://localhost');
       const pathname = url.pathname;
@@ -37,63 +54,143 @@ function createApp({store, auth = null, dataFile = path.join(__dirname, '..', 'd
         res.end(fs.readFileSync(path.join(__dirname, '..', 'public', file)));
         return;
       }
-      if (req.method === 'GET' && pathname === '/api/health') return send(res, 200, {status: 'ok'});
-      if (req.method === 'GET' && pathname === '/api/auth/config')
-        return send(res,200,{required: Boolean(auth)});
+      if (req.method === 'GET' && pathname === '/api/health') return respond( 200, {status: 'ok'});
+      if (req.method === 'GET' && pathname === '/api/auth/config') return respond(200,{required:Boolean(auth)});
       if (auth) {
-        // SameSite=Strict + comprobación Origin en peticiones con cambios.
-        if (req.method === 'POST' && req.headers.origin) {
-          let from;
-          try { from=new URL(req.headers.origin); } catch { return send(res,403,{error:'Origen no permitido'}); }
-          if (from.host!==req.headers.host) return send(res,403,{error:'Origen no permitido'});
+        if(req.method==='POST' && req.headers.origin) {
+          let origin;
+          try {origin=new URL(req.headers.origin);} catch {return respond(403,{error:'Origen no permitido'});}
+          if(origin.host!==req.headers.host) return respond(403,{error:'Origen no permitido'});
         }
         const token=getCookieToken(req.headers.cookie);
-        if (pathname === '/api/auth/login' && req.method === 'POST') {
-          const credentials=await bodyAsJson(req);
-          const result=await auth.login(credentials?.username,credentials?.password);
-          if (!result) return send(res,401,{error:'Usuario o contraseña incorrectos'});
-          return send(res,200,{user:result.user},{'Set-Cookie':cookieForToken(result.token,Boolean(req.socket.encrypted))});
+        if(req.method==='POST' && pathname==='/api/auth/login') {
+          const body=await bodyAsJson(req);
+          const result=await auth.login(body?.username,body?.password);
+          if(!result)return respond(401,{error:'Usuario o contraseña incorrectos'});
+          return respond(200,{user:result.user},{'Set-Cookie':cookieForToken(result.token,Boolean(req.socket.encrypted))});
         }
-        if (pathname === '/api/auth/logout' && req.method === 'POST') {
+        if(req.method==='POST' && pathname==='/api/auth/logout'){
           await auth.logout(token);
-          return send(res,200,{ok:true},{'Set-Cookie':expiredCookie(Boolean(req.socket.encrypted))});
+          return respond(200,{ok:true},{'Set-Cookie':expiredCookie(Boolean(req.socket.encrypted))});
         }
-        if (req.method === 'GET' && pathname === '/api/auth/me') {
+        if(req.method==='GET' && pathname==='/api/auth/me'){
           const user=await auth.userForToken(token);
           return user?send(res,200,{user}):send(res,401,{error:'Sesión no iniciada'});
         }
-        // Es obligatorio autenticar ANTES de consultar cualquier ruta de datos.
-        if (pathname.startsWith('/api/')) {
+        if(pathname.startsWith('/api/')){
           const user=await auth.userForToken(token);
-          if (!user) return send(res,401,{error:'Inicia sesión para continuar'});
-          if (pathname==='/api/private/catalog' && req.method==='GET') {
-            if (user.role!=='admin') return send(res,403,{error:'Acceso reservado a administración'});
-            return send(res,200,await auth.privateCatalog());
+          loggedInUser=user;
+          if(!user)return respond(401,{error:'Inicia sesión para continuar'});
+          if(pathname==='/api/private/catalog' && req.method==='GET'){
+            return respond(200,await auth.privateCatalog());
           }
-          const adminOnly=req.method!=='GET' &&
-            (pathname==='/api/ingredients' || pathname==='/api/recipes');
-          if (adminOnly && user.role!=='admin') return send(res,403,{error:'Se requiere permiso de administrador'});
+          // El personal opera recetas e inventario. Las finanzas sí son exclusivas de administración.
+          if(pathname.startsWith('/api/finance/')&&user.role!=='admin')
+            return respond(403,{error:'La gestión financiera requiere permiso de administración'});
         }
       }
-      if (req.method === 'GET' && pathname === '/api/ingredients') return send(res, 200, await store.listIngredients());
-      if (req.method === 'POST' && pathname === '/api/ingredients') return send(res, 201, await store.addIngredient(await bodyAsJson(req)));
-      if (req.method === 'GET' && pathname === '/api/recipes') return send(res, 200, await store.listRecipes());
-      if (req.method === 'POST' && pathname === '/api/recipes') return send(res, 201, await store.addRecipe(await bodyAsJson(req)));
-      if (req.method === 'GET' && pathname === '/api/inventory/movements') return send(res, 200, await store.listMovements());
-      if (req.method === 'GET' && pathname === '/api/production') return send(res, 200, await store.listProduction());
+
+      // Productos terminados: inventario separado de las fichas técnicas.
+      if(pathname==='/api/product-categories'||pathname.startsWith('/api/products')){
+        if(!auth||!products)return respond(503,{error:'El módulo de inventario requiere inicio de sesión y MySQL'});
+        const user=await auth.userForToken(getCookieToken(req.headers.cookie));
+        if(!user)return respond(401,{error:'Inicia sesión para continuar'});
+        const admin=user.role==='admin';
+        if(pathname==='/api/product-categories'){
+          if(req.method==='GET')return respond(200,await products.listCategories());
+          if(req.method==='POST'){
+            return respond(201,await products.createCategory(await bodyAsJson(req)));
+          }
+        }
+        if(pathname==='/api/products'){
+          if(req.method==='GET')return respond(200,await products.listProducts());
+          if(req.method==='POST'){
+            const input=await bodyAsJson(req);
+            // Un operador no puede establecer el precio: lo configura administración.
+            if(!admin)input.salePrice=null;
+            return respond(201,await products.createProduct(input));
+          }
+        }
+        if(pathname==='/api/products/import-catalog'&&req.method==='POST'){
+          return respond(200,await products.importCatalog());
+        }
+        if(pathname==='/api/products/movements'&&req.method==='GET')
+          return respond(200,await products.movements());
+        const edit=pathname.match(/^\/api\/products\/([a-f\d-]+)\/update$/i);
+        if(edit&&req.method==='POST'){
+          return respond(200,await products.updateProduct(edit[1],await bodyAsJson(req),{preservePrice:!admin}));
+        }
+        const move=pathname.match(/^\/api\/products\/([a-f\d-]+)\/movements$/i);
+        if(move&&req.method==='POST')return respond(201,await products.recordMovement(move[1],await bodyAsJson(req)));
+        return respond(404,{error:'Ruta de productos no encontrada'});
+      }
+      if(pathname==='/api/finance/overview'&&req.method==='GET'){
+        if(!auth||!loggedInUser||loggedInUser.role!=='admin')return respond(403,{error:'Acceso exclusivo a administración'});
+        const [ingredients,batches]=await Promise.all([store.listIngredients(),store.listProduction()]);
+        const detailed=ingredients.map(item=>({...item,inventoryValue:Math.round(item.stock*item.costPerUnit*100)/100}));
+        return respond(200,{ingredients:detailed,inventoryValue:Math.round(detailed.reduce((s,item)=>s+item.inventoryValue,0)*100)/100,
+          recentBatchCost:Math.round(batches.reduce((s,b)=>s+Number(b.estimatedTotalCost||0),0)*100)/100,
+          batchesConsidered:batches.length});
+      }
+      const costUpdate=pathname.match(/^\/api\/finance\/ingredients\/([a-f\d-]+)\/cost$/i);
+      if(costUpdate&&req.method==='POST'){
+        if(!auth||!loggedInUser||loggedInUser.role!=='admin')return respond(403,{error:'Acceso exclusivo a administración'});
+        const input=await bodyAsJson(req);
+        return respond(200,await store.updateIngredientCost(costUpdate[1],input.costPerUnit));
+      }
+      if (req.method === 'GET' && pathname === '/api/ingredients') return respond( 200, await store.listIngredients());
+      if (req.method === 'POST' && pathname === '/api/ingredients') {
+        const input=await bodyAsJson(req);
+        if(loggedInUser?.role==='operador')input.costPerUnit=0;
+        return respond(201, await store.addIngredient(input));
+      }
+      const fromCatalog=pathname.match(/^\/api\/recipes\/from-catalog\/([a-z][a-z0-9_]{0,99})$/);
+      if(fromCatalog&&req.method==='POST'){
+        if(!auth?.getCatalogRecipe||!store.importCatalogRecipe)
+          return respond(503,{error:'La conversión de recetas necesita MySQL y una sesión iniciada'});
+        const source=await auth.getCatalogRecipe(fromCatalog[1]);
+        if(!source)return respond(404,{error:'Receta original no encontrada'});
+        const input=await bodyAsJson(req);
+        const result=await store.importCatalogRecipe(source,input?.baseYield??null);
+        return respond(result.existing?200:201,result);
+      }
+      if (req.method === 'GET' && pathname === '/api/recipes') return respond( 200, await store.listRecipes());
+      if (req.method === 'POST' && pathname === '/api/recipes') return respond( 201, await store.addRecipe(await bodyAsJson(req)));
+      if(req.method==='POST' && pathname==='/api/recipes/bakers-preview'){
+        const input=await bodyAsJson(req);
+        const ingredients=await store.listIngredients();
+        const validated=validateRecipe(input,ingredients);
+        return respond(200,{recipeName:validated.name,baseYield:validated.baseYield,
+          ...bakerPercentages(validated,ingredients)});
+      }
+      const bakers=pathname.match(/^\/api\/recipes\/([a-f\d-]+)\/bakers$/i);
+      if(req.method==='GET' && bakers){
+        const recipe=await store.getRecipe(bakers[1]);
+        if(!recipe)return respond(404,{error:'Ficha técnica no encontrada'});
+        const calculation=bakerPercentages(recipe,await store.listIngredients());
+        return respond(200,{recipeId:recipe.id,recipeName:recipe.name,baseYield:recipe.baseYield,...calculation});
+      }
+      if (req.method === 'GET' && pathname === '/api/inventory/movements') return respond( 200, await store.listMovements());
+      if (req.method === 'GET' && pathname === '/api/production') return respond( 200, await store.listProduction());
+      const batchDetail=pathname.match(/^\/api\/production\/([a-f\d]{8}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{12})$/i);
+      if(req.method==='GET'&&batchDetail) return respond(200,await store.getProductionBatch(batchDetail[1]));
       const stock = pathname.match(/^\/api\/ingredients\/([a-f\d-]+)\/stock-in$/i);
-      if (stock && req.method === 'POST') return send(res, 200, await store.stockIn(stock[1], await bodyAsJson(req)));
+      if (stock && req.method === 'POST') return respond( 200, await store.stockIn(stock[1], await bodyAsJson(req)));
+      const stockOut=pathname.match(/^\/api\/ingredients\/([a-f\d-]+)\/stock-out$/i);
+      if(stockOut&&req.method==='POST')return respond(200,await store.stockOut(stockOut[1],await bodyAsJson(req)));
+      const adjust=pathname.match(/^\/api\/ingredients\/([a-f\d-]+)\/adjust-stock$/i);
+      if(adjust&&req.method==='POST')return respond(200,await store.adjustStock(adjust[1],await bodyAsJson(req)));
       const scale = pathname.match(/^\/api\/recipes\/([a-f\d-]+)\/scale$/i);
       if (scale && req.method === 'POST') {
         const body = await bodyAsJson(req);
-        return send(res, 200, await store.preview(scale[1], body.desiredYield));
+        return respond( 200, await store.preview(scale[1], body.desiredYield));
       }
       const produce = pathname.match(/^\/api\/recipes\/([a-f\d-]+)\/produce$/i);
       if (produce && req.method === 'POST') {
         const body = await bodyAsJson(req);
-        return send(res, 201, await store.confirmProduction(produce[1], body.desiredYield));
+        return respond( 201, await store.confirmProduction(produce[1], body.desiredYield, {productId:body.productId||null}));
       }
-      send(res, 404, {error: 'Ruta no encontrada'});
+      respond(404, {error: 'Ruta no encontrada'});
     } catch (error) {
       if (!(error instanceof ValidationError)) console.error('Error interno', error);
       send(res, error instanceof ValidationError ? error.status : 500,

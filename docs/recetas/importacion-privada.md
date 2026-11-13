@@ -37,7 +37,7 @@
 
 Algunas preparaciones y rendimientos requieren validación del equipo antes del costeo y descuento: faltan gramajes por pieza, densidades de cucharadas, rendimientos de cocciones, conversión de unidades y verificación de fórmulas propuestas. El importador **preserva estos datos sin inventar cantidades**.
 
-## Evidencia académica 
+## Evidencia académica sin exponer secretos
 
 - [Código de validación](../../src/private-catalog.js).
 - [Código de importación transaccional](../../src/private-catalog-store.js).
