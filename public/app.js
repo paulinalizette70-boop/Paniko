@@ -370,7 +370,7 @@ async function loadCatalog(force=false){
     if(!all.length)root.append(make('p','Todavía no hay preparaciones adicionales registradas.','muted'));
     const query=normalizeSearch($('recipe-search').value.trim());
     const filtered=all.filter(record=>normalizeSearch(record.title).includes(query));
-    const pieceUnits=['pieza','piezas','panes','hogazas','baguettes','panques','placas','bollos','galletas','unidades','porciones','croissants','rollos'];
+    const pieceUnits=['pieza','piezas','panes','hogazas','baguettes','panques','bollos','galletas','unidades','porciones','croissants','rollos'];
     const candidates=all.filter(record=>{
       const data=record.data||{};
       return record.kind==='Preparación'&&data.id&&data.estado==='confirmada'&&
@@ -436,7 +436,7 @@ async function loadCatalog(force=false){
           details.append(make('p','Ficha pendiente: '+problems.join('; ')+'.','warning'));
         }else{
           const yieldUnit=normalizeSearch(data.rendimiento?.unidad||'');
-          const unitMeansPieces=['pieza','piezas','panes','hogazas','baguettes','panques','placas','bollos','galletas','unidades','porciones','croissants','rollos'].includes(yieldUnit);
+          const unitMeansPieces=['pieza','piezas','panes','hogazas','baguettes','panques','bollos','galletas','unidades','porciones','croissants','rollos'].includes(yieldUnit);
           const readyYield=unitMeansPieces&&Number.isInteger(data.rendimiento?.cantidad)&&data.rendimiento.cantidad>0;
           let yieldField=null;
           if(!readyYield){

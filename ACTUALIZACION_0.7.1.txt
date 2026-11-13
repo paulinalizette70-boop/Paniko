@@ -29,5 +29,7 @@ IMPORTANTE
 - No ejecuta ninguna conversión sobre la BD durante la instalación.
 - Abre Recetas y usa «Crear las fichas completas». Revisa antes de confirmar: se crean
   fichas e ingredientes que falten, pero nunca se descuentan existencias.
+- «2 placas de masa» no equivalen a 2 piezas vendibles. Hay que indicar cuántas
+  piezas reales produce ese lote para poder escalarlo como producto terminado.
 - Si alguna receta falta o marca «pendiente», revisa su rendimiento o cantidades reales.
 - No ejecutes pruebas MYSQL_TEST contra la base real; usa una BD separada *_test.

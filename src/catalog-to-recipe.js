@@ -3,7 +3,7 @@ const {ValidationError,convertQuantity,validateRecipe,validateIngredient} = requ
 
 // 'base_yield' del sistema actual representa unidades enteras de producción,
 // no gramos de masa ni peso final. No inventar unidades a partir de pesos.
-const PIECE_YIELD_UNITS = new Set(['pieza','piezas','panes','hogazas','baguettes','panques','panqués','placas','bollos','galletas','unidades','porciones','croissants','rollos']);
+const PIECE_YIELD_UNITS = new Set(['pieza','piezas','panes','hogazas','baguettes','panques','panqués','bollos','galletas','unidades','porciones','croissants','rollos']);
 const INGREDIENT_UNITS = new Set(['g','kg','ml','l','pieza']);
 const normalized = value => String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().replace(/\s+/g,' ').toLocaleLowerCase('es');
 const compatible = (a,b) => a===b || (['g','kg'].includes(a)&&['g','kg'].includes(b)) || (['ml','l'].includes(a)&&['ml','l'].includes(b));

@@ -26,6 +26,8 @@ test('FICHA-01 usa rendimiento en piezas confirmado y NO infiere rendimiento de 
   const supplied=planCatalogRecipe(bread,20);
   assert.equal(supplied.ready,true);assert.equal(supplied.baseYield,20);
   assert.equal(planCatalogRecipe(formula(),10).ready,false,'no debe cambiar el rendimiento confirmado');
+  const plates=formula();plates.rendimiento={cantidad:2,unidad:'placas'};
+  assert.equal(planCatalogRecipe(plates).ready,false,'placas de masa no equivalen a piezas vendibles');
 });
 
 test('FICHA-02 bloquea ingredientes incompletos, conversiones arbitrarias y subrecetas',()=>{
