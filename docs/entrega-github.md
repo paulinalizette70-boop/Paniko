@@ -47,9 +47,9 @@ El README describe objetivos, funcionalidades implementadas, límites del MVP, a
 - [Issue #5 — autenticación, mermas y dashboard](https://github.com/paulinalizette70-boop/Paniko/issues/5).
 - [Issue #6 — control de acceso del catálogo privado](https://github.com/paulinalizette70-boop/Paniko/issues/6).
 
-**Estado de la versión v0.4 al cierre de esa evidencia histórica:** los tests estaban verificados en GitHub Actions. Más adelante se recibió una evaluación formativa de tres días con Ale sobre v0.4; se documenta abajo. No existe aprobación formal de la v0.7.1 ni se declara finalización de módulos pendientes.
+**Estado de la versión v0.4 al cierre de esa evidencia histórica:** los tests estaban verificados en GitHub Actions. Se recibió una evaluación formativa con Ale sobre v0.4, correspondiente al periodo del **4 al 7 de noviembre de 2026** (tres días de uso reportados); se documenta abajo. No existe aprobación formal de la v0.7.1 ni se declara finalización de módulos pendientes.
 
-## 6. Prueba real de tres días y hallazgos de usabilidad
+## 6. Prueba con Ale (4–7 de noviembre de 2026) y hallazgos de usabilidad
 
 - [Informe de prueba formativa de Paniko v0.4 con Ale](seguimiento/evaluacion-usuaria-ale-v04.md).
 - [Retrospectiva propuesta de medio término](seguimiento/retrospectiva-medio-termino.md).
