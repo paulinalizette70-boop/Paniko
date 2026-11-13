@@ -40,7 +40,9 @@ Las pruebas de v0.2 documentan entradas, salidas, rechazo por inventario insufic
 - **Resultado cualitativo comunicado:** Paniko le ayudó bastante durante esos tres días.
 - **Hallazgo:** percibió confusa la pantalla porque la información estaba concentrada en un solo lugar.
 - **Solicitud:** un apartado semanal para visualizar ventas, ganancias, inversión y pérdidas.
+- **Incidencia funcional comunicada:** dificultades para reconocer cantidades equivalentes en gramos y kilogramos; [Issue #11](https://github.com/paulinalizette70-boop/Paniko/issues/11). Los pasos de reproducción concretos no están documentados.
 - **Seguimiento de diseño:** la interfaz se reorganizó en v0.7.0/0.7.1; pendiente comprobar con Ale si solucionó su dificultad.
+- **Seguimiento de conversión:** CP-22 a CP-24 verifican conversión técnica con datos ficticios; pendiente comprobar el recorrido de la interfaz en v0.7.1 y revalidarlo con Ale.
 - **Seguimiento funcional:** [HU-11 / Issue #10](https://github.com/paulinalizette70-boop/Paniko/issues/10), pendiente de desarrollo.
 - **Evidencia escrita:** [reporte de evaluación cualitativa](../seguimiento/evaluacion-usuaria-ale-v04.md).
 
