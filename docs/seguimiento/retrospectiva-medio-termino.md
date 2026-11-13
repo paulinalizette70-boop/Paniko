@@ -1,32 +1,49 @@
-# Retrospectiva de medio término — Paniko
+# Lo que aprendimos en esta etapa de Paniko
 
-**Estado:** borrador de seguimiento de Product Owner basado en evidencias técnicas y comentarios de Ale.
+Este documento reúne lo que llevamos del proyecto, los problemas que encontramos y lo que queremos hacer después. Lo estamos usando como **borrador de retrospectiva**; todavía no es un acta de una reunión formal aprobada por todo el equipo.
 
-## Qué funcionó
+## Lo que nos ha funcionado
 
-El MVP v0.4 resultó útil para Ale durante tres días de uso real dentro del periodo del **4 al 7 de noviembre de 2026**, según el comentario recibido. El equipo pudo construir inventario, fichas, escalado y producción, y después evolucionar hacia roles y productos terminados. El repositorio dispone de pruebas automáticas y un workflow con MySQL aislado para revisar cambios antes de fusionarlos.
+Al inicio nos enfocamos en poder registrar ingredientes, crear fichas técnicas y calcular la cantidad necesaria para producir diferentes piezas de pan. Después agregamos MySQL, movimientos de inventario, usuarios, productos terminados, ventas e historial.
 
-## Qué obstaculizó el uso
+También empezamos a utilizar pruebas automatizadas y GitHub Actions. Esto nos permite revisar que varias funciones sigan trabajando después de realizar cambios en el código.
 
-La interfaz que vio Ale agrupaba la información en una sola pantalla y le pareció confusa. Además, reportó que Paniko no reconocía adecuadamente la equivalencia entre gramos y kilogramos **al crear fichas técnicas**; todavía no se documenta el mensaje de error exacto. Las necesidades de seguimiento financiero por semana no estaban cubiertas. La documentación de la rama de integración aún contiene referencias históricas que deben actualizarse para distinguir entre la versión probada con Ale (v0.4) y la versión técnica reciente (v0.7.1).
+Una de las cosas más útiles fue compartir la **versión 0.4 con Ale**. La probó durante tres días del **4 al 7 de noviembre de 2026** y me comentó que le había servido, aunque tenía varias observaciones.
 
-## Aprendizajes
+## Lo que se nos complicó
 
-La facilidad de uso es tan importante como los cálculos correctos. Una función de conversión con tests no garantiza que las personas puedan utilizar correctamente las unidades en la interfaz; se necesitan pruebas completas con g↔kg desde captura de receta hasta consumo de inventario. Mostrar todos los formularios a la vez no es necesariamente útil para quien está trabajando en una panadería. Los nuevos indicadores de negocio deben surgir de operaciones contables definidas y trazables; no se debe asumir que compras equivalen a costo de ventas ni que toda merma equivale a pérdida neta.
+La primera versión que le mostramos a Ale concentraba demasiada información en una sola pantalla. Ella nos dijo que era confuso encontrar lo que necesitaba.
 
-## Acciones y backlog ajustado
+También encontró problemas **al crear fichas técnicas**, porque no reconocía correctamente ingredientes registrados en gramos y utilizados en kilogramos, o viceversa. Más adelante, en la versión local 0.7.1, apareció otro error al intentar utilizar agua guardada en litros en una receta expresada en gramos.
 
-| Acción | Relación | Estado / verificación |
+Otra cosa que nos hizo notar es que a la panadería le serviría consultar sus resultados por semana: **ventas, ganancias, inversión y pérdidas**. Esa información todavía no está reunida en un resumen como el que ella necesita.
+
+## Qué decisiones tomamos
+
+| Situación | Qué hicimos | Qué sigue |
 | --- | --- | --- |
-| Separar las tareas en vistas claras y flujo de producción guiado | Hallazgo H-UX-01 | Desarrollado en el rediseño v0.7.0 y conservado en v0.7.1; falta revalidarlo con Ale |
-| Validar equivalencia g↔kg al crear fichas técnicas y de punta a punta | [Incidencia #11](https://github.com/paulinalizette70-boop/Paniko/issues/11) | Reporte de Ale en v0.4; conversión programada en v0.7.1, pero falta reproducir/verificar el flujo que falló y revalidarlo con la usuaria |
-| Resumen financiero semanal para administración | [HU-11 / Issue #10](https://github.com/paulinalizette70-boop/Paniko/issues/10) | Nueva prioridad alta; falta definir métricas e implementarlas |
-| Mostrar la diferencia entre ventas, compras, costos, gastos, utilidad y pérdidas | HU-11 | Pendiente de confirmación de definiciones con Ale |
-| Conservar las recetas reales fuera de GitHub y restringir las finanzas | Política de privacidad y roles | Implementado en código; verificar permisos en entorno local antes de mezclar PR #9 |
-| Revisar la v0.7.1 con la usuaria y registrar aceptación de tareas | [Evaluación v0.4](evaluacion-usuaria-ale-v04.md) | Pendiente |
-| Obtener revisión formal de PR y terminar documentación | [PR #9](https://github.com/paulinalizette70-boop/Paniko/pull/9) | Pendiente |
+| Las pantallas eran confusas. | Reorganizamos la interfaz por apartados en la versión 0.7.0 y posteriores. | Volver a mostrársela a Ale. |
+| Había problemas con g↔kg al crear fichas. | Agregamos conversiones y pruebas en el código. | Comprobar el flujo completo en la interfaz ([Issue #11](https://github.com/paulinalizette70-boop/Paniko/issues/11)). |
+| El agua estaba en litros y la receta en gramos. | En 0.7.2 se incorporó una equivalencia especial para el agua. | Probarla en nuestra instalación ([Issue #12](https://github.com/paulinalizette70-boop/Paniko/issues/12)). |
+| Ale quiere conocer sus resultados semanales. | Registramos la necesidad como historia de usuario. | Definir los cálculos e implementarla ([HU-11](https://github.com/paulinalizette70-boop/Paniko/issues/10)). |
+| Necesitábamos registrar mejor los avances. | Organizamos pruebas, ADRs, Issues y cambios por ramas. | Completar la evidencia individual y revisar los PRs que siguen abiertos. |
 
-## Alcance demostrable de medio término
+## Lo que me dejó esta etapa
 
-La evaluación realizada del **4 al 7 de noviembre de 2026**, con **tres días de uso reportados**, se documenta como **retroalimentación cualitativa** de Paniko v0.4. La ejecución de GitHub Actions es **evidencia técnica** de los cambios presentes en la rama. Ni una ni otra sustituyen la validación manual de la v0.7.1 con la base de datos local y la revisión del código por otro integrante.
+Me quedó más claro que **un programa puede hacer los cálculos bien y aun así ser difícil de usar**. Por eso queremos probar las funciones desde las pantallas, no solamente con pruebas de código.
 
+También aprendimos que las reglas de la panadería importan mucho. Por ejemplo, no podemos convertir automáticamente todos los líquidos de gramos a litros como si fueran agua, ni llamar «ganancia» a cualquier diferencia entre ventas y compras.
+
+## Cómo va GitHub
+
+Integramos **Paniko 0.7.2 en la rama `main`** mediante el [PR #9](https://github.com/paulinalizette70-boop/Paniko/pull/9), y las pruebas automáticas de esa integración se aprobaron.
+
+Todavía nos falta conseguir una revisión formal de otro integrante para documentar el trabajo en equipo y revisar los PRs anteriores. No vamos a marcar esas actividades como terminadas sin tener su evidencia.
+
+## Próximos pasos
+
+Queremos comprobar las conversiones dentro de las fichas técnicas, revisar la versión más nueva con Ale, seguir el desarrollo del apartado financiero semanal y terminar las evidencias de GitHub.
+
+**Importante:** estos son nuestros aprendizajes y acciones de seguimiento. La prueba con Ale fue de la **versión 0.4** y no significa que haya aprobado la versión 0.7.2. Las tareas y responsabilidades definitivas se registrarán cuando las confirme el equipo.
+
+[Ver informe de la prueba con Ale](evaluacion-usuaria-ale-v04.md) · [Ver entrega de GitHub](../entrega-github.md)
