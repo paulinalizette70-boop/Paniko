@@ -4,7 +4,7 @@
 
 ## Qué funcionó
 
-El MVP v0.4 resultó útil para Ale durante tres días de uso real, según el comentario recibido. El equipo pudo construir inventario, fichas, escalado y producción, y después evolucionar hacia roles y productos terminados. El repositorio dispone de pruebas automáticas y un workflow con MySQL aislado para revisar cambios antes de fusionarlos.
+El MVP v0.4 resultó útil para Ale durante tres días de uso real dentro del periodo del **4 al 7 de noviembre de 2026**, según el comentario recibido. El equipo pudo construir inventario, fichas, escalado y producción, y después evolucionar hacia roles y productos terminados. El repositorio dispone de pruebas automáticas y un workflow con MySQL aislado para revisar cambios antes de fusionarlos.
 
 ## Qué obstaculizó el uso
 
@@ -27,7 +27,7 @@ La facilidad de uso es tan importante como los cálculos correctos. Mostrar todo
 
 ## Alcance demostrable de medio término
 
-La evaluación de tres días se reporta como **retroalimentación cualitativa** de Paniko v0.4. La ejecución de GitHub Actions es **evidencia técnica** de los cambios presentes en la rama. Ni una ni otra sustituyen la validación manual de la v0.7.1 con la base de datos local y la revisión del código por otro integrante.
+La evaluación realizada del **4 al 7 de noviembre de 2026**, con **tres días de uso reportados**, se documenta como **retroalimentación cualitativa** de Paniko v0.4. La ejecución de GitHub Actions es **evidencia técnica** de los cambios presentes en la rama. Ni una ni otra sustituyen la validación manual de la v0.7.1 con la base de datos local y la revisión del código por otro integrante.
 
 ## Para formalizar la retrospectiva en equipo
 
