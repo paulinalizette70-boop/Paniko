@@ -144,6 +144,11 @@ function createApp({store, auth = null, products = null, dataFile = path.join(__
         if(loggedInUser?.role==='operador')input.costPerUnit=0;
         return respond(201, await store.addIngredient(input));
       }
+      const originalEdit=pathname.match(/^\/api\/catalog\/recipes\/([a-z][a-z0-9_]{0,99})\/save$/);
+      if(originalEdit&&req.method==='POST'){
+        if(!auth?.saveCatalogRecipe)return respond(503,{error:'Se requiere MySQL e inicio de sesión para editar recetas originales'});
+        return respond(200,await auth.saveCatalogRecipe(originalEdit[1],await bodyAsJson(req)));
+      }
       const fromCatalog=pathname.match(/^\/api\/recipes\/from-catalog\/([a-z][a-z0-9_]{0,99})$/);
       if(fromCatalog&&req.method==='POST'){
         if(!auth?.getCatalogRecipe||!store.importCatalogRecipe)
@@ -156,6 +161,8 @@ function createApp({store, auth = null, products = null, dataFile = path.join(__
       }
       if (req.method === 'GET' && pathname === '/api/recipes') return respond( 200, await store.listRecipes());
       if (req.method === 'POST' && pathname === '/api/recipes') return respond( 201, await store.addRecipe(await bodyAsJson(req)));
+      const recipeEdit=pathname.match(/^\/api\/recipes\/([a-f\d]{8}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{12})\/update$/i);
+      if(recipeEdit&&req.method==='POST')return respond(200,await store.updateRecipe(recipeEdit[1],await bodyAsJson(req)));
       if(req.method==='POST' && pathname==='/api/recipes/bakers-preview'){
         const input=await bodyAsJson(req);
         const ingredients=await store.listIngredients();
