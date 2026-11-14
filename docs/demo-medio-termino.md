@@ -20,6 +20,12 @@ La vista previa informa expresamente «No se modificó el inventario»: **todav�
 
 Saúl Mora (`saulmora8831-hub`) publicó una [revisión escrita en la conversación](https://github.com/paulinalizette70-boop/Paniko/pull/19#issuecomment-6870172329) y un [LGTM](https://github.com/paulinalizette70-boop/Paniko/pull/19#issuecomment-6870174609). Respondimos [su recomendación de preparar los accesos y las pruebas manuales](https://github.com/paulinalizette70-boop/Paniko/pull/19#issuecomment-6870518057). **La aprobación formal de GitHub aún no está registrada; falta `Review changes → Approve` y revisar los cambios nuevos antes de integrar**.
 
+### Revisión de Gael en el PR #18
+
+Gael Ramírez también dejó [comentarios técnicos verificables en el PR #18](https://github.com/paulinalizette70-boop/Paniko/pull/18#issuecomment-6870981604), sobre conversión de leche líquida y ajuste de masa madre. Señaló que mantendrá el PR como **Draft** para completar respaldo y validación de Windows. Estas observaciones se agregan a las de Saúl en el PR #19. Ninguno de los dos PRs tiene un `Approve` formal registrado hasta ahora.
+
+[Tabla completa de evidencias de revisión entre compañeros](pruebas/evidencia-prs-medio-termino.md).
+
 ## Qué vamos a demostrar
 
 Nuestra prioridad ha sido conectar **ingredientes → fichas técnicas → cálculo de producción → descuento de inventario → historial**.
