@@ -72,7 +72,7 @@ try {
   }
   $pagina = Get-Content -LiteralPath (Join-Path $Destino 'public\index.html') -Raw
   $app = Get-Content -LiteralPath (Join-Path $Destino 'public\app.js') -Raw
-  if (-not $pagina.Contains('Abrir producción por formatos') -or -not $pagina.Contains('data-scroll-to="dough-production"') -or -not $app.Contains('scrollTo:button.dataset.scrollTo||null')) {
+  if (-not $pagina.Contains('id="dough-production"') -or -not $pagina.Contains('data-scroll-to="dough-production"') -or -not $app.Contains('scrollTo:button.dataset.scrollTo||null')) {
     throw 'Verificacion fallida: no aparecio el acceso visible de brioche. Se restaurara el codigo.'
   }
   Write-Host 'Verificacion OK: Produccion por formatos esta dentro de Produccion.' -ForegroundColor Green
