@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS finished_products (
  category_id VARCHAR(60) NULL,
  source_product_key CHAR(64) NULL UNIQUE,
  operational_recipe_id CHAR(36) NULL,
+ dough_grams_per_piece INT NULL,
  unit ENUM('pieza') NOT NULL DEFAULT 'pieza',
  stock INT NOT NULL DEFAULT 0,
  min_stock INT NULL,
@@ -23,7 +24,8 @@ CREATE TABLE IF NOT EXISTS finished_products (
  CONSTRAINT ck_fp_stock CHECK (stock >= 0),
  CONSTRAINT ck_fp_min CHECK (min_stock IS NULL OR min_stock >= 0),
  CONSTRAINT ck_fp_price CHECK (sale_price IS NULL OR sale_price >= 0),
- CONSTRAINT ck_fp_unit_cost CHECK (unit_cost IS NULL OR unit_cost >= 0)
+ CONSTRAINT ck_fp_unit_cost CHECK (unit_cost IS NULL OR unit_cost >= 0),
+ CONSTRAINT ck_fp_dough_grams CHECK (dough_grams_per_piece IS NULL OR (dough_grams_per_piece > 0 AND dough_grams_per_piece <= 50000))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS finished_product_movements (
@@ -38,11 +40,37 @@ CREATE TABLE IF NOT EXISTS finished_product_movements (
  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
  INDEX ix_fpm_product_date (product_id, created_at),
  INDEX ix_fpm_date (created_at),
- UNIQUE KEY uq_fpm_batch (batch_id),
+ UNIQUE KEY uq_fpm_batch_product (batch_id,product_id),
  CONSTRAINT fk_fpm_product FOREIGN KEY(product_id) REFERENCES finished_products(id),
  CONSTRAINT fk_fpm_batch FOREIGN KEY(batch_id) REFERENCES production_batches(id),
  CONSTRAINT ck_fpm_quantity CHECK (quantity > 0),
  CONSTRAINT ck_fpm_nonnegative CHECK (stock_before >= 0 AND stock_after >= 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Cantidad de cada extra POR PIEZA, normalizada a la unidad del ingrediente.
+CREATE TABLE IF NOT EXISTS dough_product_extras (
+ product_id CHAR(36) NOT NULL,
+ ingredient_id CHAR(36) NOT NULL,
+ quantity_per_piece DECIMAL(16,6) NOT NULL,
+ PRIMARY KEY(product_id,ingredient_id),
+ CONSTRAINT fk_dpe_product FOREIGN KEY(product_id) REFERENCES finished_products(id) ON DELETE CASCADE,
+ CONSTRAINT fk_dpe_ingredient FOREIGN KEY(ingredient_id) REFERENCES ingredients(id),
+ CONSTRAINT ck_dpe_quantity CHECK (quantity_per_piece > 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Qué piezas se obtuvieron de UNA misma tanda de masa.
+-- Guardar el gramaje de aquel día permite editar la ficha sin cambiar el historial.
+CREATE TABLE IF NOT EXISTS dough_batch_outputs (
+ batch_id CHAR(36) NOT NULL,
+ product_id CHAR(36) NOT NULL,
+ product_name VARCHAR(150) NOT NULL,
+ quantity INT NOT NULL,
+ grams_per_piece INT NOT NULL,
+ total_grams INT NOT NULL,
+ PRIMARY KEY(batch_id,product_id),
+ CONSTRAINT fk_dbo_batch FOREIGN KEY(batch_id) REFERENCES production_batches(id),
+ CONSTRAINT fk_dbo_product FOREIGN KEY(product_id) REFERENCES finished_products(id),
+ CONSTRAINT ck_dbo_qty CHECK (quantity > 0 AND grams_per_piece > 0 AND total_grams > 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT IGNORE INTO finished_product_categories (id,name,sort_order) VALUES
