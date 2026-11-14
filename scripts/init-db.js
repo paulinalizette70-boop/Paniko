@@ -17,6 +17,7 @@ async function main(){
     await migrate(connection);
     await require('./migrate-calendar-yields-081').migrate(connection);
     await require('./migrate-starter-inventory-082').migrate(connection);
+    await require('./migrate-dough-products-084').migrate(connection);
     console.log(`Esquema MySQL listo: ${database}`);
   }finally{await connection.end();}
 }
