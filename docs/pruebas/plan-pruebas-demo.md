@@ -6,6 +6,10 @@
 
 Para estas pruebas usaremos datos **ficticios** y una base MySQL de demostración separada de la real. No debemos publicar credenciales, fórmulas, cantidades reales de recetas o información financiera de la panadería.
 
+## Capturas recibidas: evidencia de interfaz, no de ejecución completa
+
+El 13 de noviembre de 2026 se recibieron capturas de Paniko **local 0.8.3**. Se comprobó **visualmente** que existe una vista previa calculada para 15 baguettes, con indicador de capacidad de inventario y la leyenda «No se modificó el inventario». Esto **no corresponde** a ejecutar DM-05 ni DM-06: no hay evidencia de confirmar una tanda nueva ni de revisar su lote en el Historial. Ver [descripción de ocho vistas locales](../evidencias/capturas-local-083-2026-11-13.md). Hasta ejecutar los casos manuales, su estado sigue siendo **Pendiente**.
+
 ## Casos para ejecutar antes de la Sprint Review
 
 | ID | Prueba y pasos principales | Resultado esperado | Ejecución |
