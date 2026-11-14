@@ -63,6 +63,8 @@ Dejamos la información más detallada aquí:
 
 Estas capturas corresponden a la interfaz que utilizamos durante las pruebas locales de la versión 0.7.1. Ocultamos los datos de operaciones y no publicamos cantidades de recetas reales.
 
+Para la **entrega de medio término** también revisamos [ocho pantallas de la instalación local 0.8.3](docs/evidencias/capturas-local-083-2026-11-13.md); sus capturas completas están en el documento individual y no se publican aquí porque algunas contenían detalles de producción o costos.
+
 **Pantalla de inicio**
 
 ![Pantalla de inicio de Paniko](docs/img/paniko-inicio.webp)
@@ -129,6 +131,25 @@ Después abre **http://127.0.0.1:3000**.
 
 > Si ya tienes Paniko instalado con recetas o movimientos reales, no reemplaces toda la carpeta ni la base de datos sin hacer un respaldo. Para instalaciones que vienen de la 0.6.0 también tenemos una [nota de corrección de inventario](docs/releases/Paniko-0.7.1-correccion-inventario.md).
 
+## Cómo utilizamos Paniko
+
+Una vez que inicia sesión un usuario autorizado, el recorrido normal de la aplicación es este:
+
+1. Entramos a **Ingredientes** para revisar si están registrados los insumos y sus existencias.
+2. En **Recetas** consultamos o creamos una ficha técnica. Ahí queda registrado el rendimiento de la receta.
+3. En **Producción** elegimos una receta, indicamos cuántas piezas queremos preparar y presionamos **Calcular ingredientes**.
+4. Revisamos el resultado y los avisos sobre disponibilidad. **La vista previa no descuenta inventario.**
+5. Cuando los datos son correctos, confirmamos la producción: en ese momento se registran los movimientos correspondientes.
+6. Revisamos el lote en **Historial** y, si corresponde, las existencias en **Productos y ventas**.
+
+Si solo queremos mostrar el sistema en clase, es preferible usar una **base MySQL de demostración independiente**, con cantidades ficticias. No hay que confirmar producciones de prueba sobre el inventario real de la panadería.
+
+### ¿Qué versión vamos a mostrar en la demo?
+
+En la rama principal (\`main\`) se encuentra la versión **0.7.2**. En nuestras [capturas de la instalación local del 13 de noviembre](docs/evidencias/capturas-local-083-2026-11-13.md) aparece **0.8.3**, con calendario, masa madre y finanzas. Esos cambios posteriores siguen en ramas de desarrollo: no afirmamos que estén integrados en \`main\`.
+
+Las capturas muestran las pantallas y una vista previa calculada, **pero no sustituyen una prueba de producción confirmada**. La evidencia completa para la maestra se está preparando en nuestro documento de entrega individual, con información sensible oculta.
+
 ## Cómo usamos las pruebas
 
 Agregamos pruebas para revisar los cálculos, las conversiones de unidades, las fichas técnicas, el inventario, los productos, el inicio de sesión y algunas operaciones con MySQL.
@@ -170,11 +191,25 @@ Estas son las siguientes cosas que queremos trabajar:
 
 Este es un proyecto que seguimos desarrollando en equipo. En los commits, Issues y Pull Requests vamos registrando los cambios y las tareas para que se pueda revisar el avance de cada integrante.
 
+## Cómo contribuir al proyecto
+
+Somos un equipo de tres integrantes: Paulina Villalpando Guizar, Saúl Mora y Gael Ramírez. Para mantener organizado el trabajo, proponemos este flujo:
+
+1. Antes de empezar, revisamos los [Issues](https://github.com/paulinalizette70-boop/Paniko/issues) y acordamos qué problema vamos a resolver.
+2. Trabajamos el cambio en una **rama diferente de \`main\`**. Evitamos agregar recetas reales o información privada en archivos, pruebas o capturas.
+3. Ejecutamos \`npm.cmd test\` y verificamos las pantallas afectadas. Si un cambio toca MySQL, usamos una base de prueba separada.
+4. Abrimos un **Pull Request** explicando qué se modificó, cómo se probó y qué quedó pendiente.
+5. Otro integrante lee **Files changed**, deja comentarios y registra su revisión desde **Review changes**. Atendemos las observaciones antes de decidir si integramos el PR.
+
+Para una entrega académica, los comentarios reales y las revisiones formales son evidencias distintas. En el [PR #19](https://github.com/paulinalizette70-boop/Paniko/pull/19), Saúl ya escribió comentarios y recibió respuesta; seguimos pendientes de registrar una aprobación formal.
+
+La carpeta [\`docs/adr/\`](docs/adr/) guarda nuestras decisiones de arquitectura; los [bloqueos](docs/seguimiento/bloqueos.md) y la [deuda técnica](docs/seguimiento/deuda-tecnica.md) explican qué tuvimos que resolver y qué sigue abierto.
+
 ## Cómo organizamos los cambios en GitHub
 
 Tratamos de no hacer todos los cambios directamente en `main`. Primero se trabajan en otra rama, se prueban y después se integran mediante un Pull Request.
 
-La versión **0.7.2 ya se integró a `main` con el [PR #9](https://github.com/paulinalizette70-boop/Paniko/pull/9)**. Las pruebas automáticas de esa integración terminaron correctamente. Nos falta documentar una revisión formal del código por otro integrante; no queremos marcarla como realizada si todavía no tenemos esa evidencia.
+La versión **0.7.2 ya se integró a `main` con el [PR #9](https://github.com/paulinalizette70-boop/Paniko/pull/9)**. Las pruebas automáticas de esa integración terminaron correctamente. En el [PR #19](https://github.com/paulinalizette70-boop/Paniko/pull/19) ya contamos con comentarios de Saúl, pero todavía falta una **revisión formal** registrada con la opción *Review changes → Approve*; no queremos marcarla como realizada si GitHub aún no la muestra.
 
 También guardamos las [decisiones de arquitectura](docs/adr/), los [bloqueos](docs/seguimiento/bloqueos.md) y la [deuda técnica](docs/seguimiento/deuda-tecnica.md) para recordar por qué hicimos ciertos cambios y qué falta resolver.
 
@@ -184,7 +219,11 @@ El repositorio es público porque lo utilizamos para el proyecto académico, **p
 
 Por eso no subimos nuestras fórmulas, contraseñas, archivos `.env`, la carpeta `private/`, respaldos de MySQL ni capturas con datos sensibles. Las personas autorizadas pueden consultar las recetas dentro de Paniko, pero eso no significa que sus cantidades deban quedar publicadas en GitHub.
 
-Por ahora el código tiene la configuración de licencia `UNLICENSED`; todavía no hemos definido una licencia de distribución con el equipo.
+## Licencia y uso
+
+Por ahora el código tiene la configuración de licencia `UNLICENSED`; todavía no hemos definido una licencia de distribución con el equipo. **Esto no equivale a una licencia de código abierto.** El repositorio puede consultarse como parte de nuestro proyecto escolar, pero no estamos otorgando permisos generales de reutilización o redistribución mediante una licencia seleccionada.
+
+Antes de elegir una licencia tenemos que acordarla los tres, especialmente porque la panadería utiliza recetas y datos que deben mantenerse privados. Aunque el código del proyecto esté en un repositorio público, **las recetas reales y los datos de operación no lo están**.
 
 ---
 
