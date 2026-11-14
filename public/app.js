@@ -306,6 +306,7 @@ async function refresh() {
   ingredients=ings;recipes=recs;render(movements,batches);
   window.PanikoFinishedProducts?.updateProductionOptions?.();
   syncProductionUnit();resetCapacitySuggestion();
+  document.dispatchEvent(new Event('paniko:inventory-refreshed'));
 }
 $('production-filter').addEventListener('change',renderProductionHistory);
 $('add-item').addEventListener('click', addRecipeItem);
