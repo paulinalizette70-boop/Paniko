@@ -210,7 +210,7 @@
   });
   window.PanikoDough={selectRecipe(id){
     requestedRecipeId=id;
-    if(user)void refresh();
+    return user?refresh():Promise.resolve();
   }};
   formBatch.elements.recipeId.addEventListener('change',renderBatchRows);
   formBatch.addEventListener('input',clearPreview);
