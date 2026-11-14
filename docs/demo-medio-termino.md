@@ -8,6 +8,18 @@ Este documento es nuestra guía para presentar lo que llevamos de Paniko. La ide
 
 > **Versión que sí está en `main`: 0.7.2.** Las versiones posteriores 0.7.3 a 0.8.3 están en ramas con PRs de desarrollo y no deben presentarse como funcionalidades ya integradas a `main`. Si usamos una versión local posterior, primero hay que verificarla y dejar claro cuál se está mostrando.
 
+## Evidencia visual local incorporada (13 de noviembre)
+
+Ya contamos con **capturas reales de la instalación local 0.8.3**, incluidas en el documento individual editable de la entrega. Muestran Inicio (29 ingredientes, 7 fichas y 3 lotes), calendario, formularios de inventario, fichas técnicas, vista previa de 15 baguettes, seguimiento de masa madre, productos (17 registros, 0 piezas) y Finanzas (importes en $0.00).
+
+La vista previa informa expresamente «No se modificó el inventario»: **todavía no tenemos en esas capturas evidencia de una tanda nueva confirmada, de su historial o de una venta ejecutada**. La instalación local 0.8.3 tampoco equivale a la versión 0.7.2 que está integrada en `main`.
+
+[Consultar el inventario y alcance de las capturas](evidencias/capturas-local-083-2026-11-13.md). Las originales no se suben aquí para evitar compartir cantidades y costos privados.
+
+### Comentarios de revisión de Saúl
+
+Saúl Mora (`saulmora8831-hub`) publicó una [revisión escrita en la conversación](https://github.com/paulinalizette70-boop/Paniko/pull/19#issuecomment-6870172329) y un [LGTM](https://github.com/paulinalizette70-boop/Paniko/pull/19#issuecomment-6870174609). Respondimos [su recomendación de preparar los accesos y las pruebas manuales](https://github.com/paulinalizette70-boop/Paniko/pull/19#issuecomment-6870518057). **La aprobación formal de GitHub aún no está registrada; falta `Review changes → Approve` y revisar los cambios nuevos antes de integrar**.
+
 ## Qué vamos a demostrar
 
 Nuestra prioridad ha sido conectar **ingredientes → fichas técnicas → cálculo de producción → descuento de inventario → historial**.
@@ -58,10 +70,10 @@ La opción más segura es una instalación de Paniko conectada a una base MySQL 
 
 | Criterio | Qué tenemos | Qué falta antes de decir «terminado» |
 | --- | --- | --- |
-| **Demo funcional** | Código 0.7.2 en `main`, interfaz, inventario, fichas, producción e historial | Ensayar el flujo de principio a fin y registrar el resultado de las pruebas manuales |
+| **Demo funcional** | Código 0.7.2 en `main` y [capturas locales de 0.8.3](evidencias/capturas-local-083-2026-11-13.md) (incluidas en el documento individual) | Confirmar una tanda ficticia y registrar historial y cambios de inventario; las capturas actuales son de consulta/vista previa |
 | **README profesional** | [README](../README.md) con objetivo, instalación, uso, capturas, colaboración y apartado de licencia | Elegir una licencia solo si el equipo decide otorgarla; ahora está `UNLICENSED` |
 | **Casos de prueba** | [Pruebas automáticas](../tests/), [catálogo histórico](pruebas/casos-de-prueba.md), [ejecución aprobada de `main`](https://github.com/paulinalizette70-boop/Paniko/actions/runs/43374837592) | Ejecutar y anotar los casos manuales del [plan de demo](pruebas/plan-pruebas-demo.md) |
-| **Pull Requests** | [PR #9](https://github.com/paulinalizette70-boop/Paniko/pull/9) fusionado, historial de ramas, nuevos PRs de desarrollo | Falta evidencia de revisión de otro integrante; pedirla y responder observaciones en un PR nuevo |
+| **Pull Requests** | [PR #9](https://github.com/paulinalizette70-boop/Paniko/pull/9) fusionado; [comentarios reales de Saúl en PR #19](https://github.com/paulinalizette70-boop/Paniko/pull/19#issuecomment-6870172329) y respuesta | Falta aprobación formal de otro integrante mediante `Review changes → Approve` |
 | **ADR, bloqueos y deuda técnica** | Seis [ADRs](adr/), [bloqueos](seguimiento/bloqueos.md) y [deuda técnica](seguimiento/deuda-tecnica.md) | Revisar que los estados correspondan a `main`, no a versiones anteriores |
 | **Backlog y retrospectiva** | [Issues](https://github.com/paulinalizette70-boop/Paniko/issues), [comentarios de Ale](seguimiento/evaluacion-usuaria-ale-v04.md) y [retrospectiva](seguimiento/retrospectiva-medio-termino.md) | Revisar prioridades y confirmar acuerdos reales con el equipo |
 | **Comunicación** | Podemos explicar el problema, la solución y los pendientes | Confirmar participación de todos y ensayar las transiciones de la presentación |
