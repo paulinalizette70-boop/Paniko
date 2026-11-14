@@ -146,7 +146,7 @@ Si solo queremos mostrar el sistema en clase, es preferible usar una **base MySQ
 
 ### ¿Qué versión vamos a mostrar en la demo?
 
-En la rama principal (\`main\`) se encuentra la versión **0.7.2**. En nuestras [capturas de la instalación local del 13 de noviembre](docs/evidencias/capturas-local-083-2026-11-13.md) aparece **0.8.3**, con calendario, masa madre y finanzas. Esos cambios posteriores siguen en ramas de desarrollo: no afirmamos que estén integrados en \`main\`.
+En la rama principal (\`main\`) se encuentra la versión **0.7.2**. En nuestras [capturas de la instalación local](docs/evidencias/capturas-local-083-2026-11-13.md) aparece **0.8.3**, con calendario, masa madre y finanzas. Esos cambios posteriores siguen en ramas de desarrollo: no afirmamos que estén integrados en \`main\`.
 
 Las capturas muestran las pantallas y una vista previa calculada, **pero no sustituyen una prueba de producción confirmada**. La evidencia completa para la maestra se está preparando en nuestro documento de entrega individual, con información sensible oculta.
 
