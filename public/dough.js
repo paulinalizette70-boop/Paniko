@@ -7,7 +7,8 @@
   const status=(text,isError=false)=>{const n=$('dough-status');n.textContent=text;n.className=isError?'warning':'hint';};
   const num=n=>new Intl.NumberFormat('es-MX',{maximumFractionDigits:6}).format(n);
   const formBase=$('dough-base-form'),formFormat=$('dough-format-form'),formBatch=$('dough-batch-form');
-  let user=null,config={bases:[],formats:[]},products=[],ingredients=[],recipes=[],lastPreview=null,lastPayload=null;
+  let user=null,config={bases:[],formats:[]},preparations=[],products=[],ingredients=[],recipes=[],lastPreview=null,lastPayload=null;
+  let requestedRecipeId=null,prepPreview=null,prepPayload=null;
   const fetchJSON=async(url,opt={})=>{
     const res=await fetch(url,{credentials:'same-origin',...opt});
     const body=await res.json();if(!res.ok)throw Error(body.error||'No se pudo realizar la operación');return body;
@@ -28,7 +29,8 @@
   function addExtra(known){
     const row=el('div',undefined,'dough-extra-row');
     const select=el('select');select.setAttribute('aria-label','Ingrediente de relleno o cubierta');
-    fillSelect(select,ingredients.map(x=>({id:x.id,name:`${x.name} (${x.unit})`})),'Selecciona complemento');
+    const preparedIds=new Set(preparations.map(p=>p.ingredientId));
+    fillSelect(select,[...ingredients].sort((a,b)=>Number(preparedIds.has(b.id))-Number(preparedIds.has(a.id))||a.name.localeCompare(b.name)).map(x=>({id:x.id,name:`${x.name} (${x.unit})`})),'Selecciona complemento');
     const qty=el('input');qty.type='number';qty.min='0.000001';qty.step='0.000001';qty.required=true;qty.placeholder='Cantidad por pieza';
     const unit=el('select');unit.setAttribute('aria-label','Unidad');
     const del=el('button','Quitar','btn-soft');del.type='button';del.addEventListener('click',()=>row.remove());
@@ -43,9 +45,23 @@
     const bases=config.bases.map(b=>({id:b.recipeId,name:`${b.recipeName} · ${num(b.referenceGrams)} g por receta`}));
     fillSelect(formFormat.elements.recipeId,bases,'Primero configura la masa base');
     fillSelect(formBatch.elements.recipeId,bases,'Selecciona una masa configurada');
-    fillSelect(formFormat.elements.productId,products.filter(p=>p.active).map(p=>({id:p.id,name:p.name})),'Selecciona producto terminado');
+    fillSelect(formFormat.elements.productId,products.filter(p=>p.active).map(p=>({id:p.id,name:p.name})),'Crear nuevo producto desde la receta');
+    syncProductMode();
+    renderPreparationForms();
     const selectedBase=config.bases.find(b=>b.recipeId===formBase.elements.recipeId.value);
     if(selectedBase)formBase.elements.referenceGrams.value=String(selectedBase.referenceGrams);
+    if(requestedRecipeId){
+      if(recipes.some(r=>r.id===requestedRecipeId))formBase.elements.recipeId.value=requestedRecipeId;
+      if(config.bases.some(b=>b.recipeId===requestedRecipeId)){
+        formFormat.elements.recipeId.value=requestedRecipeId;
+        formBatch.elements.recipeId.value=requestedRecipeId;
+      }
+      if(user?.role==='admin')$('dough-settings').open=true;
+      requestedRecipeId=null;
+    }
+    if(!formFormat.elements.recipeId.value&&formBase.elements.recipeId.value&&config.bases.some(b=>b.recipeId===formBase.elements.recipeId.value))
+      formFormat.elements.recipeId.value=formBase.elements.recipeId.value;
+    if(!formBatch.elements.recipeId.value&&formFormat.elements.recipeId.value)formBatch.elements.recipeId.value=formFormat.elements.recipeId.value;
     renderBatchRows();
   }
   function renderBatchRows(){
@@ -67,9 +83,9 @@
   async function refresh(){
     if(!user)return;
     try{
-      [config,products,ingredients,recipes]=await Promise.all([
-        fetchJSON('/api/dough/config'),fetchJSON('/api/products'),fetchJSON('/api/ingredients'),fetchJSON('/api/recipes')]);
-      renderForms();root.hidden=false;$('dough-settings').hidden=user.role!=='admin';
+      [config,products,ingredients,recipes,preparations]=await Promise.all([
+        fetchJSON('/api/dough/config'),fetchJSON('/api/products'),fetchJSON('/api/ingredients'),fetchJSON('/api/recipes'),fetchJSON('/api/dough/preparations')]);
+      renderForms();root.hidden=false;$('dough-settings').hidden=user.role!=='admin';$('dough-prep-link-details').hidden=user.role!=='admin';
       status(config.bases.length?'Configura las piezas de cada formato y calcula el lote.':'Primero configura el rendimiento en gramos de tu receta base.');
     }catch(e){root.hidden=false;status('No se pudo cargar producción por formatos: '+e.message,true);}
   }
@@ -85,7 +101,14 @@
     const recipe=recipes.find(r=>r.id===formBase.elements.recipeId.value);
     formBase.elements.referenceGrams.value=recipe?.yieldUnit==='g'?String(recipe.baseYield):'';
   });
+  function syncProductMode(){
+    const creating=!formFormat.elements.productId.value;
+    const input=formFormat.elements.productName;
+    input.disabled=!creating;input.required=creating;
+    if(!creating)input.value='';
+  }
   formFormat.elements.productId.addEventListener('change',()=>{
+    syncProductMode();
     const f=config.formats.find(x=>x.productId===formFormat.elements.productId.value);
     $('dough-extra-items').replaceChildren();
     if(f){formFormat.elements.recipeId.value=f.recipeId;formFormat.elements.doughGrams.value=String(f.doughGrams);for(const extra of f.extras)addExtra(extra);}
@@ -102,9 +125,15 @@
     e.preventDefault();try{
       const extras=[...$('dough-extra-items').children].map(row=>({ingredientId:row.querySelector('select').value,
         quantity:Number(row.querySelector('input').value),unit:row.querySelectorAll('select')[1].value}));
-      await post('/api/dough/format',{recipeId:formFormat.elements.recipeId.value,productId:formFormat.elements.productId.value,
-        doughGrams:Number(formFormat.elements.doughGrams.value),extras});
-      status('Formato y complementos guardados. No se modificó inventario.');await refresh();
+      const data={recipeId:formFormat.elements.recipeId.value,doughGrams:Number(formFormat.elements.doughGrams.value),extras};
+      if(formFormat.elements.productId.value){
+        await post('/api/dough/format',{...data,productId:formFormat.elements.productId.value});
+      }else{
+        await post('/api/dough/product',{...data,name:formFormat.elements.productName.value.trim()});
+        formFormat.elements.productName.value='';
+      }
+      status('Producto y complementos guardados desde la masa base. No se modificó inventario.');
+      $('dough-extra-items').replaceChildren();await refresh();
     }catch(err){status(err.message,true)}
   });
   formBatch.elements.recipeId.addEventListener('change',renderBatchRows);
@@ -144,6 +173,6 @@
   document.addEventListener('paniko:auth',e=>{
     user=e.detail?.user||null;
     root.hidden=!user;
-    if(user)void refresh();else {config={bases:[],formats:[]};lastPreview=null;lastPayload=null;root.hidden=true;}
+    if(user)void refresh();else {config={bases:[],formats:[]};preparations=[];lastPreview=null;lastPayload=null;clearPrepPreview();root.hidden=true;}
   });
 })();
