@@ -70,6 +70,15 @@ Los PRs [#7](https://github.com/paulinalizette70-boop/Paniko/pull/7) y [#8](http
 
 También falta organizar por integrante los commits, tareas y evidencias correspondientes. La participación no debe inventarse; debe revisarse con el trabajo que realmente hizo cada quien.
 
+### Evidencia de revisión de los dos compañeros
+
+Ya recibimos comentarios **reales y verificables** de los dos integrantes:
+
+- **Saúl Mora** revisó la organización de la demo y los casos del [PR #19](https://github.com/paulinalizette70-boop/Paniko/pull/19#issuecomment-6870172329), dejó un LGTM en la conversación y [respondimos su sugerencia](https://github.com/paulinalizette70-boop/Paniko/pull/19#issuecomment-6870518057).
+- **Gael Ramírez** escribió una [observación técnica en el PR #18](https://github.com/paulinalizette70-boop/Paniko/pull/18#issuecomment-6870981604), relacionada con conversión de leche líquida y ajuste del peso de masa madre. El PR #18 permanece en **Draft** mientras se valida el comportamiento en Windows.
+
+Las evidencias se explican con más detalle en el [registro de comentarios y PRs de medio término](pruebas/evidencia-prs-medio-termino.md). Hasta esta verificación, **no hay aprobaciones formales registradas** en #18 ni #19. No debemos confundir comentarios de la conversación con la opción `Review changes → Approve`.
+
 ## 7. Capturas del programa
 
 En el [README](../README.md#capturas-de-paniko) agregamos capturas de Inicio e Historial con información sensible oculta. No publicamos fotos que muestren las fórmulas reales ni las cifras privadas de la panadería.
