@@ -14,7 +14,7 @@ test('PREP-API: solo administracion vincula recetas y crea productos; operador p
  const preparations={
    list:async()=>[{recipeId:rid,ingredientId:randomUUID(),stock:100}],
    register:async()=>{registrations++;return{ok:true}},
-   preview:async()=>({recipeId:rid,estimatedTotalCost:500,stockAvailable:true,
+   preview:async()=>({recipeId:rid,estimatedTotalCost:500,outputUnitCost:32,stockAvailable:true,
      lines:[{name:'Azucar',required:20,unitCost:15,estimatedCost:300}]}),
    produce:async()=>{productions++;return{ok:true}}
  };
@@ -36,6 +36,7 @@ test('PREP-API: solo administracion vincula recetas y crea productos; operador p
  assert.equal(p.status,200);const payload=await p.json();
  assert.equal('estimatedTotalCost' in payload,false);
  assert.equal('unitCost' in payload.lines[0],false);
+ assert.equal('outputUnitCost' in payload,false);
  assert.equal((await req('/api/dough/preparations/produce',operator,'POST')).status,201);
  assert.equal(productions,1);
  // El flujo tradicional no puede consumir una subpreparacion sin registrar su inventario final.
