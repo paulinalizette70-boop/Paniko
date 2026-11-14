@@ -233,9 +233,13 @@ function renderBatchDetail(container,detail){
     const previous=line.stockBefore===null?'':` · stock ${line.stockBefore} → ${line.stockAfter} ${line.unit}`;
     container.append(make('div',`${line.name}: ${line.quantity} ${line.unit}`+(currentUser?.role==='admin'?` · costo estimado ${money(line.estimatedCost)}`:'')+previous,'list-row'));
   }
-  if(detail.finishedProduct){
-    const p=detail.finishedProduct;
-    container.append(make('p',`Producto terminado: ${p.name} · +${p.quantity} piezas · inventario ${p.before} → ${p.after} piezas`,'good'));
+  const outputs=Array.isArray(detail.finishedProducts)&&detail.finishedProducts.length
+    ? detail.finishedProducts : (detail.finishedProduct?[detail.finishedProduct]:[]);
+  if(outputs.length){
+    container.append(make('h4',outputs.length===1?'Producto terminado':'Productos de esta misma masa'));
+    for(const p of outputs){
+      container.append(make('p',`${p.name} · +${p.quantity} piezas · inventario ${p.before} → ${p.after} piezas`,'good'));
+    }
   }else container.append(make('p','Sin producto terminado vinculado a este lote.','muted'));
 }
 function renderProductionHistory(){
