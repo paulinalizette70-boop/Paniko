@@ -136,6 +136,82 @@
       $('dough-extra-items').replaceChildren();await refresh();
     }catch(err){status(err.message,true)}
   });
+  const prepLinkForm=$('dough-prep-link-form'),prepBatchForm=$('dough-prep-batch-form');
+  function syncExistingIngredientChoices(){
+    const r=recipes.find(x=>x.id===prepLinkForm.elements.recipeId.value);
+    const list=ingredients.filter(i=>r?.yieldUnit==='g'?['g','kg'].includes(i.unit):r?.yieldUnit==='ml'?['ml','l'].includes(i.unit):false)
+      .map(i=>({id:i.id,name:i.name+' ('+i.unit+')'}));
+    fillSelect(prepLinkForm.elements.ingredientId,list,'Crear existencia nueva automáticamente');
+  }
+  function renderPreparationForms(){
+    const already=new Set(preparations.map(x=>x.recipeId));
+    fillSelect(prepLinkForm.elements.recipeId,recipes.filter(r=>['g','ml'].includes(r.yieldUnit)&&!already.has(r.id))
+      .map(r=>({id:r.id,name:r.name+' · '+r.baseYield+' '+r.yieldUnit})),'Selecciona una receta complementaria');
+    syncExistingIngredientChoices();
+    fillSelect(prepBatchForm.elements.recipeId,preparations.map(p=>({id:p.recipeId,name:p.recipeName+' · '+p.yieldUnit})),
+      'Selecciona una preparación vinculada');
+    const root=$('dough-prep-list');root.replaceChildren();
+    if(!preparations.length)root.append(el('p','Aún no hay recetas complementarias vinculadas. Puedes comenzar con la costra de concha.','muted'));
+    for(const p of preparations){
+      const card=el('div',undefined,'dough-prep-card');
+      card.append(el('strong',p.recipeName),
+        el('small','Disponible: '+num(p.stock)+' '+p.unit+' · Rinde '+num(p.baseYield)+' '+p.yieldUnit+' por receta'));
+      root.append(card);
+    }
+    clearPrepPreview();
+  }
+  function clearPrepPreview(){
+    prepPreview=null;prepPayload=null;$('dough-prep-confirm').disabled=true;
+    $('dough-prep-preview').replaceChildren();
+  }
+  prepLinkForm.elements.recipeId.addEventListener('change',syncExistingIngredientChoices);
+  prepLinkForm.addEventListener('submit',async e=>{
+    e.preventDefault();
+    try{
+      const payload={recipeId:prepLinkForm.elements.recipeId.value};
+      if(prepLinkForm.elements.ingredientId.value)payload.ingredientId=prepLinkForm.elements.ingredientId.value;
+      await post('/api/dough/preparations',payload);
+      status('Receta complementaria vinculada. Ahora puedes registrar los gramos preparados.');
+      await refresh();await window.PanikoRefreshInventory?.();
+    }catch(err){status(err.message,true);}
+  });
+  prepBatchForm.addEventListener('input',clearPrepPreview);
+  prepBatchForm.addEventListener('submit',async e=>{
+    e.preventDefault();clearPrepPreview();
+    try{
+      const data={recipeId:prepBatchForm.elements.recipeId.value,quantity:Number(prepBatchForm.elements.quantity.value)};
+      const plan=await post('/api/dough/preparations/preview',data);
+      const box=$('dough-prep-preview');
+      box.append(el('h4','Preparar '+num(plan.quantity)+' '+plan.yieldUnit+' de '+plan.recipeName));
+      box.append(el('p','Se añadirán '+num(plan.addedQuantity)+' '+plan.outputUnit+' de '+plan.outputName+' al inventario.','hint'));
+      for(const x of plan.lines){
+        const msg=x.name+': '+num(x.required)+' '+x.unit+' · disponible '+num(x.stock)+' '+x.unit+
+          (x.shortage>0?' · faltan '+num(x.shortage)+' '+x.unit:'');
+        box.append(el('div',msg,x.sufficient?'list-row':'list-row warning'));
+      }
+      box.append(el('p',plan.stockAvailable?'Existencias suficientes para preparar.':'Inventario insuficiente. No se puede confirmar.',
+        plan.stockAvailable?'good':'warning'));
+      prepPayload=data;prepPreview=plan;$('dough-prep-confirm').disabled=!plan.stockAvailable;
+    }catch(err){status(err.message,true);}
+  });
+  $('dough-prep-confirm').addEventListener('click',async()=>{
+    if(!prepPreview?.stockAvailable||!prepPayload)return;
+    if(!confirm('¿Confirmas '+prepPreview.quantity+' '+prepPreview.yieldUnit+' de '+prepPreview.recipeName+
+       '? Se descontarán sus insumos y aumentará el inventario de la preparación.'))return;
+    $('dough-prep-confirm').disabled=true;
+    try{
+      const result=await post('/api/dough/preparations/produce',prepPayload);
+      status('Preparación registrada: +'+num(result.addedQuantity)+' '+result.unit+' de '+result.ingredientName+'.');
+      await refresh();
+      await window.PanikoRefreshInventory?.();
+      await window.PanikoFinishedProducts?.refresh?.();
+    }catch(err){status(err.message,true);}
+    finally{clearPrepPreview();}
+  });
+  window.PanikoDough={selectRecipe(id){
+    requestedRecipeId=id;
+    if(user)void refresh();
+  }};
   formBatch.elements.recipeId.addEventListener('change',renderBatchRows);
   formBatch.addEventListener('input',clearPreview);
   formBatch.addEventListener('submit',async e=>{
