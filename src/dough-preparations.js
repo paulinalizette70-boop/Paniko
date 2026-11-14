@@ -113,7 +113,10 @@ function createPreparationStore(pool){
       stockBefore:output.stock,addedQuantity,lines,stockAvailable:lines.every(x=>x.sufficient),
       estimatedTotalCost:money(totalCost),outputUnitCost:output.costPerUnit};
   }
-  async function preview(raw){return getPlan(raw)}
+  async function preview(raw){
+    const {outputUnitCost,...plan}=await getPlan(raw);
+    return {...plan,lines:plan.lines.map(({unitCost,...line})=>line)};
+  }
   async function produce(raw){
     const conn=await pool.getConnection();
     try{
