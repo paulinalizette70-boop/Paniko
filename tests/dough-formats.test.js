@@ -132,10 +132,11 @@ test('FORM-07 API requiere sesión y restringe cambios de formatos a administrac
 
 const fsVisual=require('node:fs');
 const pathVisual=require('node:path');
-test('FORM-UI acceso visible a brioche y formatos desde el menú y producción',()=>{
+test('FORM-UI producción por formatos accesible dentro de Producción, sin enlace lateral',()=>{
  const html=fsVisual.readFileSync(pathVisual.join(__dirname,'../public/index.html'),'utf8');
  const js=fsVisual.readFileSync(pathVisual.join(__dirname,'../public/app.js'),'utf8');
  assert.match(html,/data-view-target="production" data-scroll-to="dough-production"/);
+ assert.doesNotMatch(html,/<button class="nav-link"[^>]+data-scroll-to="dough-production"/);
  assert.match(html,/Abrir producción por formatos/);
  assert.match(js,/scrollTo:button\.dataset\.scrollTo\|\|null/);
 });
