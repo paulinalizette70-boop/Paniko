@@ -8,7 +8,7 @@ const {getCookieToken,cookieForToken,expiredCookie}=require('./auth');
 
 // Los costos y el presupuesto son información de administración, no del equipo operativo.
 // Filtrar también los campos anidados: ocultar botones NO protege la API.
-const FINANCIAL_KEYS=/^(costPerUnit|unitCost|estimatedCost|estimatedTotalCost|cost(?:s|_.*)?|costo(?:s|_.*)?|precio(?:$|[_-].*)|price(?:$|[_-].*)|presupuesto|margen|utilidad|ganancia|gasto(?:s|_.*)?|ingreso(?:s|_.*)?|inversion|inversión|valorInventario)$/i;
+const FINANCIAL_KEYS=/^(salePrice|costPerUnit|unitCost|estimatedCost|estimatedTotalCost|cost(?:s|_.*)?|costo(?:s|_.*)?|precio(?:$|[_-].*)|price(?:$|[_-].*)|presupuesto|margen|utilidad|ganancia|gasto(?:s|_.*)?|ingreso(?:s|_.*)?|inversion|inversión|valorInventario)$/i;
 function operationalData(value){
   if(Array.isArray(value))return value.map(operationalData);
   if(value&&typeof value==='object'&&!(value instanceof Date)){
@@ -19,7 +19,7 @@ function operationalData(value){
 }
 
 
-function createApp({store, auth = null, products = null, finance = null, sourdough = null, calendar = null, dataFile = path.join(__dirname, '..', 'data', 'paniko.json')} = {}) {
+function createApp({store, auth = null, products = null, finance = null, sourdough = null, calendar = null, dough = null, dataFile = path.join(__dirname, '..', 'data', 'paniko.json')} = {}) {
   store = store || createStore(dataFile);
   const assets = {
     '/': ['index.html', 'text/html; charset=utf-8'],
@@ -29,6 +29,7 @@ function createApp({store, auth = null, products = null, finance = null, sourdou
     '/sourdough.js': ['sourdough.js', 'application/javascript; charset=utf-8'],
     '/starter-status.js': ['starter-status.js', 'application/javascript; charset=utf-8'],
     '/calendar.js': ['calendar.js', 'application/javascript; charset=utf-8'],
+    '/dough.js': ['dough.js', 'application/javascript; charset=utf-8'],
   };
   async function bodyAsJson(req) {
     let size = 0; const chunks=[];
@@ -126,6 +127,25 @@ function createApp({store, auth = null, products = null, finance = null, sourdou
         const move=pathname.match(/^\/api\/products\/([a-f\d-]+)\/movements$/i);
         if(move&&req.method==='POST')return respond(201,await products.recordMovement(move[1],await bodyAsJson(req)));
         return respond(404,{error:'Ruta de productos no encontrada'});
+      }
+      // Masa compartida: varios productos desde una receta base, con extras en inventario.
+      if(pathname.startsWith('/api/dough/')){
+        if(!auth||!loggedInUser)return respond(401,{error:'Inicia sesión para producir por formatos'});
+        if(!dough)return respond(503,{error:'Producción por formatos no disponible: revisa la migración MySQL'});
+        if(pathname==='/api/dough/config'&&req.method==='GET')return respond(200,await dough.list());
+        if(pathname==='/api/dough/base'&&req.method==='POST'){
+          if(loggedInUser.role!=='admin')return respond(403,{error:'Solo administración puede configurar la receta base'});
+          return respond(200,await dough.setBase(await bodyAsJson(req)));
+        }
+        if(pathname==='/api/dough/format'&&req.method==='POST'){
+          if(loggedInUser.role!=='admin')return respond(403,{error:'Solo administración puede configurar formatos y rellenos'});
+          return respond(200,await dough.setFormat(await bodyAsJson(req)));
+        }
+        if(pathname==='/api/dough/preview'&&req.method==='POST')
+          return respond(200,await dough.preview(await bodyAsJson(req)));
+        if(pathname==='/api/dough/confirm'&&req.method==='POST')
+          return respond(201,await dough.confirm(await bodyAsJson(req)));
+        return respond(404,{error:'Acción de producción por formatos no encontrada'});
       }
       // Calendario de trabajo: los planes son distintos de las producciones confirmadas.
       if(pathname==='/api/calendar'&&req.method==='GET'){

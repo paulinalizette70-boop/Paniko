@@ -3,7 +3,7 @@ on:
   push:
     branches: [main, feat/paniko-0.8.1-calendario-rendimientos, feat/paniko-0.8.2-masa-madre-inventario, feat/paniko-0.8.3-masa-madre-leche, feat/paniko-masa-madre-visual]
   pull_request:
-    branches: [main, feat/finanzas-costos-productos-0.7.4, feat/paniko-0.8.0-finanzas-masa-madre, feat/paniko-0.8.3-masa-madre-leche]
+    branches: [main, integracion/paniko-acumulado-visual-20261113, feat/finanzas-costos-productos-0.7.4, feat/paniko-0.8.0-finanzas-masa-madre, feat/paniko-0.8.3-masa-madre-leche]
 jobs:
   tests:
     runs-on: ubuntu-latest

@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS finished_product_movements (
  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
  INDEX ix_fpm_product_date (product_id, created_at),
  INDEX ix_fpm_date (created_at),
- UNIQUE KEY uq_fpm_batch (batch_id),
+ INDEX ix_fpm_batch (batch_id),
  CONSTRAINT fk_fpm_product FOREIGN KEY(product_id) REFERENCES finished_products(id),
  CONSTRAINT fk_fpm_batch FOREIGN KEY(batch_id) REFERENCES production_batches(id),
  CONSTRAINT ck_fpm_quantity CHECK (quantity > 0),

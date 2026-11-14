@@ -341,3 +341,17 @@ h3{font-size:1rem;font-weight:750}
 .starter-notes{font-size:.82rem}
 @media(max-width:760px){.starter-home{flex-wrap:wrap}.starter-home-open{margin-left:auto}.starter-care-hero{grid-template-columns:125px minmax(0,1fr);padding:14px;gap:12px}.starter-care-meta{grid-template-columns:1fr}.starter-care-meta .starter-metric{padding:9px}}
 @media(max-width:470px){.starter-home{padding:16px}.starter-home-art{font-size:3rem}.starter-care-hero{grid-template-columns:1fr}.starter-care-meta{grid-template-columns:1fr 1fr}.starter-care-meta .starter-metric:last-child{grid-column:1/-1}.starter-quick-actions button{flex:1;min-width:118px}}
+/* Producción por formatos: una masa, varias piezas, rellenos controlados en inventario. */
+.dough-feature{margin-top:18px}
+.dough-config-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;padding:14px 0}
+.dough-config-grid .form-stack{min-width:0}
+.dough-batch-formats{display:grid;gap:9px}
+.dough-batch-row{display:grid;grid-template-columns:minmax(0,1fr) 110px;align-items:center;gap:12px;background:var(--surface-2,#f7f3ec);border:1px solid #e9dfd1;border-radius:12px;padding:12px}
+.dough-batch-row strong,.dough-batch-row small{display:block}
+.dough-batch-row small{font-size:12px;color:var(--muted,#83786c);margin-top:4px;line-height:1.4}
+.dough-extra-row{display:grid;grid-template-columns:minmax(0,2fr) minmax(90px,1fr) 75px auto;gap:7px;align-items:center;margin-bottom:8px}
+.dough-extra-row select,.dough-extra-row input{min-width:0;width:100%}
+.dough-batch-preview{padding:12px 0}
+.dough-batch-preview .warning{color:#a64935}
+.dough-batch-preview .good{color:#496e48}
+@media(max-width:760px){.dough-config-grid{grid-template-columns:1fr}.dough-extra-row{grid-template-columns:1fr 1fr}.dough-extra-row select:first-child{grid-column:1/-1}}
