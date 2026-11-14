@@ -141,16 +141,38 @@
               </article>
             </div>
             <section class="panel dough-feature" id="dough-production" data-component="dough" hidden>
-            <div class="section-heading panel-heading"><div><span class="eyebrow">UNA MASA, VARIOS PANES</span><h2>Producción por formatos</h2><p class="muted">Usa una misma masa de brioche para conchas, bollos y buns. Define los gramos de masa por pieza y los complementos de cada formato.</p></div></div>
-            <p class="hint">Los complementos preparados, como mermelada o costra, deben estar registrados como ingredientes con existencias propias. No se vuelve a consumir la receta del relleno al utilizarlo aquí.</p>
+            <div class="section-heading panel-heading"><div><span class="eyebrow">UNA MASA, VARIOS PANES</span><h2>Producción por formatos</h2><p class="muted">Selecciona una receta base y crea desde ella conchas, bollos o buns. Cada producto conserva su gramaje y sus rellenos.</p></div></div>
+            <p class="hint">Las costras, mermeladas y otros complementos pueden convertirse en inventario desde su propia ficha técnica, sin registrarlos dos veces. Solo se descontarán de existencias cuando produzcas los panes.</p>
             <div id="dough-status" class="hint" role="status" aria-live="polite"></div>
             <details class="action-details dough-admin" id="dough-settings" hidden>
               <summary><strong>Configurar masa base y formatos</strong> · Administración</summary>
               <div class="dough-config-grid">
                 <form id="dough-base-form" class="form-stack"><h3>Masa base</h3><label>Receta existente<select name="recipeId" required></select></label><label>Gramos de masa que rinde esa receta completa<input name="referenceGrams" type="number" min="1" step="1" required placeholder="Ej. 5000"/></label><p class="hint">Si la ficha técnica ya está en gramos, deben coincidir. Si está en piezas, indica el peso real total del lote.</p><button type="submit" class="btn-soft">Guardar masa base</button></form>
-                <form id="dough-format-form" class="form-stack"><h3>Formato de pan</h3><label>Masa base<select name="recipeId" required></select></label><label>Producto terminado<select name="productId" required></select></label><label>Gramos de masa por pieza<input name="doughGrams" type="number" min="1" max="1000000" step="1" required placeholder="Ej. 60"/></label><h4>Rellenos o cubiertas por pieza</h4><div id="dough-extra-items"></div><button id="dough-add-extra" type="button" class="btn-soft">+ Agregar complemento</button><button type="submit" class="btn-soft">Guardar formato</button></form>
+                <form id="dough-format-form" class="form-stack"><h3>Crear producto desde esta masa</h3><label>Receta base<select name="recipeId" required></select></label><label>Producto existente (opcional, para editarlo)<select name="productId"></select></label><label>Nombre del nuevo producto<input name="productName" maxlength="150" placeholder="Ej. Concha de brioche" required/></label><label>Gramos de masa por pieza<input name="doughGrams" type="number" min="1" max="1000000" step="1" required placeholder="Ej. 45"/></label><h4>Rellenos o cubiertas por pieza</h4><p class="hint">Si ya preparaste costra o mermelada desde una ficha, aparecerá aquí al vincularla abajo.</p><div id="dough-extra-items"></div><button id="dough-add-extra" type="button" class="btn-soft">+ Agregar relleno o cubierta</button><button type="submit" class="btn-primary">Guardar producto y su formato</button></form>
               </div>
             </details>
+            <section class="dough-prep-area">
+              <div class="section-heading"><div><span class="eyebrow">INGREDIENTES QUE TÚ PREPARAS</span><h3>Costras, mermeladas y otras subpreparaciones</h3><p class="muted">Vincula una receta que rinda gramos o mililitros; al confirmarla, sus insumos se descontarán y su preparación aparecerá entre los complementos disponibles.</p></div></div>
+              <details id="dough-prep-link-details" class="action-details dough-admin" hidden><summary><strong>Vincular receta como subpreparación</strong> · Administración</summary>
+                <form id="dough-prep-link-form" class="form-stack">
+                  <label>Ficha técnica de costra, mermelada, crumble…<select name="recipeId" required></select></label>
+                  <label>Si ya tienes esa preparación en Inventario, reutilizar ingrediente (opcional)<select name="ingredientId"></select></label>
+                  <p class="hint">Sin ingrediente existente: Paniko creará una existencia en cero, sin descontar materiales. No duplica la fórmula.</p>
+                  <button class="btn-soft" type="submit">Vincular receta y existencia</button>
+                </form>
+              </details>
+              <div id="dough-prep-list" class="dough-prep-list" aria-live="polite"></div>
+              <form id="dough-prep-batch-form" class="form-stack">
+                <div class="dough-prep-fields">
+                  <label>¿Qué preparación hiciste?<select name="recipeId" required></select></label>
+                  <label>Cantidad obtenida (g o ml)<input name="quantity" type="number" step="1" min="1" max="1000000000" required placeholder="Ej. 600"/></label>
+                </div>
+                <button type="submit" class="btn-soft">Revisar consumo y existencias</button>
+              </form>
+              <div id="dough-prep-preview" aria-live="polite"></div>
+              <button type="button" class="btn-primary" id="dough-prep-confirm" disabled>Confirmar preparación y actualizar inventario</button>
+            </section>
+            <div class="divider"></div>
             <form id="dough-batch-form" class="form-stack"><label>¿Qué masa vas a utilizar?<select name="recipeId" required></select></label><div id="dough-batch-formats" class="dough-batch-formats"></div><button type="submit" class="btn-soft">Calcular masa y complementos</button></form>
             <div id="dough-batch-preview" class="dough-batch-preview" aria-live="polite"></div>
             <button type="button" id="dough-confirm" class="btn-primary" disabled>Confirmar lote de varios formatos</button>

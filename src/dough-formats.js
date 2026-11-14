@@ -151,6 +151,38 @@ function createDoughFormatStore(pool){
       return {productId:format.productId,recipeId:format.recipeId,doughGrams:format.doughGrams,extras:format.extras};
     }catch(err){await conn.rollback();throw err;}finally{conn.release();}
   }
+  // Crear un producto directamente desde la receta base.
+  // Producto y formato se guardan en una unica transaccion.
+  async function createProduct(raw){
+    const name=raw?.name;
+    if(typeof name!=='string'||!name.trim()||name.trim().length>150)
+      throw new ValidationError('Nombre de producto obligatorio (maximo 150 caracteres)');
+    const productId=crypto.randomUUID();
+    const [ings]=await pool.execute('SELECT id,name,unit,cost_per_unit,stock FROM ingredients ORDER BY id');
+    const ingredients=ings.map(i=>({id:i.id,name:i.name,unit:i.unit,costPerUnit:Number(i.cost_per_unit),stock:Number(i.stock)}));
+    const format=validateFormat({...raw,productId},ingredients);
+    const conn=await pool.getConnection();
+    try{
+      await conn.beginTransaction();
+      const [base]=await conn.execute('SELECT recipe_id FROM dough_recipe_yields WHERE recipe_id=?',[format.recipeId]);
+      if(!base.length)throw new ValidationError('Configura primero los gramos que rinde la masa base',409);
+      const [categories]=await conn.execute("SELECT id FROM finished_product_categories WHERE id='brioche'");
+      const category=categories.length?'brioche':null;
+      await conn.execute('INSERT INTO finished_products (id,name,category_id,operational_recipe_id) VALUES (?,?,?,?)',
+        [productId,name.trim(),category,format.recipeId]);
+      await conn.execute('INSERT INTO dough_product_formats (product_id,recipe_id,dough_grams_per_piece,active) VALUES (?,?,?,1)',
+        [productId,format.recipeId,format.doughGrams]);
+      for(const extra of format.extras)
+        await conn.execute('INSERT INTO dough_product_extras (product_id,ingredient_id,quantity_per_piece) VALUES (?,?,?)',
+          [productId,extra.ingredientId,extra.quantityPerPiece]);
+      await conn.commit();
+      return {id:productId,name:name.trim(),recipeId:format.recipeId,doughGrams:format.doughGrams,extras:format.extras,stock:0};
+    }catch(err){
+      await conn.rollback();
+      if(err?.code==='ER_DUP_ENTRY')throw new ValidationError('Ya existe un producto con ese nombre; puedes editar su formato existente',409);
+      throw err;
+    }finally{conn.release()}
+  }
   async function getPlan(input,conn=pool,locked=false){
     const recipeId=uuid(input?.recipeId,'Receta base');
     const requested=input?.formats;
@@ -224,6 +256,6 @@ function createDoughFormatStore(pool){
         estimatedTotalCost:plan.estimatedTotalCost};
     }catch(err){await conn.rollback();throw err;}finally{conn.release();}
   }
-  return {list,setBase,setFormat,preview,confirm};
+  return {list,setBase,setFormat,createProduct,preview,confirm};
 }
 module.exports={createDoughFormatStore,validateFormat,buildPlan,positiveInt};

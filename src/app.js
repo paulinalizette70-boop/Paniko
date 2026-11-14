@@ -8,7 +8,7 @@ const {getCookieToken,cookieForToken,expiredCookie}=require('./auth');
 
 // Los costos y el presupuesto son información de administración, no del equipo operativo.
 // Filtrar también los campos anidados: ocultar botones NO protege la API.
-const FINANCIAL_KEYS=/^(salePrice|costPerUnit|unitCost|estimatedCost|estimatedTotalCost|cost(?:s|_.*)?|costo(?:s|_.*)?|precio(?:$|[_-].*)|price(?:$|[_-].*)|presupuesto|margen|utilidad|ganancia|gasto(?:s|_.*)?|ingreso(?:s|_.*)?|inversion|inversión|valorInventario)$/i;
+const FINANCIAL_KEYS=/^(salePrice|costPerUnit|unitCost|outputUnitCost|estimatedCost|estimatedTotalCost|cost(?:s|_.*)?|costo(?:s|_.*)?|precio(?:$|[_-].*)|price(?:$|[_-].*)|presupuesto|margen|utilidad|ganancia|gasto(?:s|_.*)?|ingreso(?:s|_.*)?|inversion|inversión|valorInventario)$/i;
 function operationalData(value){
   if(Array.isArray(value))return value.map(operationalData);
   if(value&&typeof value==='object'&&!(value instanceof Date)){
@@ -19,7 +19,7 @@ function operationalData(value){
 }
 
 
-function createApp({store, auth = null, products = null, finance = null, sourdough = null, calendar = null, dough = null, dataFile = path.join(__dirname, '..', 'data', 'paniko.json')} = {}) {
+function createApp({store, auth = null, products = null, finance = null, sourdough = null, calendar = null, dough = null, preparations = null, dataFile = path.join(__dirname, '..', 'data', 'paniko.json')} = {}) {
   store = store || createStore(dataFile);
   const assets = {
     '/': ['index.html', 'text/html; charset=utf-8'],
@@ -132,10 +132,32 @@ function createApp({store, auth = null, products = null, finance = null, sourdou
       if(pathname.startsWith('/api/dough/')){
         if(!auth||!loggedInUser)return respond(401,{error:'Inicia sesión para producir por formatos'});
         if(!dough)return respond(503,{error:'Producción por formatos no disponible: revisa la migración MySQL'});
+        // Subpreparaciones: convertir una receta en existencias de costra, mermelada, etc.
+        if(pathname==='/api/dough/preparations'&&req.method==='GET'){
+          if(!preparations)return respond(503,{error:'Prepara la migracion MySQL de subpreparaciones'});
+          return respond(200,await preparations.list());
+        }
+        if(pathname==='/api/dough/preparations'&&req.method==='POST'){
+          if(loggedInUser.role!=='admin')return respond(403,{error:'Solo administracion puede vincular preparaciones'});
+          if(!preparations)return respond(503,{error:'Subpreparaciones no disponibles'});
+          return respond(201,await preparations.register(await bodyAsJson(req)));
+        }
+        if(pathname==='/api/dough/preparations/preview'&&req.method==='POST'){
+          if(!preparations)return respond(503,{error:'Subpreparaciones no disponibles'});
+          return respond(200,await preparations.preview(await bodyAsJson(req)));
+        }
+        if(pathname==='/api/dough/preparations/produce'&&req.method==='POST'){
+          if(!preparations)return respond(503,{error:'Subpreparaciones no disponibles'});
+          return respond(201,await preparations.produce(await bodyAsJson(req)));
+        }
         if(pathname==='/api/dough/config'&&req.method==='GET')return respond(200,await dough.list());
         if(pathname==='/api/dough/base'&&req.method==='POST'){
           if(loggedInUser.role!=='admin')return respond(403,{error:'Solo administración puede configurar la receta base'});
           return respond(200,await dough.setBase(await bodyAsJson(req)));
+        }
+        if(pathname==='/api/dough/product'&&req.method==='POST'){
+          if(loggedInUser.role!=='admin')return respond(403,{error:'Solo administracion puede crear productos desde la receta'});
+          return respond(201,await dough.createProduct(await bodyAsJson(req)));
         }
         if(pathname==='/api/dough/format'&&req.method==='POST'){
           if(loggedInUser.role!=='admin')return respond(403,{error:'Solo administración puede configurar formatos y rellenos'});
@@ -276,6 +298,8 @@ function createApp({store, auth = null, products = null, finance = null, sourdou
       }
       const produce = pathname.match(/^\/api\/recipes\/([a-f\d-]+)\/produce$/i);
       if (produce && req.method === 'POST') {
+        if(preparations && (await preparations.list()).some(p=>p.recipeId===produce[1]))
+          throw new ValidationError('Esta receta es una subpreparación: registra los gramos obtenidos desde Producción por formatos para actualizar inventario',409);
         const body = await bodyAsJson(req);
         return respond( 201, await store.confirmProduction(produce[1], body.desiredYield, {productId:body.productId||null}));
       }

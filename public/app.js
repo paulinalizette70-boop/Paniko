@@ -128,6 +128,16 @@ function renderRecipeList(){
     const edit=make('button','Editar ficha','btn-soft');edit.type='button';
     edit.addEventListener('click',()=>startEditingRecipe(recipe));
     const actions=make('div',undefined,'recipe-actions');actions.append(edit,percentButton,use);
+    if(currentUser?.role==='admin'&&recipe.yieldUnit!=='ml'){
+      const formatsButton=make('button','Crear productos desde esta receta','btn-soft');formatsButton.type='button';
+      formatsButton.addEventListener('click',async()=>{
+        navigateTo('production');
+        await window.PanikoDough?.selectRecipe?.(recipe.id);
+        const target=$('dough-production');
+        if(target&&!target.hidden)target.scrollIntoView({block:'start',behavior:'instant'});
+      });
+      actions.append(formatsButton);
+    }
     line.append(details,actions,detail);root.append(line);
   }
   if(!list.length)root.append(make('p',recipes.length?'No se encontraron recetas.':'Todavía no hay fichas técnicas.','muted'));

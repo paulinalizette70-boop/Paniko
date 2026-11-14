@@ -362,3 +362,11 @@ h3{font-size:1rem;font-weight:750}
 .dough-callout p{max-width:650px;line-height:1.5}
 .dough-callout .btn-primary{flex-shrink:0}
 @media(max-width:760px){.dough-callout{display:flex;align-items:stretch;flex-direction:column}.dough-callout .btn-primary{width:100%}}
+
+/* Preparaciones elaboradas como ingredientes reutilizables, dentro de Produccion. */
+.dough-prep-area{margin-top:18px;padding:18px 0;border-top:1px solid #e6dfd3}
+.dough-prep-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:14px 0}
+.dough-prep-card{padding:13px 15px;border-radius:12px;border:1px solid #dfdfce;background:#f5f6ee}
+.dough-prep-card strong,.dough-prep-card small{display:block}.dough-prep-card small{color:var(--muted,#82786c);margin-top:7px;line-height:1.4}
+.dough-prep-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media(max-width:760px){.dough-prep-fields{grid-template-columns:1fr}}
