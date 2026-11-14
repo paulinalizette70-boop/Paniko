@@ -8,7 +8,7 @@ const {getCookieToken,cookieForToken,expiredCookie}=require('./auth');
 
 // Los costos y el presupuesto son información de administración, no del equipo operativo.
 // Filtrar también los campos anidados: ocultar botones NO protege la API.
-const FINANCIAL_KEYS=/^(salePrice|costPerUnit|unitCost|estimatedCost|estimatedTotalCost|cost(?:s|_.*)?|costo(?:s|_.*)?|precio(?:$|[_-].*)|price(?:$|[_-].*)|presupuesto|margen|utilidad|ganancia|gasto(?:s|_.*)?|ingreso(?:s|_.*)?|inversion|inversión|valorInventario)$/i;
+const FINANCIAL_KEYS=/^(salePrice|costPerUnit|unitCost|outputUnitCost|estimatedCost|estimatedTotalCost|cost(?:s|_.*)?|costo(?:s|_.*)?|precio(?:$|[_-].*)|price(?:$|[_-].*)|presupuesto|margen|utilidad|ganancia|gasto(?:s|_.*)?|ingreso(?:s|_.*)?|inversion|inversión|valorInventario)$/i;
 function operationalData(value){
   if(Array.isArray(value))return value.map(operationalData);
   if(value&&typeof value==='object'&&!(value instanceof Date)){
