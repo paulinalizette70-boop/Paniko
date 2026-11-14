@@ -41,7 +41,7 @@ test('PREP-API: solo administracion vincula recetas y crea productos; operador p
  // El flujo tradicional no puede consumir una subpreparacion sin registrar su inventario final.
  const old=await req('/api/recipes/'+rid+'/produce',operator,'POST',{desiredYield:100});
  assert.equal(old.status,409);
- assert.match((await old.json()).error,/subpreparacion/i);
+ assert.match((await old.json()).error,/subpreparaci[oó]n/i);
 });
 test('PREP-UI: crear desde Recetas, preparar costra y no agregar menu lateral',()=>{
  const html=fs.readFileSync(path.join(__dirname,'../public/index.html'),'utf8');
