@@ -66,7 +66,7 @@ La mayor integración quedó en el [**Pull Request #9**](https://github.com/paul
 
 Los PRs [#7](https://github.com/paulinalizette70-boop/Paniko/pull/7) y [#8](https://github.com/paulinalizette70-boop/Paniko/pull/8) son trabajos anteriores que todavía necesitamos revisar para decidir si se cierran como superados.
 
-**Pendiente:** guardar la revisión formal del código por otro integrante. Aunque ya integramos el PR #9, no contamos con esa aprobación en GitHub, así que no la marcamos como realizada.
+**Actualización del PR #19:** [Saúl dejó observaciones sobre el guion y las pruebas](https://github.com/paulinalizette70-boop/Paniko/pull/19#issuecomment-6870172329), después [escribió LGTM](https://github.com/paulinalizette70-boop/Paniko/pull/19#issuecomment-6870174609), y [respondimos con los preparativos pendientes](https://github.com/paulinalizette70-boop/Paniko/pull/19#issuecomment-6870518057). Estos son comentarios reales del equipo, pero **todavía no hay una aprobación formal registrada en la pestaña de reviews**. El PR #9 integrado tampoco tuvo esa aprobación. Falta pedir una revisión formal después de los cambios recientes.
 
 También falta organizar por integrante los commits, tareas y evidencias correspondientes. La participación no debe inventarse; debe revisarse con el trabajo que realmente hizo cada quien.
 
@@ -86,3 +86,13 @@ Antes de cerrar la entrega queremos revisar las conversiones al crear fichas en 
 Preparamos un [guion de Sprint Review](demo-medio-termino.md) para mostrar el recorrido del inventario, las fichas, el escalado, la producción y el historial, además de los comentarios de Ale. También dejamos un [plan de casos manuales DM-01 a DM-10](pruebas/plan-pruebas-demo.md).
 
 Estos archivos son una **guía y un plan de verificación**. Las pruebas manuales todavía deben ejecutarse y documentarse; no estamos diciendo que todas salieron bien sin haberlas realizado. La ejecución automatizada de `main` ya tiene [evidencia de éxito](https://github.com/paulinalizette70-boop/Paniko/actions/runs/43374837592).
+
+
+## 10. Capturas de la versión local 0.8.3
+
+Ya documentamos las [pantallas reales de la instalación local y lo que prueban](evidencias/capturas-local-083-2026-11-13.md). Las capturas completas están en el documento individual de la entrega; **no se publicaron originales con datos de recetas o costos**.
+
+- La pantalla de Producción muestra una **vista previa de 15 piezas**, no una producción confirmada.
+- El inventario de terminados registra **0 piezas**, así que no se afirma haber completado una venta.
+- La instalación local muestra **0.8.3**; la rama `main` continúa en **0.7.2**.
+- Queda pendiente ejecutar la tanda de prueba, verificar existencias e incorporar la evidencia de Historial.
