@@ -201,7 +201,7 @@ Somos un equipo de tres integrantes: Paulina Villalpando Guizar, Saúl Mora y Ga
 4. Abrimos un **Pull Request** explicando qué se modificó, cómo se probó y qué quedó pendiente.
 5. Otro integrante lee **Files changed**, deja comentarios y registra su revisión desde **Review changes**. Atendemos las observaciones antes de decidir si integramos el PR.
 
-Para una entrega académica, los comentarios reales y las revisiones formales son evidencias distintas. En el [PR #19](https://github.com/paulinalizette70-boop/Paniko/pull/19), Saúl ya escribió comentarios y recibió respuesta; seguimos pendientes de registrar una aprobación formal.
+Para una entrega académica, los comentarios reales y las revisiones formales son evidencias distintas. En el [PR #19](https://github.com/paulinalizette70-boop/Paniko/pull/19), Saúl ya escribió comentarios y recibió respuesta. Gael también dejó una [revisión técnica comentada en el PR #18](https://github.com/paulinalizette70-boop/Paniko/pull/18#issuecomment-6870981604). Ambas participaciones tienen [evidencia documentada](docs/pruebas/evidencia-prs-medio-termino.md), pero siguen pendientes las aprobaciones formales.
 
 La carpeta [\`docs/adr/\`](docs/adr/) guarda nuestras decisiones de arquitectura; los [bloqueos](docs/seguimiento/bloqueos.md) y la [deuda técnica](docs/seguimiento/deuda-tecnica.md) explican qué tuvimos que resolver y qué sigue abierto.
 
