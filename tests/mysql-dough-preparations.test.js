@@ -32,6 +32,8 @@ test('DB-PREP-01 MySQL aislado: crear preparacion, producirla y usarla en concha
     const view=await prep.preview({recipeId:crustRecipe.id,quantity:600});
     assert.equal(view.stockAvailable,true);
     assert.equal(view.addedQuantity,600);
+    assert.equal('outputUnitCost' in view,false);
+    assert.equal('unitCost' in view.lines[0],false);
     const batch=await prep.produce({recipeId:crustRecipe.id,quantity:600});
     assert.equal(batch.stockAfter,600);
     assert.equal((await inv.listIngredients()).find(x=>x.id===sugar.id).stock,1200);
