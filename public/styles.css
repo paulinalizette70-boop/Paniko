@@ -281,3 +281,51 @@ h3{font-size:1rem;font-weight:750}
 @media(max-width:540px){.calendar-grid{gap:3px}.calendar-day{min-height:54px;padding:6px;border-radius:8px}.calendar-day.selected{padding:5px}.calendar-weekday{font-size:.66rem}.calendar-toolbar strong{min-width:110px}.calendar-agenda-item{flex-direction:column;align-items:stretch}.calendar-actions{justify-content:flex-start}.calendar-day .cal-dot{width:6px;height:6px}}
 
 .starter-card .warning{background:#fff5e8;padding:12px;border-radius:10px}.starter-card .good{background:#edf6eb;padding:12px;border-radius:10px}
+
+
+/* Paniko 0.8.4: una masa base y muchos productos (dentro de Producción). */
+.dough-workshop{margin-top:26px}
+.dough-workshop>.section-heading{margin-bottom:14px}
+.dough-workshop .section-heading p{max-width:760px;line-height:1.65}
+.dough-define{margin:17px 0 23px;border:1px solid #dbe5d8;border-radius:16px;background:#f5f7f0;overflow:hidden}
+.dough-define>summary{padding:17px 20px;cursor:pointer;font-weight:700;color:#36583a}
+.dough-define[open]>summary{border-bottom:1px solid #dbe5d8}
+.dough-define .inset-form{padding:20px}
+.dough-define .inset-form h3{margin:10px 0 3px}
+.dough-extra-rows{display:grid;gap:11px}
+.dough-extra-line{display:grid;grid-template-columns:minmax(160px,1.7fr) minmax(120px,1fr) minmax(95px,.6fr) auto;gap:12px;align-items:end;background:#fffefa;border:1px solid #e5e7de;border-radius:12px;padding:12px}
+.dough-extra-line .btn-soft{margin-bottom:2px;min-height:44px}
+.dough-templates{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:12px;margin:17px 0 23px}
+.dough-product-card{background:#fffefa;border:1px solid var(--border);border-radius:15px;padding:16px;display:grid;align-content:start;gap:10px}
+.dough-product-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.dough-product-head strong{color:#365438}
+.dough-product-card p{margin:0}
+.dough-product-card small{color:#6a7669;line-height:1.45}
+.dough-product-card button{justify-self:start;margin-top:4px}
+.dough-weight{white-space:nowrap;border-radius:50px;background:#e8efe4;color:#3b573d;font-size:.78rem;font-weight:700;padding:5px 9px}
+.dough-production-box{background:#f6f7f0;border:1px solid #e3e9df;border-radius:16px;padding:22px}
+.dough-production-box h3{margin:0 0 16px;color:#38553d}
+.dough-select-label{display:block;max-width:450px;margin-bottom:17px}
+.dough-allocation-rows{display:grid;gap:9px;margin:13px 0 17px}
+.dough-allocation-row{display:flex;align-items:center;justify-content:space-between;gap:16px;border:1px solid #e2e8dd;border-radius:12px;background:#fffefa;padding:12px 14px}
+.dough-allocation-row>div{display:grid;gap:3px;min-width:0}
+.dough-allocation-row small{color:#71806d}
+.dough-allocation-row input{max-width:125px;flex:none}
+.dough-production-box .recipe-actions{margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap}
+.dough-preview{background:#fffefa;border:1px solid #e8ebe1;border-radius:12px;padding:15px}
+.dough-preview h4{margin:4px 0 12px}
+.dough-output-list{margin:0 0 18px;padding-left:24px;line-height:1.75}
+.dough-stock-line{padding:9px 3px;border-bottom:1px solid #edf0e9;font-size:.9rem}
+.dough-stock-line.warning{color:#a54e34}
+.dough-preview p.good{color:#3e6845}
+@media(max-width:760px){
+  .dough-extra-line{grid-template-columns:1fr 1fr}
+  .dough-extra-line label:first-child{grid-column:1/-1}
+  .dough-production-box{padding:15px}
+}
+@media(max-width:460px){
+  .dough-extra-line{grid-template-columns:1fr}
+  .dough-extra-line label:first-child{grid-column:auto}
+  .dough-allocation-row{align-items:start}
+  .dough-allocation-row input{max-width:100px}
+}
