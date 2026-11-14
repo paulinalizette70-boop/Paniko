@@ -19,13 +19,14 @@ function operationalData(value){
 }
 
 
-function createApp({store, auth = null, products = null, finance = null, sourdough = null, calendar = null, dataFile = path.join(__dirname, '..', 'data', 'paniko.json')} = {}) {
+function createApp({store, auth = null, products = null, dough = null, finance = null, sourdough = null, calendar = null, dataFile = path.join(__dirname, '..', 'data', 'paniko.json')} = {}) {
   store = store || createStore(dataFile);
   const assets = {
     '/': ['index.html', 'text/html; charset=utf-8'],
     '/styles.css': ['styles.css', 'text/css; charset=utf-8'],
     '/app.js': ['app.js', 'application/javascript; charset=utf-8'],
     '/products.js': ['products.js', 'application/javascript; charset=utf-8'],
+    '/dough-products.js': ['dough-products.js', 'application/javascript; charset=utf-8'],
     '/sourdough.js': ['sourdough.js', 'application/javascript; charset=utf-8'],
     '/calendar.js': ['calendar.js', 'application/javascript; charset=utf-8'],
   };
@@ -92,6 +93,23 @@ function createApp({store, auth = null, products = null, finance = null, sourdou
         }
       }
 
+      // Productos distintos de UNA masa base, identificados por sus gramos por pieza.
+      // Se mantienen dentro de Producción; no forman un módulo lateral nuevo.
+      if(pathname==='/api/dough-products'||pathname.startsWith('/api/dough-products/')){
+        if(!auth||!dough)return respond(503,{error:'Productos de masa base requiere inicio de sesión y migración 0.8.4'});
+        if(!loggedInUser)return respond(401,{error:'Inicia sesión para utilizar productos de masa'});
+        if(pathname==='/api/dough-products'){
+          if(req.method==='GET')return respond(200,await dough.list());
+          if(req.method==='POST')return respond(201,await dough.create(await bodyAsJson(req)));
+        }
+        if(pathname==='/api/dough-products/preview'&&req.method==='POST')
+          return respond(200,await dough.preview(await bodyAsJson(req)));
+        if(pathname==='/api/dough-products/produce'&&req.method==='POST')
+          return respond(201,await dough.produce(await bodyAsJson(req)));
+        const edit=pathname.match(/^\/api\/dough-products\/([a-f\d-]{36})\/update$/i);
+        if(edit&&req.method==='POST')return respond(200,await dough.update(edit[1],await bodyAsJson(req)));
+        return respond(404,{error:'Ruta de productos de masa no encontrada'});
+      }
       // Productos terminados: inventario separado de las fichas técnicas.
       if(pathname==='/api/product-categories'||pathname.startsWith('/api/products')){
         if(!auth||!products)return respond(503,{error:'El módulo de inventario requiere inicio de sesión y MySQL'});
