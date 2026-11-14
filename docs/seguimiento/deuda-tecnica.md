@@ -1,15 +1,18 @@
-# Deudas técnicas y funcionales identificadas
+# Deudas técnicas y trabajo que nos falta revisar
 
-| Tema | Estado | Riesgo / acción |
+En este archivo anotamos cosas que ya tienen código pero **todavía necesitan pruebas**, además de las mejoras que siguen pendientes. El estado se refiere a la versión **0.7.2 de `main`** del 13 de noviembre de 2026. Las ramas 0.7.3–0.8.3 están en PRs de desarrollo y no equivalen a cambios publicados en `main`.
+
+| Tema | Cómo va en `main` | Qué falta |
 | --- | --- | --- |
-| Persistencia JSON principal | Sustituida por MySQL; JSON sigue en tests | Mantener adaptador aislado; ver [ADR-004](../adr/ADR-004-mysql-transacciones-inventario.md) |
-| Conversión g↔kg y ml↔l | Implementada en código y con pruebas técnicas; Ale reportó dificultad con g↔kg **al crear fichas técnicas** en v0.4 | [Incidencia #11](https://github.com/paulinalizette70-boop/Paniko/issues/11): reproducir creación de fichas con ingrediente existente en kg y cantidad en g (y viceversa), luego escalado y descuento; comprobar en v0.7.1 y no cerrar sin evidencia |
-| Autenticación y roles | Implementados en rama v0.7.1 y probados de forma automática | PR #9 aún no fusionado; comprobar permisos reales en Windows/MySQL, especialmente sección financiera |
-| Mermas y cierre formal de lotes | Hay movimientos de producto terminado; cierre formal de lotes por verificar | Evaluar el ciclo completo de producción y conciliación de cantidades |
-| Migración de registros históricos | Pendiente | No migrar ni sobreescribir datos reales sin copia de seguridad |
-| Prueba con Ale | Realizada durante **tres días en v0.4**; [informe](evaluacion-usuaria-ale-v04.md) | Aporta retroalimentación cualitativa positiva y problemas de navegación y equivalencia g↔kg; no equivale a aprobación de v0.7.1 |
-| Rediseño de la interfaz | Implementado en v0.7.0/0.7.1 | Volver a probar con Ale para confirmar que la navegación es clara |
-| Dashboard financiero semanal | **No implementado**; nueva [HU-11](https://github.com/paulinalizette70-boop/Paniko/issues/10) | Definir ventas, inversión, ganancias y pérdidas con Ale, garantizar trazabilidad y acceso solo admin |
-| Capturas y documentación de medio término | Parcial | Incorporar capturas auténticas, evidencias de PR revisado y aceptación documentada |
+| Base de datos MySQL | Ya está implementada y tiene pruebas automatizadas | Revisar respaldos y cualquier migración de registros históricos antes de tocar datos reales |
+| Conversiones de unidades | g↔kg y ml↔l están implementadas; 0.7.2 agrega equivalencias específicas de Agua/Huevo | Probar la creación de fichas desde la interfaz con unidades diferentes; [Issues #11](https://github.com/paulinalizette70-boop/Paniko/issues/11) y [#12](https://github.com/paulinalizette70-boop/Paniko/issues/12) |
+| Inicio de sesión y roles | Código y pruebas automatizadas disponibles | Repetir un caso manual como operador para comprobar que no vea datos financieros |
+| Salidas y mermas | Hay movimientos de ingredientes y productos terminados | Verificar las operaciones completas y el cierre/conciliación de lotes de producción |
+| Diseño de las pantallas | Se reorganizó en secciones desde 0.7.0 | Mostrar el diseño nuevo a Ale para saber si ahora le parece más claro |
+| Reporte financiero semanal | Todavía no está integrado a `main` | Definir con Ale qué datos se utilizarán y comprobar el reporte; [HU-11](https://github.com/paulinalizette70-boop/Paniko/issues/10) |
+| Documentación de equipo | Hay README, ADRs, Issues, pruebas y PRs | Falta una revisión formal de otro integrante y terminar la evidencia individual |
+| Validación con Ale | Ale probó la versión **0.4** durante tres días del 4 al 7 de noviembre | Probar una versión posterior; no usar su opinión sobre 0.4 como aceptación de 0.7.2 |
 
-Las evidencias actuales no justifican afirmar que Ale haya aceptado la v0.7.1 ni que el dashboard financiero exista.
+Las versiones 0.8.0–0.8.3 tienen trabajo relacionado con finanzas, calendario, masa madre y conversiones, pero siguen en **Pull Requests borrador**. Antes de presentarlas como parte del MVP integrado necesitamos revisar sus dependencias, fusionarlas y probarlas.
+
+Podemos seguir el avance en [Issues](https://github.com/paulinalizette70-boop/Paniko/issues), el [plan de demo](../demo-medio-termino.md) y los [casos manuales](../pruebas/plan-pruebas-demo.md).

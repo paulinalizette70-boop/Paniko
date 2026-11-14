@@ -1,6 +1,6 @@
-# Casos de prueba — Paniko v0.4.0
+# Casos de prueba de Paniko (histórico y versión de medio término)
 
-Los ingredientes de las pruebas son **ficticios**, no recetas reales. Los resultados deben verificarse en la [bitácora](registro-ejecuciones.md).
+Los ingredientes de las pruebas son **ficticios**, no recetas reales. Los casos CP-01 a CP-24 se documentaron en etapas anteriores (0.1 a 0.4), y los conservamos como historial. Para la demo de la versión **0.7.2** utilizaremos además el [plan de pruebas manuales DM-01 a DM-10](plan-pruebas-demo.md). Los resultados deben verificarse en la [bitácora](registro-ejecuciones.md) y en GitHub Actions.
 
 | Caso | Tipo | Acción / datos | Resultado esperado | Archivo |
 | --- | --- | --- | --- | --- |
@@ -33,7 +33,7 @@ Pruebas con **datos sintéticos**, nunca fórmulas de la panadería:
 
 Última ejecución de GitHub Actions: **21 pruebas aprobadas, 0 fallidas y 0 omitidas**. Incluye pruebas de integración MySQL con datos ficticios. [Ver ejecución y registro de pruebas](https://github.com/paulinalizette70-boop/Paniko/actions/runs/41965295559).
 
-## Nuevos casos: unidades (
+## Casos históricos de conversión de unidades
 
 | ID | Tipo | Descripción | Resultado esperado | Ubicación |
 | --- | --- | --- | --- | --- |
@@ -42,3 +42,23 @@ Pruebas con **datos sintéticos**, nunca fórmulas de la panadería:
 | CP-24 | Integración MySQL | Entrada, ficha técnica y producción ficticias expresadas en g con inventario en kg | Consumos consistentes en kg, sin modificar stock cuando una unidad es incompatible | `tests/mysql.test.js` |
 
 La ejecución [v0.4.0 en GitHub Actions](https://github.com/paulinalizette70-boop/Paniko/actions/runs/41968225354) confirma **24 aprobadas, 0 fallidas y 0 omitidas**, incluidas las tres nuevas subpruebas de conversión y MySQL con datos ficticios.
+
+
+## Pruebas de la versión de medio término (0.7.2)
+
+En `main` ya contamos con archivos adicionales para pruebas unitarias, integración y seguridad. Entre ellas:
+
+| Área actual | Archivo de pruebas | Qué revisa |
+| --- | --- | --- |
+| Conversiones de Agua y Huevo | [`unit-conversions-egg-water.test.js`](../../tests/unit-conversions-egg-water.test.js) | Equivalencias específicas y rechazo de conversiones que no corresponden |
+| Fichas técnicas | [`catalog-to-technical-sheet.test.js`](../../tests/catalog-to-technical-sheet.test.js) | Creación de ficha, uso de ingredientes existentes, transacción y control de stock |
+| Porcentaje panadero | [`bakers-percent.test.js`](../../tests/bakers-percent.test.js) | Porcentajes basados en el peso total de harinas |
+| Inicio de sesión y roles | [`auth-security.test.js`](../../tests/auth-security.test.js) | Autorización y protección de rutas |
+| Finanzas y roles | [`roles-and-finances.test.js`](../../tests/roles-and-finances.test.js) | Separación entre operaciones y datos financieros |
+| Inventario | [`stock-adjustments.test.js`](../../tests/stock-adjustments.test.js) | Salidas y ajustes de cantidades |
+| Producción | [`production-planning.test.js`](../../tests/production-planning.test.js) | Vista previa y estimación según inventario |
+| Historial | [`production-history.test.js`](../../tests/production-history.test.js) | Consulta de lotes y movimientos |
+
+**Evidencia automática:** [GitHub Actions, `main`, ejecución aprobada de 0.7.2](https://github.com/paulinalizette70-boop/Paniko/actions/runs/43374837592).
+
+**Importante:** esta ejecución técnica no equivale a haber probado toda la demo manual. Los casos de la Sprint Review están en [DM-01 a DM-10](plan-pruebas-demo.md) y permanecen sin resultado hasta ejecutarlos con datos ficticios.

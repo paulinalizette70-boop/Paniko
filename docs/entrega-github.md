@@ -66,9 +66,18 @@ La mayor integración quedó en el [**Pull Request #9**](https://github.com/paul
 
 Los PRs [#7](https://github.com/paulinalizette70-boop/Paniko/pull/7) y [#8](https://github.com/paulinalizette70-boop/Paniko/pull/8) son trabajos anteriores que todavía necesitamos revisar para decidir si se cierran como superados.
 
-**Pendiente:** guardar la revisión formal del código por otro integrante. Aunque ya integramos el PR #9, no contamos con esa aprobación en GitHub, así que no la marcamos como realizada.
+**Actualización del PR #19:** [Saúl dejó observaciones sobre el guion y las pruebas](https://github.com/paulinalizette70-boop/Paniko/pull/19#issuecomment-6870172329), después [escribió LGTM](https://github.com/paulinalizette70-boop/Paniko/pull/19#issuecomment-6870174609), y [respondimos con los preparativos pendientes](https://github.com/paulinalizette70-boop/Paniko/pull/19#issuecomment-6870518057). Estos son comentarios reales del equipo, pero **todavía no hay una aprobación formal registrada en la pestaña de reviews**. El PR #9 integrado tampoco tuvo esa aprobación. Falta pedir una revisión formal después de los cambios recientes.
 
 También falta organizar por integrante los commits, tareas y evidencias correspondientes. La participación no debe inventarse; debe revisarse con el trabajo que realmente hizo cada quien.
+
+### Evidencia de revisión de los dos compañeros
+
+Ya recibimos comentarios **reales y verificables** de los dos integrantes:
+
+- **Saúl Mora** revisó la organización de la demo y los casos del [PR #19](https://github.com/paulinalizette70-boop/Paniko/pull/19#issuecomment-6870172329), dejó un LGTM en la conversación y [respondimos su sugerencia](https://github.com/paulinalizette70-boop/Paniko/pull/19#issuecomment-6870518057).
+- **Gael Ramírez** escribió una [observación técnica en el PR #18](https://github.com/paulinalizette70-boop/Paniko/pull/18#issuecomment-6870981604), relacionada con conversión de leche líquida y ajuste del peso de masa madre. El PR #18 permanece en **Draft** mientras se valida el comportamiento en Windows.
+
+Las evidencias se explican con más detalle en el [registro de comentarios y PRs de medio término](pruebas/evidencia-prs-medio-termino.md). Hasta esta verificación, **no hay aprobaciones formales registradas** en #18 ni #19. No debemos confundir comentarios de la conversación con la opción `Review changes → Approve`.
 
 ## 7. Capturas del programa
 
@@ -79,3 +88,20 @@ En el [README](../README.md#capturas-de-paniko) agregamos capturas de Inicio e H
 Antes de cerrar la entrega queremos revisar las conversiones al crear fichas en nuestra instalación, añadir la revisión formal de GitHub y terminar la evidencia individual. Después seguiremos con el resumen financiero semanal que nos pidió Ale.
 
 **Estado actual:** `main` contiene **Paniko 0.7.2**; la aplicación y sus pruebas están publicadas, pero todavía hay trabajo por validar y documentar.
+
+
+## 9. Guía de demo de medio término
+
+Preparamos un [guion de Sprint Review](demo-medio-termino.md) para mostrar el recorrido del inventario, las fichas, el escalado, la producción y el historial, además de los comentarios de Ale. También dejamos un [plan de casos manuales DM-01 a DM-10](pruebas/plan-pruebas-demo.md).
+
+Estos archivos son una **guía y un plan de verificación**. Las pruebas manuales todavía deben ejecutarse y documentarse; no estamos diciendo que todas salieron bien sin haberlas realizado. La ejecución automatizada de `main` ya tiene [evidencia de éxito](https://github.com/paulinalizette70-boop/Paniko/actions/runs/43374837592).
+
+
+## 10. Capturas de la versión local 0.8.3
+
+Ya documentamos las [pantallas reales de la instalación local y lo que prueban](evidencias/capturas-local-083-2026-11-13.md). Las capturas completas están en el documento individual de la entrega; **no se publicaron originales con datos de recetas o costos**.
+
+- La pantalla de Producción muestra una **vista previa de 15 piezas**, no una producción confirmada.
+- El inventario de terminados registra **0 piezas**, así que no se afirma haber completado una venta.
+- La instalación local muestra **0.8.3**; la rama `main` continúa en **0.7.2**.
+- Queda pendiente ejecutar la tanda de prueba, verificar existencias e incorporar la evidencia de Historial.
