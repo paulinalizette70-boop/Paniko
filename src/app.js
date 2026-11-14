@@ -19,7 +19,7 @@ function operationalData(value){
 }
 
 
-function createApp({store, auth = null, products = null, finance = null, sourdough = null, calendar = null, dough = null, dataFile = path.join(__dirname, '..', 'data', 'paniko.json')} = {}) {
+function createApp({store, auth = null, products = null, finance = null, sourdough = null, calendar = null, dough = null, preparations = null, dataFile = path.join(__dirname, '..', 'data', 'paniko.json')} = {}) {
   store = store || createStore(dataFile);
   const assets = {
     '/': ['index.html', 'text/html; charset=utf-8'],
@@ -132,10 +132,32 @@ function createApp({store, auth = null, products = null, finance = null, sourdou
       if(pathname.startsWith('/api/dough/')){
         if(!auth||!loggedInUser)return respond(401,{error:'Inicia sesión para producir por formatos'});
         if(!dough)return respond(503,{error:'Producción por formatos no disponible: revisa la migración MySQL'});
+        // Subpreparaciones: convertir una receta en existencias de costra, mermelada, etc.
+        if(pathname==='/api/dough/preparations'&&req.method==='GET'){
+          if(!preparations)return respond(503,{error:'Prepara la migracion MySQL de subpreparaciones'});
+          return respond(200,await preparations.list());
+        }
+        if(pathname==='/api/dough/preparations'&&req.method==='POST'){
+          if(loggedInUser.role!=='admin')return respond(403,{error:'Solo administracion puede vincular preparaciones'});
+          if(!preparations)return respond(503,{error:'Subpreparaciones no disponibles'});
+          return respond(201,await preparations.register(await bodyAsJson(req)));
+        }
+        if(pathname==='/api/dough/preparations/preview'&&req.method==='POST'){
+          if(!preparations)return respond(503,{error:'Subpreparaciones no disponibles'});
+          return respond(200,await preparations.preview(await bodyAsJson(req)));
+        }
+        if(pathname==='/api/dough/preparations/produce'&&req.method==='POST'){
+          if(!preparations)return respond(503,{error:'Subpreparaciones no disponibles'});
+          return respond(201,await preparations.produce(await bodyAsJson(req)));
+        }
         if(pathname==='/api/dough/config'&&req.method==='GET')return respond(200,await dough.list());
         if(pathname==='/api/dough/base'&&req.method==='POST'){
           if(loggedInUser.role!=='admin')return respond(403,{error:'Solo administración puede configurar la receta base'});
           return respond(200,await dough.setBase(await bodyAsJson(req)));
+        }
+        if(pathname==='/api/dough/product'&&req.method==='POST'){
+          if(loggedInUser.role!=='admin')return respond(403,{error:'Solo administracion puede crear productos desde la receta'});
+          return respond(201,await dough.createProduct(await bodyAsJson(req)));
         }
         if(pathname==='/api/dough/format'&&req.method==='POST'){
           if(loggedInUser.role!=='admin')return respond(403,{error:'Solo administración puede configurar formatos y rellenos'});
