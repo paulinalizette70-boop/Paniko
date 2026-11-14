@@ -131,6 +131,51 @@
                 <p class="hint center">Te pediremos una última confirmación.</p>
               </article>
             </div>
+            <section class="panel dough-workshop" id="dough-workshop" aria-labelledby="dough-workshop-title">
+              <div class="section-heading panel-heading">
+                <div>
+                  <span class="eyebrow">UNA MASA, DIFERENTES PANES</span>
+                  <h2 id="dough-workshop-title">Productos a partir de una masa base</h2>
+                  <p>Guarda una sola receta de masa (con rendimiento en gramos) y define el peso de cada producto. Por ejemplo: conchas de 45 g, francés de 55 g o placas para roles de 370 g.</p>
+                </div>
+              </div>
+              <p class="hint">Cada producto puede llevar ingredientes extras: cobertura, mermelada o queso crema. La vista previa suma todo; el inventario solo cambia cuando confirmas la tanda.</p>
+              <details class="action-details dough-define" id="dough-template-details">
+                <summary>+ Crear o editar un producto de esta masa</summary>
+                <form id="dough-template-form" class="form-stack inset-form">
+                  <div class="input-pair">
+                    <label>Nombre del producto<input name="name" required maxlength="150" placeholder="Ej. Concha de brioche"/></label>
+                    <label>Categoría<select name="categoryId" required></select></label>
+                  </div>
+                  <div class="input-pair">
+                    <label>Masa base<select name="recipeId" required></select></label>
+                    <label>Gramos de masa por pieza<input name="gramsPerPiece" type="number" min="1" max="50000" step="1" required placeholder="Ej. 45"/></label>
+                  </div>
+                  <h3>Ingredientes extras por pieza (opcionales)</h3>
+                  <p class="hint">Solo agrega lo que se usa además de la masa base. La cantidad es para UNA pieza. Si ya preparas una cobertura por separado, regístrala como insumo del inventario para poder descontarla.</p>
+                  <div id="dough-extra-rows" class="dough-extra-rows"></div>
+                  <button id="dough-add-extra" type="button" class="btn-soft">+ Añadir ingrediente extra</button>
+                  <div class="recipe-actions">
+                    <button type="submit" class="btn-primary" id="dough-save-template">Guardar producto por gramaje</button>
+                    <button type="button" class="btn-soft" id="dough-cancel-template" hidden>Cancelar edición</button>
+                  </div>
+                </form>
+              </details>
+              <div id="dough-template-list" class="dough-templates" aria-live="polite"></div>
+              <div class="dough-production-box">
+                <h3>¿Cuántos productos hacemos de esta masa?</h3>
+                <label class="dough-select-label">Selecciona la masa base
+                  <select id="dough-production-recipe"></select>
+                </label>
+                <div id="dough-allocation-rows" class="dough-allocation-rows"></div>
+                <div class="recipe-actions">
+                  <button id="dough-calc-button" type="button" class="btn-soft">Calcular masa e ingredientes</button>
+                  <button id="dough-confirm-button" type="button" class="btn-primary" disabled>Confirmar tanda y descontar inventario</button>
+                </div>
+                <div id="dough-preview" class="dough-preview" aria-live="polite"></div>
+              </div>
+              <p id="dough-status" class="hint" role="status" aria-live="polite"></p>
+            </section>
           </section>
 
           <section class="view" data-view="ingredients" aria-labelledby="ingredients-title" hidden>
@@ -233,6 +278,7 @@
   </div>
   <script src="/app.js" defer></script>
   <script src="/products.js" defer></script>
+  <script src="/dough-products.js" defer></script>
   <script src="/sourdough.js" defer></script>
   <script src="/calendar.js" defer></script>
 </body>
