@@ -70,6 +70,14 @@ try {
     New-Item -ItemType Directory -Force -Path (Split-Path -Parent $actual) | Out-Null
     Copy-Item -LiteralPath (Join-Path $raiz $archivo) -Destination $actual -Force
   }
+  $pagina = Get-Content -LiteralPath (Join-Path $Destino 'public\index.html') -Raw
+  $app = Get-Content -LiteralPath (Join-Path $Destino 'public\app.js') -Raw
+  if (-not $pagina.Contains('Brioche y formatos') -or -not $pagina.Contains('Abrir producción por formatos') -or -not $app.Contains('scrollTo:button.dataset.scrollTo||null')) {
+    throw 'Verificacion fallida: no aparecio el acceso visible de brioche. Se restaurara el codigo.'
+  }
+  Write-Host 'Verificacion OK: Brioche y formatos esta en el menu y en Produccion.' -ForegroundColor Green
+  Write-Host 'Reinicia el servidor y usa Ctrl+F5 en el navegador.'
+  Write-Host 'Si el panel muestra error de datos, verifica primero la migracion MySQL.'
   Write-Host 'Codigo de produccion por formatos instalado.' -ForegroundColor Green
   Write-Host "Respaldo del codigo: $respaldo"
   Write-Host 'IMPORTANTE: Falta aplicar la migracion MySQL despues de exportar un respaldo.'
