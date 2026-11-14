@@ -298,6 +298,8 @@ function createApp({store, auth = null, products = null, finance = null, sourdou
       }
       const produce = pathname.match(/^\/api\/recipes\/([a-f\d-]+)\/produce$/i);
       if (produce && req.method === 'POST') {
+        if(preparations && (await preparations.list()).some(p=>p.recipeId===produce[1]))
+          throw new ValidationError('Esta receta es una subpreparación: registra los gramos obtenidos desde Producción por formatos para actualizar inventario',409);
         const body = await bodyAsJson(req);
         return respond( 201, await store.confirmProduction(produce[1], body.desiredYield, {productId:body.productId||null}));
       }
