@@ -7,11 +7,12 @@ const {createFinishedProductStore}=require('./src/finished-products');
 const {createFinanceDashboard}=require('./src/finance-dashboard');
 const {createSourdoughStore}=require('./src/sourdough');
 const {createCalendarStore}=require('./src/calendar');
+const {createDoughFormatStore}=require('./src/dough-formats');
 async function main() {
   const pool=poolFromEnv();
   try {
     await pool.query('SELECT 1');
-    const app=createApp({store:createMysqlStore(pool),auth:makeAuth(pool),products:createFinishedProductStore(pool),finance:createFinanceDashboard(pool),sourdough:createSourdoughStore(pool),calendar:createCalendarStore(pool)});
+    const app=createApp({store:createMysqlStore(pool),auth:makeAuth(pool),products:createFinishedProductStore(pool),finance:createFinanceDashboard(pool),sourdough:createSourdoughStore(pool),calendar:createCalendarStore(pool),dough:createDoughFormatStore(pool)});
     const port=Number(process.env.PORT || 3000);
     const host=process.env.HOST || '127.0.0.1';
     app.listen(port, host, () => console.log(`Paniko (MySQL) disponible en http://${host}:${port}`));

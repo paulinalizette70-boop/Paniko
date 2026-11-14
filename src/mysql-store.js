@@ -123,7 +123,7 @@ function createMysqlStore(pool) {
       WHERE bi.batch_id=? ORDER BY i.name,bi.ingredient_id`,[id]);
     const [finished]=await pool.execute(`SELECT m.product_id,p.name AS product_name,m.quantity,m.stock_before,m.stock_after
       FROM finished_product_movements m JOIN finished_products p ON p.id=m.product_id
-      WHERE m.batch_id=? LIMIT 1`,[id]);
+      WHERE m.batch_id=? ORDER BY p.name,m.id`,[id]);
     return {
       id:r.id,recipeId:r.recipe_id,recipeName:r.recipe_name,desiredYield:Number(r.desired_yield),yieldUnit:r.yield_unit||'pieza',
       estimatedTotalCost:Number(r.estimated_total_cost),createdAt:r.created_at,
@@ -132,7 +132,9 @@ function createMysqlStore(pool) {
         stockBefore:x.stock_before===null?null:Number(x.stock_before),
         stockAfter:x.stock_after===null?null:Number(x.stock_after)})),
       finishedProduct:finished.length?{id:finished[0].product_id,name:finished[0].product_name,
-        quantity:Number(finished[0].quantity),before:Number(finished[0].stock_before),after:Number(finished[0].stock_after)}:null
+        quantity:Number(finished[0].quantity),before:Number(finished[0].stock_before),after:Number(finished[0].stock_after)}:null,
+      finishedProducts:finished.map(x=>({id:x.product_id,name:x.product_name,
+        quantity:Number(x.quantity),before:Number(x.stock_before),after:Number(x.stock_after)}))
     };
   }
   async function stockIn(id,raw) {

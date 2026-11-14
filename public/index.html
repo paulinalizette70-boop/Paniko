@@ -115,6 +115,10 @@
 
           <section class="view" data-view="production" aria-labelledby="production-title" hidden>
             <div class="page-heading"><span class="eyebrow">MANOS A LA MASA</span><h1 id="production-title">Nueva producción</h1><p>Prepara una tanda en tres pasos. El inventario no cambiará hasta que confirmes.</p></div>
+            <div class="panel dough-callout">
+              <div><span class="eyebrow">UNA MASA, VARIOS PANES</span><h2>¿Conchas, bollos y buns con el mismo brioche?</h2><p class="muted">Cada tipo de pan puede tener un gramaje diferente y sus propios rellenos o cubiertas, sin duplicar la receta base.</p></div>
+              <button type="button" class="btn-primary" data-view-target="production" data-scroll-to="dough-production">Abrir producción por formatos</button>
+            </div>
             <div class="work-grid production-layout">
               <article class="panel primary-panel">
                 <div class="panel-title"><span class="step">01</span><div><h2>¿Qué vamos a hornear?</h2><p>Elige la receta y la cantidad que necesitas: piezas, gramos o mililitros.</p></div></div>
@@ -136,8 +140,22 @@
                 <p class="hint center">Te pediremos una última confirmación.</p>
               </article>
             </div>
+            <section class="panel dough-feature" id="dough-production" data-component="dough" hidden>
+            <div class="section-heading panel-heading"><div><span class="eyebrow">UNA MASA, VARIOS PANES</span><h2>Producción por formatos</h2><p class="muted">Usa una misma masa de brioche para conchas, bollos y buns. Define los gramos de masa por pieza y los complementos de cada formato.</p></div></div>
+            <p class="hint">Los complementos preparados, como mermelada o costra, deben estar registrados como ingredientes con existencias propias. No se vuelve a consumir la receta del relleno al utilizarlo aquí.</p>
+            <div id="dough-status" class="hint" role="status" aria-live="polite"></div>
+            <details class="action-details dough-admin" id="dough-settings" hidden>
+              <summary><strong>Configurar masa base y formatos</strong> · Administración</summary>
+              <div class="dough-config-grid">
+                <form id="dough-base-form" class="form-stack"><h3>Masa base</h3><label>Receta existente<select name="recipeId" required></select></label><label>Gramos de masa que rinde esa receta completa<input name="referenceGrams" type="number" min="1" step="1" required placeholder="Ej. 5000"/></label><p class="hint">Si la ficha técnica ya está en gramos, deben coincidir. Si está en piezas, indica el peso real total del lote.</p><button type="submit" class="btn-soft">Guardar masa base</button></form>
+                <form id="dough-format-form" class="form-stack"><h3>Formato de pan</h3><label>Masa base<select name="recipeId" required></select></label><label>Producto terminado<select name="productId" required></select></label><label>Gramos de masa por pieza<input name="doughGrams" type="number" min="1" max="1000000" step="1" required placeholder="Ej. 60"/></label><h4>Rellenos o cubiertas por pieza</h4><div id="dough-extra-items"></div><button id="dough-add-extra" type="button" class="btn-soft">+ Agregar complemento</button><button type="submit" class="btn-soft">Guardar formato</button></form>
+              </div>
+            </details>
+            <form id="dough-batch-form" class="form-stack"><label>¿Qué masa vas a utilizar?<select name="recipeId" required></select></label><div id="dough-batch-formats" class="dough-batch-formats"></div><button type="submit" class="btn-soft">Calcular masa y complementos</button></form>
+            <div id="dough-batch-preview" class="dough-batch-preview" aria-live="polite"></div>
+            <button type="button" id="dough-confirm" class="btn-primary" disabled>Confirmar lote de varios formatos</button>
+            </section>
           </section>
-
           <section class="view" data-view="ingredients" aria-labelledby="ingredients-title" hidden>
             <div class="page-heading"><span class="eyebrow">TU ALMACÉN</span><h1 id="ingredients-title">Ingredientes</h1><p>Revisa lo que tienes y mantén las existencias al día.</p></div>
             <div class="panel"><div class="section-heading panel-heading"><div><h2>Existencias actuales</h2><p class="muted">Las cantidades reflejan tu inventario registrado.</p></div><label class="search-field"><span class="visually-hidden">Buscar ingrediente</span><input id="ingredient-search" type="search" placeholder="Buscar ingrediente…" autocomplete="off"/></label></div><div id="ingredient-list" class="inventory-list">Sin registros.</div></div>
@@ -241,5 +259,6 @@
   <script src="/starter-status.js" defer></script>
   <script src="/sourdough.js" defer></script>
   <script src="/calendar.js" defer></script>
+  <script src="/dough.js" defer></script>
 </body>
 </html>

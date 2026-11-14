@@ -30,7 +30,7 @@ const normalizeSearch=(value)=>String(value).normalize('NFD').replace(/[\u0300-\
 const VIEWS={dashboard:'Inicio',production:'Producción',ingredients:'Ingredientes',recipes:'Recetas',products:'Productos y ventas',sourdough:'Mi masa madre',history:'Historial',finance:'Finanzas'};
 let currentUser=null;
 let currentView='dashboard';
-function navigateTo(view,{focus=false}={}) {
+function navigateTo(view,{focus=false,scrollTo=null}={}) {
   if(!Object.hasOwn(VIEWS,view))return;
   if(view==='finance'&&document.querySelector('[data-view-target="finance"]')?.hidden)return;
   currentView=view;
@@ -40,17 +40,21 @@ function navigateTo(view,{focus=false}={}) {
   if(view==='dashboard')window.PanikoSourdough?.refreshDashboard?.();
   for(const section of document.querySelectorAll('[data-view]'))section.hidden=section.dataset.view!==view;
   for(const button of document.querySelectorAll('.nav-link')){
-    const selected=button.dataset.viewTarget===view;
+    const selected=button.dataset.viewTarget===view && (scrollTo ? button.dataset.scrollTo===scrollTo : !button.dataset.scrollTo);
     button.classList.toggle('active',selected);
     if(selected)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');
   }
   $('current-view-name').textContent=VIEWS[view];
   $('notification').hidden=true;
   window.scrollTo({top:0,behavior:'instant'});
+  if(scrollTo){
+    const target=document.getElementById(scrollTo);
+    if(target && !target.hidden)target.scrollIntoView({block:'start',behavior:'instant'});
+  }
   if(focus){const heading=document.querySelector(`[data-view="${view}"] h1`);if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true});}}
 }
 for(const button of document.querySelectorAll('[data-view-target]')){
-  button.addEventListener('click',()=>navigateTo(button.dataset.viewTarget,{focus:true}));
+  button.addEventListener('click',()=>navigateTo(button.dataset.viewTarget,{focus:!button.dataset.scrollTo,scrollTo:button.dataset.scrollTo||null}));
 }
 window.PanikoNavigate=navigateTo;
 function renderIngredientList(){
@@ -234,9 +238,10 @@ function renderBatchDetail(container,detail){
     const previous=line.stockBefore===null?'':` · stock ${line.stockBefore} → ${line.stockAfter} ${line.unit}`;
     container.append(make('div',`${line.name}: ${line.quantity} ${line.unit}`+(currentUser?.role==='admin'?` · costo estimado ${money(line.estimatedCost)}`:'')+previous,'list-row'));
   }
-  if(detail.finishedProduct){
-    const p=detail.finishedProduct;
-    container.append(make('p',`Producto terminado: ${p.name} · +${p.quantity} piezas · inventario ${p.before} → ${p.after} piezas`,'good'));
+  const finished=Array.isArray(detail.finishedProducts)&&detail.finishedProducts.length?detail.finishedProducts:(detail.finishedProduct?[detail.finishedProduct]:[]);
+  if(finished.length){
+    container.append(make('h4','Productos obtenidos'));
+    for(const p of finished)container.append(make('p',`${p.name} · +${p.quantity} piezas · inventario ${p.before} → ${p.after} piezas`,'good'));
   }else container.append(make('p','Sin producto terminado vinculado a este lote.','muted'));
 }
 function renderProductionHistory(){
