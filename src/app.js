@@ -19,13 +19,16 @@ function operationalData(value){
 }
 
 
-function createApp({store, auth = null, products = null, dataFile = path.join(__dirname, '..', 'data', 'paniko.json')} = {}) {
+function createApp({store, auth = null, products = null, finance = null, sourdough = null, calendar = null, dataFile = path.join(__dirname, '..', 'data', 'paniko.json')} = {}) {
   store = store || createStore(dataFile);
   const assets = {
     '/': ['index.html', 'text/html; charset=utf-8'],
     '/styles.css': ['styles.css', 'text/css; charset=utf-8'],
     '/app.js': ['app.js', 'application/javascript; charset=utf-8'],
     '/products.js': ['products.js', 'application/javascript; charset=utf-8'],
+    '/sourdough.js': ['sourdough.js', 'application/javascript; charset=utf-8'],
+    '/starter-status.js': ['starter-status.js', 'application/javascript; charset=utf-8'],
+    '/calendar.js': ['calendar.js', 'application/javascript; charset=utf-8'],
   };
   async function bodyAsJson(req) {
     let size = 0; const chunks=[];
@@ -124,6 +127,65 @@ function createApp({store, auth = null, products = null, dataFile = path.join(__
         if(move&&req.method==='POST')return respond(201,await products.recordMovement(move[1],await bodyAsJson(req)));
         return respond(404,{error:'Ruta de productos no encontrada'});
       }
+      // Calendario de trabajo: los planes son distintos de las producciones confirmadas.
+      if(pathname==='/api/calendar'&&req.method==='GET'){
+        if(!auth||!loggedInUser||!calendar)return respond(503,{error:'Calendario no disponible: verifica MySQL y la migración'});
+        return respond(200,await calendar.month(url.searchParams.get('month')));
+      }
+      if(pathname==='/api/calendar/events'&&req.method==='POST'){
+        if(!auth||!loggedInUser||!calendar)return respond(503,{error:'Calendario no disponible'});
+        return respond(201,await calendar.create(await bodyAsJson(req)));
+      }
+      const calendarEvent=pathname.match(/^\/api\/calendar\/events\/([a-f\d-]{36})\/(status|delete)$/i);
+      if(calendarEvent&&req.method==='POST'){
+        if(!auth||!loggedInUser||!calendar)return respond(503,{error:'Calendario no disponible'});
+        if(calendarEvent[2]==='status')return respond(200,await calendar.setStatus(calendarEvent[1],(await bodyAsJson(req)).status));
+        return respond(200,await calendar.remove(calendarEvent[1]));
+      }
+      // Seguimiento de masa madre: vinculación, conteo físico y alimentaciones transaccionales.
+      if(pathname.startsWith('/api/sourdough/')){
+        if(!auth||!sourdough)return respond(503,{error:'Módulo de masa madre no disponible: verifica la migración MySQL'});
+        if(!loggedInUser)return respond(401,{error:'Inicia sesión para continuar'});
+        if(pathname==='/api/sourdough/starters'){
+          if(req.method==='GET')return respond(200,await sourdough.listStarters());
+          if(req.method==='POST')return respond(201,await sourdough.createStarter(await bodyAsJson(req)));
+        }
+        const starterAction=pathname.match(/^\/api\/sourdough\/starters\/([a-f\d-]{36})\/(update|feed|feedings|link-inventory|reconcile-inventory)$/i);
+        if(starterAction){
+          const [,id,action]=starterAction;
+          if(action==='update'&&req.method==='POST')return respond(200,await sourdough.updateStarter(id,await bodyAsJson(req)));
+          if(action==='link-inventory'&&req.method==='POST')return respond(200,await sourdough.linkInventory(id,await bodyAsJson(req)));
+          if(action==='reconcile-inventory'&&req.method==='POST')return respond(200,await sourdough.reconcileInventory(id,await bodyAsJson(req)));
+          if(action==='feed'&&req.method==='POST')return respond(201,await sourdough.feed(id,await bodyAsJson(req)));
+          if(action==='feedings'&&req.method==='GET')return respond(200,await sourdough.feedings(id));
+        }
+        return respond(404,{error:'Operación de masa madre no encontrada'});
+      }
+      // Control financiero exclusivo de administración, también a nivel de API.
+      if(pathname==='/api/finance/dashboard'&&req.method==='GET'){
+        if(!auth||loggedInUser?.role!=='admin')return respond(403,{error:'Solo administración puede consultar las ganancias'});
+        if(!finance)return respond(503,{error:'Panel financiero no disponible: verifica la migración MySQL'});
+        const days=Number(url.searchParams.get('days')||7);
+        return respond(200,await finance.dashboard(days));
+      }
+      if(pathname==='/api/finance/expenses'&&req.method==='POST'){
+        if(!auth||loggedInUser?.role!=='admin')return respond(403,{error:'Solo administración puede registrar gastos'});
+        if(!finance)return respond(503,{error:'Panel financiero no disponible: verifica la migración MySQL'});
+        return respond(201,await finance.addExpense(await bodyAsJson(req)));
+      }
+      if(pathname==='/api/finance/products'&&req.method==='GET'){
+        if(!auth||!loggedInUser||loggedInUser.role!=='admin')
+          return respond(403,{error:'Solo administración puede consultar los costos de productos'});
+        if(!products?.listFinancials)return respond(503,{error:'El inventario de productos requiere MySQL'});
+        return respond(200,await products.listFinancials());
+      }
+      const financialProduct=pathname.match(/^\/api\/finance\/products\/([a-f\d-]+)\/pricing$/i);
+      if(financialProduct&&req.method==='POST'){
+        if(!auth||!loggedInUser||loggedInUser.role!=='admin')
+          return respond(403,{error:'Solo administración puede editar costos y precios de productos'});
+        if(!products?.updateFinancials)return respond(503,{error:'El inventario de productos requiere MySQL'});
+        return respond(200,await products.updateFinancials(financialProduct[1],await bodyAsJson(req)));
+      }
       if(pathname==='/api/finance/overview'&&req.method==='GET'){
         if(!auth||!loggedInUser||loggedInUser.role!=='admin')return respond(403,{error:'Acceso exclusivo a administración'});
         const [ingredients,batches]=await Promise.all([store.listIngredients(),store.listProduction()]);
@@ -144,6 +206,11 @@ function createApp({store, auth = null, products = null, dataFile = path.join(__
         if(loggedInUser?.role==='operador')input.costPerUnit=0;
         return respond(201, await store.addIngredient(input));
       }
+      const originalEdit=pathname.match(/^\/api\/catalog\/recipes\/([a-z][a-z0-9_]{0,99})\/save$/);
+      if(originalEdit&&req.method==='POST'){
+        if(!auth?.saveCatalogRecipe)return respond(503,{error:'Se requiere MySQL e inicio de sesión para editar recetas originales'});
+        return respond(200,await auth.saveCatalogRecipe(originalEdit[1],await bodyAsJson(req)));
+      }
       const fromCatalog=pathname.match(/^\/api\/recipes\/from-catalog\/([a-z][a-z0-9_]{0,99})$/);
       if(fromCatalog&&req.method==='POST'){
         if(!auth?.getCatalogRecipe||!store.importCatalogRecipe)
@@ -151,11 +218,13 @@ function createApp({store, auth = null, products = null, dataFile = path.join(__
         const source=await auth.getCatalogRecipe(fromCatalog[1]);
         if(!source)return respond(404,{error:'Receta original no encontrada'});
         const input=await bodyAsJson(req);
-        const result=await store.importCatalogRecipe(source,input?.baseYield??null);
+        const result=await store.importCatalogRecipe(source,input?.baseYield??null,input?.yieldUnit??null);
         return respond(result.existing?200:201,result);
       }
       if (req.method === 'GET' && pathname === '/api/recipes') return respond( 200, await store.listRecipes());
       if (req.method === 'POST' && pathname === '/api/recipes') return respond( 201, await store.addRecipe(await bodyAsJson(req)));
+      const recipeEdit=pathname.match(/^\/api\/recipes\/([a-f\d]{8}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{12})\/update$/i);
+      if(recipeEdit&&req.method==='POST')return respond(200,await store.updateRecipe(recipeEdit[1],await bodyAsJson(req)));
       if(req.method==='POST' && pathname==='/api/recipes/bakers-preview'){
         const input=await bodyAsJson(req);
         const ingredients=await store.listIngredients();

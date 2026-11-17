@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS recipes (
   id CHAR(36) NOT NULL PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
   base_yield INT NOT NULL,
+  yield_unit ENUM('pieza','g','ml') NOT NULL DEFAULT 'pieza',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT ck_recipe_yield CHECK (base_yield > 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -35,6 +36,7 @@ CREATE TABLE IF NOT EXISTS production_batches (
   recipe_id CHAR(36) NOT NULL,
   recipe_name VARCHAR(100) NOT NULL,
   desired_yield INT NOT NULL,
+  yield_unit ENUM('pieza','g','ml') NOT NULL DEFAULT 'pieza',
   estimated_total_cost DECIMAL(16,2) NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_batch_recipe FOREIGN KEY(recipe_id) REFERENCES recipes(id),

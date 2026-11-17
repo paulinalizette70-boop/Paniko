@@ -16,6 +16,7 @@
     <symbol id="i-book" viewBox="0 0 24 24"><path d="M5 3h14v17H7a3 3 0 0 0-3 1V6a3 3 0 0 1 3-3z"/><path d="M4 18a3 3 0 0 1 3-3h12M9 8h6m-6 4h4"/></symbol>
     <symbol id="i-cart" viewBox="0 0 24 24"><path d="M3 4h2l2.5 12h12L22 8H6"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></symbol>
     <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></symbol>
+    <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M20 4c-9 0-15 4-15 11a5 5 0 0 0 5 5c7 0 11-6 10-16z"/><path d="M5 20c2-4 6-7 11-10"/></symbol>
     <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
     <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
     <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></symbol>
@@ -52,11 +53,12 @@
           <button class="nav-link" type="button" data-view-target="production"><svg class="icon"><use href="#i-bread"/></svg><span>Producción</span></button>
           <button class="nav-link" type="button" data-view-target="ingredients"><svg class="icon"><use href="#i-box"/></svg><span>Ingredientes</span></button>
           <button class="nav-link" type="button" data-view-target="recipes"><svg class="icon"><use href="#i-book"/></svg><span>Recetas</span></button>
+          <button class="nav-link" type="button" data-view-target="sourdough"><svg class="icon"><use href="#i-leaf"/></svg><span>Mi masa madre</span></button>
           <button class="nav-link" type="button" data-view-target="products"><svg class="icon"><use href="#i-cart"/></svg><span>Productos y ventas</span></button>
           <button class="nav-link" type="button" data-view-target="history"><svg class="icon"><use href="#i-clock"/></svg><span>Historial</span></button>
           <button class="nav-link admin-nav" type="button" data-view-target="finance" hidden><svg class="icon"><use href="#i-lock"/></svg><span>Finanzas</span></button>
         </nav>
-        <div class="sidebar-bottom"><span class="sidebar-motto">Un día a la vez,<br/>un pan a la vez.</span><span class="version-label">Versión 0.7.2</span></div>
+        <div class="sidebar-bottom"><span class="sidebar-motto">Un día a la vez,<br/>un pan a la vez.</span><span class="version-label">Versión 0.8.3 · mejoras visuales en desarrollo</span></div>
       </aside>
 
       <div class="main-column">
@@ -78,6 +80,30 @@
               <div class="stat-card"><span class="stat-icon accent-peach"><svg class="icon"><use href="#i-book"/></svg></span><div><span class="stat-label">Recetas disponibles</span><strong id="dashboard-recipes">—</strong><small>Fichas de producción</small></div></div>
               <div class="stat-card"><span class="stat-icon accent-sand"><svg class="icon"><use href="#i-bread"/></svg></span><div><span class="stat-label">Lotes recientes</span><strong id="dashboard-batches">—</strong><small>En el historial consultado</small></div></div>
             </div>
+            <section class="panel starter-home" id="sourdough-home" aria-labelledby="sourdough-home-title">
+              <div class="starter-home-art" aria-hidden="true">✿</div>
+              <div class="starter-home-content"><span class="eyebrow">UN CUIDADO A TIEMPO</span><h2 id="sourdough-home-title">Tus masas madre</h2><p id="sourdough-home-summary" aria-live="polite">Revisando tus cultivos…</p><div id="sourdough-home-items" class="starter-home-items"></div></div>
+              <button type="button" class="btn-soft starter-home-open" data-view-target="sourdough">Ver mis cultivos</button>
+            </section>
+            <section class="panel dashboard-calendar" aria-labelledby="calendar-title">
+              <div class="section-heading"><div><span class="eyebrow">TU SEMANA EN ORDEN</span><h2 id="calendar-title">Calendario de la panadería</h2><p class="hint">Pendientes y producción planeada; los lotes confirmados aparecen automáticamente en su día.</p></div>
+                <div class="calendar-toolbar"><button type="button" id="calendar-prev" class="btn-soft" aria-label="Mes anterior">‹</button><strong id="calendar-month-label">Mes</strong><button type="button" id="calendar-next" class="btn-soft" aria-label="Mes siguiente">›</button><button type="button" id="calendar-today" class="btn-soft">Hoy</button></div>
+              </div>
+              <div class="calendar-legend"><span><i class="cal-dot pending"></i>Pendiente</span><span><i class="cal-dot planned"></i>Producción planeada</span><span><i class="cal-dot actual"></i>Producido</span></div>
+              <div id="calendar-grid" class="calendar-grid" aria-label="Calendario mensual"></div>
+              <p id="calendar-status" class="hint" role="status" aria-live="polite"></p>
+              <div class="calendar-bottom">
+                <div class="calendar-agenda"><h3 id="calendar-day-title">Selecciona una fecha</h3><div id="calendar-day-items">Aquí se mostrarán tus pendientes y lo producido.</div></div>
+                <details class="calendar-new" id="calendar-new-details"><summary class="btn-soft">+ Añadir pendiente o producción planeada</summary>
+                  <form id="calendar-form" class="form-stack"><label>Fecha<input name="eventDate" type="date" required/></label><label>Tipo<select name="kind"><option value="pendiente">Pendiente</option><option value="produccion">Producción planeada</option></select></label>
+                  <label>¿Qué hay que hacer?<input name="title" maxlength="120" placeholder="Ej. Preparar mermelada de higo" required/></label>
+                  <label>Receta (opcional para producción)<select name="recipeId"><option value="">Sin receta vinculada</option></select></label>
+                  <label>Cantidad prevista (opcional, en la unidad de la receta)<input name="plannedQuantity" type="number" min="1" max="1000000000" step="1" placeholder="No es obligatorio"/></label>
+                  <label>Notas<textarea name="notes" maxlength="300" rows="2" placeholder="Horario, encargos, recordatorios…"></textarea></label>
+                  <p class="hint">La planificación NO descuenta inventario. Solo una producción confirmada lo hace.</p><button class="btn-primary" type="submit">Guardar en calendario</button></form>
+                </details>
+              </div>
+            </section>
             <div class="section-heading quick-title"><div><span class="eyebrow">ACCESOS RÁPIDOS</span><h2>¿Qué necesitas hacer hoy?</h2></div></div>
             <div class="quick-grid">
               <button class="quick-card" type="button" data-view-target="production"><span class="quick-icon q-production"><svg class="icon"><use href="#i-bread"/></svg></span><strong>Producir pan</strong><small>Calcula cantidades y registra una tanda.</small><span class="quick-more">Ir a producción <svg class="icon"><use href="#i-arrow"/></svg></span></button>
@@ -91,10 +117,10 @@
             <div class="page-heading"><span class="eyebrow">MANOS A LA MASA</span><h1 id="production-title">Nueva producción</h1><p>Prepara una tanda en tres pasos. El inventario no cambiará hasta que confirmes.</p></div>
             <div class="work-grid production-layout">
               <article class="panel primary-panel">
-                <div class="panel-title"><span class="step">01</span><div><h2>¿Qué vamos a hornear?</h2><p>Elige la receta y las piezas que necesitas.</p></div></div>
+                <div class="panel-title"><span class="step">01</span><div><h2>¿Qué vamos a hornear?</h2><p>Elige la receta y la cantidad que necesitas: piezas, gramos o mililitros.</p></div></div>
                 <form id="scale-form" class="form-stack">
                   <label>Receta a preparar<select name="recipe" required></select></label>
-                  <label>Cantidad de piezas que quieres hacer<input type="number" name="desiredYield" min="1" step="1" value="20" required/></label>
+                  <label><span id="production-amount-label">Cantidad que quieres preparar (piezas)</span><input type="number" name="desiredYield" min="1" step="1" value="20" required/></label>
                   <label>Producto terminado (opcional)<select name="finishedProduct" id="finished-product-selector"><option value="">Sin producto vinculado; solo descuenta ingredientes</option></select></label>
                   <p class="hint">Si el producto está vinculado con esta receta, sus piezas se sumarán automáticamente al inventario terminado.</p>
                   <button type="submit" class="btn-primary">Calcular ingredientes <svg class="icon"><use href="#i-arrow"/></svg></button>
@@ -135,14 +161,14 @@
           <section class="view" data-view="recipes" aria-labelledby="recipes-title" hidden>
             <div class="page-heading"><span class="eyebrow">TUS FÓRMULAS DE TRABAJO</span><h1 id="recipes-title">Recetas</h1><p>Aquí encuentras las fórmulas para producir, las preparaciones y los rellenos. Todos los usuarios de Paniko pueden consultarlos.</p></div>
             <div class="panel"><div class="section-heading panel-heading"><div><h2>Fichas técnicas escalables</h2>
-<p class="hint">Equivalencias de esta panadería: <strong>1 huevo = 50 g</strong> (sin cáscara). Para Agua, <strong>1 g ≈ 1 ml</strong>. Las fichas se pueden guardar con existencias en cero; el inventario se comprueba al producir. El <strong>% panadero</strong> se calcula con el peso total de las harinas = 100 %, aunque todavía no tengas inventario. Se puede consultar desde cada ficha o en Producción.</p><p class="muted">Se generan de tus recetas originales y se conectan con el inventario para planear y confirmar producción.</p></div><label class="search-field"><span class="visually-hidden">Buscar receta</span><input id="recipe-search" type="search" placeholder="Buscar receta…" autocomplete="off"/></label></div><div id="recipe-list" class="inventory-list">Sin recetas.</div></div>
+<p class="hint">Equivalencias de esta panadería: <strong>1 huevo = 50 g</strong> (sin cáscara). Para Agua, <strong>1 g ≈ 1 ml</strong>; leche líquida, <strong>1 ml ≈ 1.03 g</strong> (aproximación). Las fichas se pueden guardar con existencias en cero; el inventario se comprueba al producir. El <strong>% panadero</strong> se calcula con el peso total de las harinas = 100 %, aunque todavía no tengas inventario. Se puede consultar desde cada ficha o en Producción.</p><p class="muted">Se generan de tus recetas originales y se conectan con el inventario para planear y confirmar producción.</p></div><label class="search-field"><span class="visually-hidden">Buscar receta</span><input id="recipe-search" type="search" placeholder="Buscar receta…" autocomplete="off"/></label></div><div id="recipe-list" class="inventory-list">Sin recetas.</div></div>
             <div class="panel" id="recipe-catalog-panel">
-              <div class="section-heading panel-heading"><div><h2>Recetas originales y rellenos</h2><p class="muted">A partir de tus fórmulas puedes crear una ficha técnica escalable con un clic cuando tenga todos sus datos. Si falta el rendimiento en piezas, Paniko te lo indicará sin inventarlo.</p></div></div>
+              <div class="section-heading panel-heading"><div><h2>Recetas originales y rellenos</h2><p class="muted">Edita las fórmulas pendientes, completa cantidades y rendimiento, y confirma cada una antes de crear una ficha escalable. Si falta el rendimiento en piezas, Paniko te lo indicará sin inventarlo.</p></div></div>
               <div id="recipe-catalog-list" class="inventory-list" aria-live="polite"><p class="muted">Abre Recetas para consultar las preparaciones adicionales.</p></div>
               <button id="refresh-recipe-catalog" type="button" class="btn-soft">Actualizar preparaciones</button>
             </div>
             <details class="panel action-details add-new-details" id="recipe-create-details"><summary><span class="action-icon accent-peach"><svg class="icon"><use href="#i-plus"/></svg></span><span><strong>Crear una ficha de producción</strong><small>Indica ingredientes y rendimiento base</small></span><svg class="icon arrow"><use href="#i-chevron"/></svg></summary>
-              <form id="recipe-form" class="form-stack inset-form"><div class="input-pair"><label>Nombre de la receta<input name="name" maxlength="100" required placeholder="Ej. Conchas"/></label><label>Rendimiento base (piezas)<input name="yield" type="number" min="1" step="1" required value="10"/></label></div><div class="recipe-ingredients-head"><h3>Ingredientes para ese rendimiento</h3><p class="hint">Especifica la cantidad y unidad de cada ingrediente.</p></div><div id="recipe-items"></div><button type="button" id="add-item" class="btn-soft"><svg class="icon"><use href="#i-plus"/></svg> Añadir otro ingrediente</button><button type="button" id="baker-preview-button" class="btn-soft">Calcular % panadero</button><div id="baker-form-preview" class="baker-detail" aria-live="polite" hidden></div><button type="submit" class="btn-primary">Guardar ficha técnica</button></form>
+              <form id="recipe-form" class="form-stack inset-form"><p id="recipe-edit-hint" class="hint" hidden>Estás editando una ficha guardada. Los lotes producidos anteriormente y el inventario no cambiarán.</p><div class="input-pair"><label>Nombre de la receta<input name="name" maxlength="100" required placeholder="Ej. Conchas"/></label><label>Rendimiento del lote<input name="yield" type="number" min="1" step="1" required value="10"/></label><label>Unidad del rendimiento<select name="yieldUnit"><option value="pieza">Piezas</option><option value="g">Gramos (g)</option><option value="ml">Mililitros (ml)</option></select></label></div><div class="recipe-ingredients-head"><h3>Ingredientes para ese rendimiento</h3><p class="hint">Especifica la cantidad y unidad de cada ingrediente.</p></div><div id="recipe-items"></div><button type="button" id="add-item" class="btn-soft"><svg class="icon"><use href="#i-plus"/></svg> Añadir otro ingrediente</button><button type="button" id="baker-preview-button" class="btn-soft">Calcular % panadero</button><div id="baker-form-preview" class="baker-detail" aria-live="polite" hidden></div><div class="recipe-actions"><button type="submit" id="recipe-save-button" class="btn-primary">Guardar ficha técnica</button><button type="button" id="recipe-cancel-button" class="btn-soft" hidden>Cancelar edición</button></div></form>
             </details>
           </section>
 
@@ -154,6 +180,19 @@
             </section>
           </section>
 
+          <section class="view" data-view="sourdough" aria-labelledby="sourdough-title" hidden>
+            <div class="page-heading"><span class="eyebrow">CUIDA TU CULTIVO</span><h1 id="sourdough-title">Mi masa madre</h1><p>Registra cada alimentación, lleva el peso de tu masa madre y consulta cuándo quieres revisarla de nuevo.</p></div>
+            <div class="panel sourdough-intro"><h2>Un rincón para tus cultivos 🌾</h2><p>Visualiza tus cuidados, encuentra cuándo corresponde revisar y registra una alimentación sin salir del panel. El peso proviene de <strong>Inventario</strong> cuando el cultivo está vinculado.</p><p class="hint">Los estados se basan solo en el horario que configuraste; no miden actividad real ni indican que sea seguro hornear. La hidratación que se muestra en el historial pertenece a cada alimentación, no a toda la masa madre. Los avisos funcionan dentro de Paniko mientras esté abierto o al volver a entrar; no se envían notificaciones externas.</p></div>
+            <details class="panel action-details" id="sourdough-create-details"><summary><span class="action-icon accent-olive"><svg class="icon"><use href="#i-plus"/></svg></span><span><strong>Agregar una masa madre</strong><small>Nombre, ubicación y frecuencia de revisión</small></span><svg class="icon arrow"><use href="#i-chevron"/></svg></summary>
+              <form id="starter-create-form" class="form-stack inset-form"><label>Nombre de tu masa madre<input name="name" required maxlength="100" placeholder="Ej. Masa madre principal"/></label>
+                <div class="input-pair"><label>¿Dónde la guardas?<select name="location"><option value="ambiente">Temperatura ambiente</option><option value="refrigerador">Refrigerador</option></select></label><label>Revisar cada cuántas horas<input name="feedEveryHours" type="number" min="1" max="336" step="1" value="24" required/></label></div>
+                <label>Peso actual (g) · opcional<input name="initialWeightGrams" type="number" min="0" max="1000000" step="0.01" placeholder="Puedes capturarlo después"/></label>
+                <label>Notas<input name="notes" maxlength="500" placeholder="Ej. Uso harina de fuerza"/></label>
+                <button class="btn-primary" type="submit">Guardar masa madre</button></form>
+            </details>
+            <div id="sourdough-list" class="sourdough-grid" aria-live="polite"><p class="muted">Todavía no hay registros.</p></div>
+          </section>
+
           <section class="view" data-view="history" aria-labelledby="history-title" hidden>
             <div class="page-heading"><span class="eyebrow">TODO QUEDA REGISTRADO</span><h1 id="history-title">Historial</h1><p>Consulta lotes y movimientos anteriores sin modificar las existencias.</p></div>
             <div class="panel"><div class="section-heading panel-heading"><div><h2>Lotes de producción</h2><p class="muted">Últimos 100 lotes registrados.</p></div><label class="filter-field">Filtrar por receta<select id="production-filter"><option value="">Todas las recetas</option></select></label></div><div id="production-list" class="history-list"></div></div>
@@ -161,12 +200,35 @@
           </section>
 
           <section id="finance-panel" class="view" data-view="finance" aria-labelledby="finance-title" hidden>
-            <div class="page-heading"><span class="eyebrow">SOLO ADMINISTRACIÓN</span><h1 id="finance-title">Gestión financiera</h1><p>Costos de insumos y valor estimado del inventario. El personal operativo no tiene acceso a esta información.</p></div>
+            <div class="page-heading"><span class="eyebrow">SOLO ADMINISTRACIÓN</span><h1 id="finance-title">Gestión financiera</h1><p>Administra los costos de ingredientes y productos, junto con los precios de venta. Solo administración puede hacer cambios.</p></div>
+            <div class="panel finance-dashboard"><div class="section-heading panel-heading"><div><h2>Ingresos y ganancias</h2><p class="muted">Ventas registradas, costo de piezas vendidas y gastos adicionales. Los importes se guardan al momento de cada venta.</p></div><label class="filter-field">Periodo<select id="finance-period"><option value="7">Últimos 7 días</option><option value="30">Últimos 30 días</option><option value="90">Últimos 90 días</option><option value="365">Últimos 365 días</option></select></label></div>
+              <div class="finance-metric-grid">
+                <div class="finance-metric"><span>Ingresos conocidos</span><strong id="finance-revenue">—</strong></div>
+                <div class="finance-metric"><span>Costo de lo vendido</span><strong id="finance-cogs">—</strong></div>
+                <div class="finance-metric"><span>Gastos adicionales</span><strong id="finance-expenses">—</strong></div>
+                <div class="finance-metric"><span>Utilidad bruta</span><strong id="finance-gross">—</strong></div>
+                <div class="finance-metric emphasis"><span>Utilidad neta</span><strong id="finance-net">—</strong></div>
+              </div>
+              <p id="finance-summary-note" class="hint" aria-live="polite">Cargando resumen…</p>
+              <p class="hint">Utilidad bruta = ingresos − costo de productos vendidos. Utilidad neta = utilidad bruta − gastos adicionales. No dupliques como gasto la materia prima que ya está incluida en el costo por pieza.</p>
+            </div>
+            <div class="finance-side-by-side">
+              <div class="panel"><h2>Registrar gasto</h2><p class="muted">Renta, servicios, nómina, empaque y otros gastos no incluidos en el costo de las piezas.</p>
+                <form id="finance-expense-form" class="form-stack"><label>Categoría<select name="category" required><option>Renta</option><option>Servicios</option><option>Nómina</option><option>Empaque</option><option>Mantenimiento</option><option>Otros</option></select></label>
+                  <label>Concepto<input name="description" maxlength="150" required placeholder="Ej. Recibo de luz"/></label>
+                  <div class="input-pair"><label>Importe MXN<input name="amount" type="number" min="0.01" step="0.01" required placeholder="0.00"/></label><label>Fecha<input id="finance-expense-date" name="expenseDate" type="date" required/></label></div>
+                  <button type="submit" class="btn-primary">Guardar gasto</button></form>
+              </div>
+              <div class="panel"><h2>Ventas y gastos recientes</h2><div id="finance-recent-list" aria-live="polite"><p class="muted">Cargando movimientos…</p></div></div>
+            </div>
             <div class="stats-grid finance-metrics">
               <div class="stat-card"><div><span class="stat-label">Valor estimado de ingredientes</span><strong id="finance-inventory-value">—</strong><small>Existencias × costo unitario</small></div></div>
               <div class="stat-card"><div><span class="stat-label">Costo estimado de lotes recientes</span><strong id="finance-batch-cost">—</strong><small>Últimos lotes registrados</small></div></div>
             </div>
             <div class="panel finance-editor"><div class="section-heading panel-heading"><div><h2>Costos de ingredientes</h2><p class="muted">Solo administración puede consultar o actualizar el costo unitario. Los cambios afectan los cálculos futuros, no los costos registrados en lotes anteriores.</p></div></div><div id="finance-ingredient-list" aria-live="polite"></div></div>
+            <div class="panel finance-editor"><div class="section-heading panel-heading"><div><h2>Costos y precios de productos</h2>
+            <p class="muted">Edita por separado el costo de elaboración por pieza y el precio de venta al público. El costo es manual y no se inventa a partir de las recetas. Estos cambios no modifican existencias ni ventas anteriores.</p></div></div>
+            <div id="finance-product-list" aria-live="polite"><p class="muted">Abre Finanzas para consultar tus productos.</p></div></div>
           </section>
 
           <footer class="app-footer">Paniko · Elaborado con cariño para panaderías artesanales <span>Proyecto académico · Uso local</span></footer>
@@ -176,5 +238,8 @@
   </div>
   <script src="/app.js" defer></script>
   <script src="/products.js" defer></script>
+  <script src="/starter-status.js" defer></script>
+  <script src="/sourdough.js" defer></script>
+  <script src="/calendar.js" defer></script>
 </body>
 </html>

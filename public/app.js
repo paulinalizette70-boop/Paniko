@@ -1,6 +1,7 @@
 'use strict';
 let ingredients = [];
 let recipes = [];
+let editingRecipeId=null;
 let productionBatches = [];
 const $ = (id) => document.getElementById(id);
 const make = (tag, content, cls) => {
@@ -14,8 +15,19 @@ function notify(message, failed=false) {
   const element=$('notification');element.textContent=message;
   element.className=failed?'toast warning':'toast good';element.hidden=false;
 }
+const yieldLabel=(unit)=>unit==='g'?'g':unit==='ml'?'ml':'piezas';
+function normalizedCatalogYield(source){
+  const unit=normalizeSearch(source?.unidad||''),quantity=source?.cantidad;
+  const pieces=['pieza','piezas','panes','hogazas','baguettes','panques','bollos','galletas','unidades','porciones','croissants','rollos'];
+  if(!Number.isFinite(quantity)||quantity<=0)return null;
+  if(pieces.includes(unit)&&Number.isSafeInteger(quantity))return {baseYield:quantity,yieldUnit:'pieza'};
+  const factor={g:1,gramo:1,gramos:1,kg:1000,kilogramo:1000,kilogramos:1000,ml:1,mililitros:1,l:1000,litro:1000,litros:1000}[unit];
+  if(!factor)return null;
+  const baseYield=quantity*factor;
+  return Number.isSafeInteger(baseYield)&&baseYield>0?{baseYield,yieldUnit:['l','ml','litro','litros','mililitros'].includes(unit)?'ml':'g'}:null;
+}
 const normalizeSearch=(value)=>String(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('es');
-const VIEWS={dashboard:'Inicio',production:'Producción',ingredients:'Ingredientes',recipes:'Recetas',products:'Productos y ventas',history:'Historial',finance:'Finanzas'};
+const VIEWS={dashboard:'Inicio',production:'Producción',ingredients:'Ingredientes',recipes:'Recetas',products:'Productos y ventas',sourdough:'Mi masa madre',history:'Historial',finance:'Finanzas'};
 let currentUser=null;
 let currentView='dashboard';
 function navigateTo(view,{focus=false}={}) {
@@ -24,6 +36,8 @@ function navigateTo(view,{focus=false}={}) {
   currentView=view;
   if(view==='recipes')void loadCatalog();
   if(view==='finance')void loadFinances();
+  if(view==='sourdough')window.PanikoSourdough?.refresh?.();
+  if(view==='dashboard')window.PanikoSourdough?.refreshDashboard?.();
   for(const section of document.querySelectorAll('[data-view]'))section.hidden=section.dataset.view!==view;
   for(const button of document.querySelectorAll('.nav-link')){
     const selected=button.dataset.viewTarget===view;
@@ -82,7 +96,7 @@ function renderRecipeList(){
   const list=recipes.filter(r=>normalizeSearch(r.name).includes(query));
   for(const recipe of list){
     const line=make('div',undefined,'inventory-item recipe-card');
-    const details=make('div');details.append(make('strong',recipe.name),make('small',`${recipe.items.length} ingredientes · Rendimiento base: ${recipe.baseYield} piezas`));
+    const details=make('div');details.append(make('strong',recipe.name),make('small',`${recipe.items.length} ingredientes · Rendimiento base: ${recipe.baseYield} ${yieldLabel(recipe.yieldUnit)}`));
     const use=make('button','Preparar','secondary');use.type='button';
     use.addEventListener('click',()=>{
       navigateTo('production');$('scale-form').elements.recipe.value=recipe.id;
@@ -107,7 +121,9 @@ function renderRecipeList(){
       }catch(error){detail.replaceChildren(make('p',error.message,'warning'));}
       finally{percentButton.disabled=false;}
     });
-    const actions=make('div',undefined,'recipe-actions');actions.append(percentButton,use);
+    const edit=make('button','Editar ficha','btn-soft');edit.type='button';
+    edit.addEventListener('click',()=>startEditingRecipe(recipe));
+    const actions=make('div',undefined,'recipe-actions');actions.append(edit,percentButton,use);
     line.append(details,actions,detail);root.append(line);
   }
   if(!list.length)root.append(make('p',recipes.length?'No se encontraron recetas.':'Todavía no hay fichas técnicas.','muted'));
@@ -139,6 +155,8 @@ function availableUnits(unit,name='') {
     return ['pieza','g','kg'];
   if(/^agua(?: (?:potable|purificada|filtrada))?$/.test(key)&&['g','kg','ml','l'].includes(unit))
     return ['g','kg','ml','l'];
+  if(/^leche(?: (?:entera|tibia|fria|liquida|fresca|pasteurizada|deslactosada|descremada|semidescremada|de vaca|sin lactosa))*$/.test(key)&&['g','kg','ml','l'].includes(unit))
+    return ['g','kg','ml','l'];
   if (['g','kg'].includes(unit)) return ['g','kg'];
   if (['ml','l'].includes(unit)) return ['ml','l'];
   return unit === 'pieza' ? ['pieza'] : [];
@@ -164,7 +182,28 @@ function syncAdjustUnit(){
   const id=$('adjust-stock-form').elements.ingredient.value;
   $('adjust-unit-label').textContent=ingredients.find(i=>i.id===id)?.unit||'unidad';
 }
-function addRecipeItem() {
+function resetRecipeEditor(){
+  editingRecipeId=null;
+  const form=$('recipe-form');form.reset();form.elements.yieldUnit.value='pieza';
+  $('recipe-items').replaceChildren();addRecipeItem();
+  $('recipe-save-button').textContent='Guardar ficha técnica';
+  $('recipe-cancel-button').hidden=true;$('recipe-edit-hint').hidden=true;
+  $('baker-form-preview').hidden=true;$('baker-form-preview').replaceChildren();
+}
+function startEditingRecipe(recipe){
+  editingRecipeId=recipe.id;
+  navigateTo('recipes');$('recipe-create-details').open=true;
+  const form=$('recipe-form');form.elements.name.value=recipe.name;
+  form.elements.yield.value=String(recipe.baseYield);form.elements.yieldUnit.value=recipe.yieldUnit||'pieza';
+  $('recipe-items').replaceChildren();
+  for(const item of recipe.items)addRecipeItem(item);
+  $('recipe-save-button').textContent='Guardar cambios';
+  $('recipe-cancel-button').hidden=false;$('recipe-edit-hint').hidden=false;
+  $('baker-form-preview').hidden=true;$('baker-form-preview').replaceChildren();
+  $('recipe-create-details').scrollIntoView({block:'start',behavior:'smooth'});
+}
+$('recipe-cancel-button').addEventListener('click',resetRecipeEditor);
+function addRecipeItem(defaults=null) {
   const row=make('div',undefined,'item-row');
   const select=make('select');select.setAttribute('aria-label','Ingrediente');
   fillSelect(select,ingredients,'Registra ingredientes antes');
@@ -176,7 +215,9 @@ function addRecipeItem() {
   remove.addEventListener('click',()=>row.remove());
   select.addEventListener('change',()=>setUnitOptions(unit,select.value));
   row.append(select,quantity,unit,remove);$('recipe-items').append(row);
+  if(defaults?.ingredientId){select.value=defaults.ingredientId;quantity.value=String(defaults.quantity);}
   setUnitOptions(unit,select.value);
+  if(defaults?.unit&&[...unit.options].some(o=>o.value===defaults.unit))unit.value=defaults.unit;
 }
 function formatProductionDate(value){
   if(!value)return 'Fecha no disponible';
@@ -205,9 +246,9 @@ function renderProductionHistory(){
   root.append(make('p',`${batches.length} lote(s) en el historial mostrado.`,'muted'));
   for(const batch of batches){
     const section=make('div',undefined,'list-row');
-    const costPerPiece=batch.desiredYield>0?money(batch.estimatedTotalCost/batch.desiredYield):'—';
-    const finance=currentUser?.role==='admin'?` · ${money(batch.estimatedTotalCost)} (${costPerPiece}/pieza)`:'';
-    section.append(make('div',`${formatProductionDate(batch.createdAt)} · ${batch.recipeName} · ${batch.desiredYield} piezas${finance}`));
+    const costPerUnit=batch.desiredYield>0?money(batch.estimatedTotalCost/batch.desiredYield):'—';
+    const finance=currentUser?.role==='admin'?` · ${money(batch.estimatedTotalCost)} (${costPerUnit}/${yieldLabel(batch.yieldUnit)})`:'';
+    section.append(make('div',`${formatProductionDate(batch.createdAt)} · ${batch.recipeName} · ${batch.desiredYield} ${yieldLabel(batch.yieldUnit)}${finance}`));
     const button=make('button','Ver detalle','secondary');button.type='button';button.setAttribute('aria-expanded','false');
     const detail=make('div',undefined,'production-detail');detail.hidden=true;
     let loaded=false;
@@ -259,12 +300,13 @@ function render(movements, batches) {
   productionBatches=batches;
   syncProductionFilter();renderProductionHistory();
 }
+window.PanikoRefreshInventory=()=>refresh();
 async function refresh() {
   const [ings,recs,movements,batches]=await Promise.all([
     api('/api/ingredients'),api('/api/recipes'),api('/api/inventory/movements'),api('/api/production')]);
   ingredients=ings;recipes=recs;render(movements,batches);
   window.PanikoFinishedProducts?.updateProductionOptions?.();
-  resetCapacitySuggestion();
+  syncProductionUnit();resetCapacitySuggestion();
 }
 $('production-filter').addEventListener('change',renderProductionHistory);
 $('add-item').addEventListener('click', addRecipeItem);
@@ -279,7 +321,7 @@ $('ingredient-form').addEventListener('submit', async (event) => {
   } catch (error) { notify(error.message, true); }
 });
 function currentRecipeInput(form){
-  return {name:form.elements.name.value,baseYield:Number(form.elements.yield.value),
+  return {name:form.elements.name.value,baseYield:Number(form.elements.yield.value),yieldUnit:form.elements.yieldUnit.value,
     items:[...$('recipe-items').children].map(row=>({ingredientId:row.querySelector('select').value,
       quantity:Number(row.querySelector('input').value),unit:row.querySelector('.recipe-unit').value}))};
 }
@@ -299,10 +341,12 @@ $('recipe-form').addEventListener('submit', async (event) => {
   const rows = [...$('recipe-items').children];
   try {
     if (!rows.length) throw new Error('Añade al menos un ingrediente.');
-    await post('/api/recipes', currentRecipeInput(form));
-    form.reset(); $('recipe-items').replaceChildren(); addRecipeItem();
+    const wasEditing=Boolean(editingRecipeId);
+    const url=wasEditing?`/api/recipes/${editingRecipeId}/update`:'/api/recipes';
+    await post(url,currentRecipeInput(form));
+    resetRecipeEditor();
     $('baker-form-preview').hidden=true;$('baker-form-preview').replaceChildren();
-    await refresh(); notify('Ficha técnica guardada.');
+    await refresh(); notify(wasEditing?'Ficha técnica actualizada. No se modificó el inventario.':'Ficha técnica guardada.');
   } catch (error) { notify(error.message, true); }
 });
 $('stock-in-form').addEventListener('submit',async(event)=>{
@@ -332,8 +376,8 @@ $('adjust-stock-form').addEventListener('submit',async event=>{
 function renderPreview(result) {
   const container=$('scale-results');container.replaceChildren();
   $('produce-button').disabled=!result.stockAvailable;
-  container.append(make('p', `${result.recipeName} · ${result.desiredYield} piezas`+(currentUser?.role==='admin'?` · costo estimado ${money(result.estimatedTotalCost)}`:'')));
-  container.append(make('p', `Capacidad con existencias actuales: hasta ${result.maxProducible} piezas.`, result.maxProducible>0?'good':'warning'));
+  container.append(make('p', `${result.recipeName} · ${result.desiredYield} ${yieldLabel(result.yieldUnit)}`+(currentUser?.role==='admin'?` · costo estimado ${money(result.estimatedTotalCost)}`:'')));
+  container.append(make('p', `Capacidad con existencias actuales: hasta ${result.maxProducible} ${yieldLabel(result.yieldUnit)}.`, result.maxProducible>0?'good':'warning'));
   if(result.limitingIngredients?.length)container.append(make('p', `Insumo(s) limitante(s): ${result.limitingIngredients.join(', ')}`, 'muted'));
   for(const line of result.lines){
     const detail=`${line.name}: necesita ${line.required} ${line.unit} · disponible ${line.stock} ${line.unit}`+
@@ -370,7 +414,12 @@ function resetCapacitySuggestion(){
   placeholder.append(symbol,make('strong','Tu cálculo aparecerá aquí'),make('p','Selecciona una receta y pulsa «Calcular ingredientes».'));
   $('scale-results').replaceChildren(placeholder);
 }
-$('scale-form').elements.recipe.addEventListener('change',resetCapacitySuggestion);
+function syncProductionUnit(){
+  const r=recipes.find(x=>x.id===$('scale-form').elements.recipe.value);
+  $('production-amount-label').textContent='Cantidad que quieres preparar ('+yieldLabel(r?.yieldUnit)+')';
+  if(r&&(r.yieldUnit||'pieza')!=='pieza')$('finished-product-selector').value='';
+}
+$('scale-form').elements.recipe.addEventListener('change',()=>{syncProductionUnit();resetCapacitySuggestion();});
 $('scale-form').elements.desiredYield.addEventListener('input',resetCapacitySuggestion);
 $('max-production-button').addEventListener('click',()=>{
   const button=$('max-production-button');
@@ -380,7 +429,8 @@ $('max-production-button').addEventListener('click',()=>{
      !Number.isSafeInteger(maximum)||maximum<1)return;
   form.elements.desiredYield.value=String(maximum);
   resetCapacitySuggestion();
-  notify(`Cantidad ajustada a ${maximum} piezas. Calcula la vista previa de nuevo para confirmar.`);
+  const recipe=recipes.find(r=>r.id===form.elements.recipe.value);
+  notify(`Cantidad ajustada a ${maximum} ${yieldLabel(recipe?.yieldUnit)}. Calcula la vista previa de nuevo para confirmar.`);
 });
 $('scale-form').addEventListener('submit', async(event)=>{
   event.preventDefault();try{await selectedPreview();notify('Vista previa calculada. No se modificó el inventario.');}catch(e){notify(e.message,true);}
@@ -391,9 +441,10 @@ $('produce-button').addEventListener('click',async()=>{
     if(!result.stockAvailable) throw new Error('No puedes confirmar: inventario insuficiente.');
     const selectedProduct=$('finished-product-selector').value;
     const details=selectedProduct?'También aumentará la existencia del producto terminado vinculado.':'No se seleccionó producto terminado; solo se descontarán ingredientes.';
-    if(!confirm(`¿Confirmas ${result.desiredYield} piezas de ${result.recipeName}? Se descontarán ingredientes. ${details}`)) return;
+    if(!confirm(`¿Confirmas ${result.desiredYield} ${yieldLabel(result.yieldUnit)} de ${result.recipeName}? Se descontarán ingredientes. ${details}`)) return;
     const done=await post(`/api/recipes/${result.recipeId}/produce`,{desiredYield:result.desiredYield,productId:selectedProduct||null});
     await refresh();await window.PanikoFinishedProducts?.refresh?.();
+    document.dispatchEvent(new Event('paniko:production-saved'));
     resetCapacitySuggestion();
     notify(done.finishedProduct ? `Producción registrada: ingredientes descontados y ${done.desiredYield} piezas añadidas a ${done.finishedProduct.name}.` : `Producción confirmada (${done.id}). Solo se descontaron ingredientes: no seleccionaste un producto vinculado.`);
   }catch(e){notify(e.message,true);}
@@ -429,6 +480,58 @@ $('logout-button').addEventListener('click',async()=>{
 });
 let catalogLoaded=false;
 let catalogBusy=false;
+function catalogEditForm(record,owner){
+  const data=record.data||{},sourceItems=Array.isArray(data.ingredientes)?data.ingredientes:[];
+  const form=make('form',undefined,'form-stack catalog-edit-form');
+  const heading=make('h4','Completar y revisar receta original');
+  const help=make('p','Guardar pendiente conserva los datos aunque falten cantidades. Confirmar valida los datos necesarios para crear una ficha técnica. Ninguna opción descuenta inventario.','hint');
+  const nameLabel=make('label','Nombre de la receta');
+  const nameInput=make('input');nameInput.required=true;nameInput.maxLength=100;nameInput.value=data.nombre||record.title;
+  nameLabel.append(nameInput);
+  const yieldRow=make('div',undefined,'input-pair');
+  const yieldLabel=make('label','Rendimiento del lote');
+  const yieldInput=make('input');yieldInput.type='number';yieldInput.min='0.000001';yieldInput.max='1000000000';yieldInput.step='any';yieldInput.value=data.rendimiento?.cantidad??'';yieldInput.placeholder='Cantidad por confirmar';yieldLabel.append(yieldInput);
+  const yieldUnitLabel=make('label','Unidad del rendimiento');
+  const yieldUnit=make('select');
+  const yieldUnits=[...new Set([data.rendimiento?.unidad,'pieza','piezas','kg','g','l','ml'].filter(Boolean))];
+  for(const item of yieldUnits){const option=make('option',item);option.value=item;yieldUnit.append(option);}
+  yieldUnit.value=data.rendimiento?.unidad||'pieza';yieldUnitLabel.append(yieldUnit);yieldRow.append(yieldLabel,yieldUnitLabel);
+  const itemList=make('div',undefined,'catalog-edit-items');
+  const available=['g','kg','ml','l','pieza'];
+  function addSourceItem(source={}){
+    const row=make('div',undefined,'catalog-edit-item');
+    const name=make('input');name.type='text';name.required=true;name.maxLength=100;name.value=source.ingrediente||'';name.placeholder='Ingrediente';name.setAttribute('aria-label','Nombre del ingrediente');
+    const quantity=make('input');quantity.type='number';quantity.min='0.000001';quantity.max='1000000000';quantity.step='0.000001';quantity.value=source.cantidad??'';quantity.placeholder='Por confirmar';quantity.setAttribute('aria-label','Cantidad del ingrediente');
+    const unit=make('select');unit.setAttribute('aria-label','Unidad del ingrediente');
+    for(const u of [...new Set([source.unidad,...available].filter(Boolean))]){const option=make('option',u);option.value=u;unit.append(option);}
+    unit.value=source.unidad||'g';
+    const remove=make('button','Quitar','secondary');remove.type='button';remove.addEventListener('click',()=>row.remove());
+    row.append(name,quantity,unit,remove);itemList.append(row);
+  }
+  for(const item of sourceItems)addSourceItem(item);
+  const add=make('button','+ Añadir ingrediente','btn-soft');add.type='button';add.addEventListener('click',()=>addSourceItem());
+  const notesLabel=make('label','Observaciones');const notes=make('textarea');notes.maxLength=3000;notes.rows=3;notes.value=data.observaciones||'';notesLabel.append(notes);
+  const actionRow=make('div',undefined,'recipe-actions');
+  const draft=make('button','Guardar pendiente','btn-soft');draft.type='button';
+  const confirmButton=make('button','Confirmar datos','btn-primary');confirmButton.type='button';
+  const cancel=make('button','Cerrar','secondary');cancel.type='button';cancel.addEventListener('click',()=>form.remove());
+  async function save(confirm){
+    const items=[...itemList.children].map(row=>({name:row.children[0].value,quantity:row.children[1].value===''?null:Number(row.children[1].value),unit:row.children[2].value}));
+    if(!form.reportValidity()){notify('Revisa los campos marcados.',true);return;}
+    draft.disabled=true;confirmButton.disabled=true;
+    try{
+      await post(`/api/catalog/recipes/${data.id}/save`,{name:nameInput.value,
+        yieldQuantity:yieldInput.value===''?null:Number(yieldInput.value),yieldUnit:yieldUnit.value,
+        items,notes:notes.value,confirm});
+      catalogLoaded=false;await loadCatalog(true);
+      notify(confirm?'Receta confirmada. Ya puedes crear su ficha técnica.':'Cambios guardados como pendientes.');
+    }catch(error){notify(error.message,true);}finally{draft.disabled=false;confirmButton.disabled=false;}
+  }
+  draft.addEventListener('click',()=>save(false));confirmButton.addEventListener('click',()=>save(true));
+  actionRow.append(draft,confirmButton,cancel);
+  form.append(heading,help,nameLabel,yieldRow,make('h4','Ingredientes'),itemList,add,notesLabel,actionRow);
+  owner.append(form);
+}
 async function loadCatalog(force=false){
   if(!currentUser || (catalogLoaded&&!force) || catalogBusy)return;
   catalogBusy=true;
@@ -445,8 +548,7 @@ async function loadCatalog(force=false){
     const candidates=all.filter(record=>{
       const data=record.data||{};
       return record.kind==='Preparación'&&data.id&&data.estado==='confirmada'&&
-        !data.componentes?.length&&pieceUnits.includes(normalizeSearch(data.rendimiento?.unidad||''))&&
-        Number.isInteger(data.rendimiento?.cantidad)&&data.rendimiento.cantidad>0&&
+        !data.componentes?.length&&Boolean(normalizedCatalogYield(data.rendimiento))&&
         Array.isArray(data.ingredientes)&&data.ingredientes.length>0&&
         data.ingredientes.every(i=>Number.isFinite(i.cantidad)&&i.cantidad>0&&['g','kg','ml','l','pieza'].includes(i.unidad))&&
         !recipes.some(r=>normalizeSearch(r.name)===normalizeSearch(record.title));
@@ -458,7 +560,7 @@ async function loadCatalog(force=false){
         bulk.disabled=true;let created=0,errors=[];
         for(const record of candidates){
           try{
-            const result=await post(`/api/recipes/from-catalog/${record.data.id}`,{baseYield:record.data.rendimiento.cantidad});
+            const result=await post(`/api/recipes/from-catalog/${record.data.id}`,normalizedCatalogYield(record.data.rendimiento));
             if(!result.existing)created++;
           }catch(error){errors.push(record.title+': '+error.message);}
         }
@@ -466,7 +568,7 @@ async function loadCatalog(force=false){
         notify(`${created} fichas técnicas creadas.`+(errors.length?` ${errors.length} pendientes: ${errors.join('; ')}`:''),errors.length>0);
         void loadCatalog(true);
       });
-      root.append(bulk,make('p','Solo se incluyen recetas confirmadas con rendimiento en piezas e ingredientes completos.','hint'));
+      root.append(bulk,make('p','Solo se incluyen fórmulas confirmadas con rendimiento conocido en piezas, peso o volumen e ingredientes completos.','hint'));
     }
     for(const record of filtered){
       const data=record.data||{};
@@ -489,6 +591,14 @@ async function loadCatalog(force=false){
         for(const item of data.componentes)details.append(make('p',item.nombre||item.id||'Componente','muted'));
       }
       if(data.observaciones)details.append(make('p',`Notas: ${data.observaciones}`,'muted'));
+      if(record.kind==='Preparación'&&data.id){
+        const editOriginal=make('button',data.estado==='confirmada'?'Editar receta original':'Completar receta pendiente','btn-soft');
+        editOriginal.type='button';editOriginal.addEventListener('click',()=>{
+          if(details.querySelector('.catalog-edit-form')){details.querySelector('.catalog-edit-form').remove();return;}
+          catalogEditForm(record,details);
+        });
+        details.append(editOriginal);
+      }
       const already=recipes.some(r=>normalizeSearch(r.name)===normalizeSearch(record.title));
       const canConvert=record.kind==='Preparación' && data.id && /^[a-z][a-z0-9_]{0,99}$/.test(data.id);
       if(already){
@@ -506,27 +616,28 @@ async function loadCatalog(force=false){
         if(problems.length){
           details.append(make('p','Ficha pendiente: '+problems.join('; ')+'.','warning'));
         }else{
-          const yieldUnit=normalizeSearch(data.rendimiento?.unidad||'');
-          const unitMeansPieces=['pieza','piezas','panes','hogazas','baguettes','panques','bollos','galletas','unidades','porciones','croissants','rollos'].includes(yieldUnit);
-          const readyYield=unitMeansPieces&&Number.isInteger(data.rendimiento?.cantidad)&&data.rendimiento.cantidad>0;
-          let yieldField=null;
-          if(!readyYield){
-            const label=make('label','¿Cuántas piezas salen de este lote?');
-            const hint=make('small','Indica el número de piezas, no los gramos de masa.');
-            yieldField=make('input');yieldField.type='number';yieldField.min='1';yieldField.step='1';yieldField.max='1000000000';yieldField.required=true;yieldField.placeholder='Piezas del lote';
-            label.append(yieldField,hint);details.append(label);
+          const ready=normalizedCatalogYield(data.rendimiento);
+          let yieldField=null,unitField=null;
+          if(!ready){
+            const label=make('label','Rendimiento real del lote (no se calcula automáticamente)');
+            yieldField=make('input');yieldField.type='number';yieldField.min='1';yieldField.step='1';yieldField.max='1000000000';yieldField.placeholder='Cantidad confirmada';
+            unitField=make('select');
+            for(const [value,name] of [['pieza','Piezas'],['g','Gramos (g)'],['kg','Kilogramos (kg)'],['ml','Mililitros (ml)'],['l','Litros (l)']]){const o=make('option',name);o.value=value;unitField.append(o);}
+            unitField.value=['g','kg','ml','l'].includes(data.rendimiento?.unidad)?data.rendimiento.unidad:'g';
+            label.append(yieldField,unitField);details.append(label,make('p','También puedes completar el rendimiento desde «Editar receta original».','hint'));
           }
           const create=make('button','Crear ficha técnica escalable','btn-primary');create.type='button';
           create.addEventListener('click',async()=>{
-            const baseYield=readyYield?data.rendimiento.cantidad:Number(yieldField?.value);
-            if(!Number.isSafeInteger(baseYield)||baseYield<=0){notify('Especifica las piezas reales que produce el lote.',true);yieldField?.focus();return;}
-            const confirmation=`¿Crear la ficha de ${record.title} para ${baseYield} piezas? Se conectarán los ingredientes existentes. Si falta alguno, se registrará con existencia y costo cero. Esta acción NO descuenta inventario.`;
+            const quantity=ready?ready:normalizedCatalogYield({cantidad:Number(yieldField?.value),unidad:unitField?.value});
+            if(!quantity){notify('Indica un rendimiento real en piezas, g, kg, ml o l.',true);yieldField?.focus();return;}
+            const {baseYield,yieldUnit}=quantity;
+            const confirmation=`¿Crear la ficha de ${record.title} para ${baseYield} ${yieldLabel(yieldUnit)}? Se conectarán los ingredientes existentes. Si falta alguno, se registrará con existencia y costo cero. Esta acción NO descuenta inventario.`;
             if(!confirm(confirmation))return;
             create.disabled=true;
             try{
-              const result=await post(`/api/recipes/from-catalog/${data.id}`,{baseYield});
+              const result=await post(`/api/recipes/from-catalog/${data.id}`,{baseYield,yieldUnit});
               await refresh();catalogLoaded=false;
-              notify(result.existing?'La ficha ya existía; revisa su rendimiento.':`Ficha creada para ${baseYield} piezas. ${result.createdIngredients.length} ingredientes nuevos sin existencias.`);
+              notify(result.existing?'La ficha ya existía; revisa su rendimiento.':`Ficha creada para ${baseYield} ${yieldLabel(yieldUnit)}. ${result.createdIngredients.length} ingredientes nuevos sin existencias.`);
               void loadCatalog(true);
             }catch(error){notify(error.message,true);create.disabled=false;}
           });
@@ -570,7 +681,72 @@ async function loadFinances(){
       root.append(form);
     }
   }catch(error){root.replaceChildren(make('p',error.message,'warning'));}
+  await Promise.all([loadProductFinances(),loadFinanceDashboard()]);
 }
+
+async function loadProductFinances(){
+  if(currentUser?.role!=='admin')return;
+  const root=$('finance-product-list');
+  root.replaceChildren(make('p','Cargando costos y precios de productos…','muted'));
+  try{
+    const products=await api('/api/finance/products');
+    root.replaceChildren();
+    if(!products.length){root.append(make('p','Aún no hay productos terminados. Regístralos primero en Productos y ventas.','muted'));return;}
+    for(const item of products){
+      const form=make('form',undefined,'finance-cost-row');
+      const title=make('div');title.append(make('strong',item.name),make('small',`${item.stock} piezas disponibles`));
+      const costLabel=make('label','Costo de elaboración por pieza (MXN)');
+      const cost=make('input');cost.type='number';cost.step='0.01';cost.min='0';cost.placeholder='Sin definir';
+      cost.value=item.unitCost===null?'':String(item.unitCost);cost.setAttribute('aria-label',`Costo de elaboración de ${item.name}`);
+      costLabel.append(cost);
+      const priceLabel=make('label','Precio de venta por pieza (MXN)');
+      const price=make('input');price.type='number';price.step='0.01';price.min='0';price.placeholder='Sin definir';
+      price.value=item.salePrice===null?'':String(item.salePrice);price.setAttribute('aria-label',`Precio de venta de ${item.name}`);
+      priceLabel.append(price);
+      const save=make('button','Guardar costos y precio','btn-soft');save.type='submit';
+      const note=make('small','Ambos importes son opcionales. No cambian el inventario ni las ventas anteriores.','muted');
+      form.append(title,costLabel,priceLabel,save,note);
+      form.addEventListener('submit',async event=>{
+        event.preventDefault();if(!form.reportValidity())return;save.disabled=true;
+        try{
+          await post(`/api/finance/products/${item.id}/pricing`,{
+            unitCost:cost.value===''?null:Number(cost.value),
+            salePrice:price.value===''?null:Number(price.value)});
+          await Promise.all([loadProductFinances(),loadFinanceDashboard()]);await window.PanikoFinishedProducts?.refresh?.();
+          notify(`Costos y precio de ${item.name} actualizados.`);
+        }catch(error){notify(error.message,true);save.disabled=false;}
+      });
+      root.append(form);
+    }
+  }catch(error){root.replaceChildren(make('p',error.message,'warning'));}
+}
+
+async function loadFinanceDashboard(){
+  if(currentUser?.role!=='admin')return;
+  const info=$('finance-summary-note');info.textContent='Calculando resumen…';
+  try{
+    const days=Number($('finance-period').value),r=await api(`/api/finance/dashboard?days=${days}`);
+    for(const [id,value] of [['finance-revenue',r.knownRevenue],['finance-cogs',r.knownCostOfSales],['finance-expenses',r.expenses],['finance-gross',r.grossProfit],['finance-net',r.netProfit]])
+      $(id).textContent=value===null?'Sin calcular':money(value);
+    info.textContent=`${r.transactions} ventas desde el registro financiero · ${r.unitsSold} piezas. `+(r.legacySales?`${r.legacySales} ventas anteriores sin importe registrado. `:'')+(r.unpricedSales?`${r.unpricedSales} ventas sin precio. `:'')+(r.unknownCostSales?`${r.unknownCostSales} ventas sin costo. `:'')+r.note;
+    info.className='hint'+(r.complete?'':' warning');
+    const list=$('finance-recent-list');list.replaceChildren();
+    const entries=[...r.sales.map(s=>({when:s.soldAt,title:`Venta · ${s.productName}`,detail:`${s.quantity} piezas · ${s.unitPrice===null?'Precio sin definir':money(s.quantity*s.unitPrice)}${s.unitCost===null?' · costo pendiente':''}`})),
+      ...r.expenseList.map(e=>({when:e.expenseDate,title:`Gasto · ${e.category}`,detail:`${e.description} · ${money(e.amount)}`}))].sort((a,b)=>String(b.when).localeCompare(String(a.when))).slice(0,25);
+    if(!entries.length)list.append(make('p','Todavía no hay ventas o gastos nuevos en este periodo.','muted'));
+    for(const e of entries){const row=make('div',undefined,'finance-history-row');row.append(make('strong',e.title),make('small',e.detail),make('small',new Date(e.when).toLocaleDateString('es-MX')));list.append(row);}
+  }catch(e){info.textContent=e.message;info.className='hint warning';}
+}
+$('finance-period').addEventListener('change',loadFinanceDashboard);
+$('finance-expense-date').value=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
+$('finance-expense-form').addEventListener('submit',async event=>{
+  event.preventDefault();if(currentUser?.role!=='admin')return;
+  const f=event.currentTarget,save=f.querySelector('[type=submit]');save.disabled=true;try{
+    await post('/api/finance/expenses',{category:f.elements.category.value,description:f.elements.description.value,
+      amount:Number(f.elements.amount.value),expenseDate:f.elements.expenseDate.value});
+    f.elements.description.value='';f.elements.amount.value='';await loadFinanceDashboard();notify('Gasto guardado en el panel financiero.');
+  }catch(e){notify(e.message,true);}finally{save.disabled=false;}
+});
 
 async function initializePaniko(){
   addRecipeItem();showAuthUI(null,true);

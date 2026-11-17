@@ -13,10 +13,10 @@ function quantity(value,label='Cantidad',allowZero=false){
     throw new ValidationError(label+': número entero '+(allowZero?'no negativo':'mayor que cero')+' válido');
   return value;
 }
-function moneyOptional(value){
+function moneyOptional(value,label='Precio'){
   if(value===undefined||value===null||value==='')return null;
   if(typeof value!=='number'||!Number.isFinite(value)||value<0||value>9999999999.99||Math.abs(value*100-Math.round(value*100))>1e-6)
-    throw new ValidationError('Precio: número no negativo con máximo 2 decimales');
+    throw new ValidationError(label+': número no negativo con máximo 2 decimales');
   return value;
 }
 function categoryId(value){
@@ -98,6 +98,25 @@ function createFinishedProductStore(pool){
     }catch(e){throw dbError(e);}
     return {id,name,categoryId:cat,salePrice:price,minStock:min,operationalRecipeId:linked,active:raw.active};
   }
+  // Administración: costo de elaboración manual, separado del precio al público.
+  // Una consulta distinta evita que este dato aparezca en el catálogo operativo.
+  async function listFinancials(){
+    const [rows]=await pool.execute('SELECT id,name,stock,unit_cost,sale_price FROM finished_products ORDER BY name,id');
+    return rows.map(r=>({id:r.id,name:r.name,stock:Number(r.stock),
+      unitCost:r.unit_cost===null?null:Number(r.unit_cost),
+      salePrice:r.sale_price===null?null:Number(r.sale_price)}));
+  }
+  async function updateFinancials(id,raw){
+    if(!isUUID(id))throw new ValidationError('Producto no válido');
+    const unitCost=moneyOptional(raw?.unitCost,'Costo unitario');
+    const salePrice=moneyOptional(raw?.salePrice,'Precio de venta');
+    try{
+      const [result]=await pool.execute('UPDATE finished_products SET unit_cost=?,sale_price=? WHERE id=?',
+        [unitCost,salePrice,id]);
+      if(!result.affectedRows)throw new ValidationError('Producto no encontrado',404);
+    }catch(e){throw dbError(e);}
+    return {id,unitCost,salePrice};
+  }
   async function movements(){
     const [rows]=await pool.query(`SELECT m.id,m.product_id,p.name AS product_name,m.movement_type,m.quantity,m.stock_before,m.stock_after,m.reason,m.batch_id,m.created_at
       FROM finished_product_movements m JOIN finished_products p ON p.id=m.product_id ORDER BY m.created_at DESC,m.id DESC LIMIT 200`);
@@ -111,7 +130,7 @@ function createFinishedProductStore(pool){
     const qty=quantity(raw?.quantity);
     const reason=text(raw?.reason,'Motivo');
     return tx(pool,async c=>{
-      const [rows]=await c.execute('SELECT id,name,stock,active FROM finished_products WHERE id=? FOR UPDATE',[id]);
+      const [rows]=await c.execute('SELECT id,name,stock,active,sale_price,unit_cost FROM finished_products WHERE id=? FOR UPDATE',[id]);
       if(!rows.length)throw new ValidationError('Producto no encontrado',404);
       if(!rows[0].active)throw new ValidationError('No se permiten movimientos de un producto inactivo',409);
       const before=Number(rows[0].stock);
@@ -123,6 +142,11 @@ function createFinishedProductStore(pool){
       const movementId=crypto.randomUUID();
       await c.execute('INSERT INTO finished_product_movements (id,product_id,movement_type,quantity,stock_before,stock_after,reason) VALUES (?,?,?,?,?,?,?)',
         [movementId,id,type,qty,before,after,reason]);
+      // Congelar importes al vender: cambiar los precios mañana NO reescribe las ventas de hoy.
+      // Un precio/costo no capturado permanece NULL, nunca se inventa un importe.
+      if(type==='venta')await c.execute(`INSERT INTO sale_financial_snapshots
+        (movement_id,product_id,product_name,quantity,unit_price,unit_cost) VALUES (?,?,?,?,?,?)`,
+        [movementId,id,rows[0].name,qty,rows[0].sale_price??null,rows[0].unit_cost??null]);
       return {id:movementId,productId:id,name:rows[0].name,type,quantity:qty,before,after,reason};
     });
   }
@@ -152,6 +176,6 @@ function createFinishedProductStore(pool){
       return{source:rows.length,created,already};
     });
   }
-  return{listCategories,createCategory,listProducts,createProduct,updateProduct,movements,recordMovement,importCatalog};
+  return{listCategories,createCategory,listProducts,createProduct,updateProduct,listFinancials,updateFinancials,movements,recordMovement,importCatalog};
 }
 module.exports={createFinishedProductStore,text,quantity,moneyOptional,categoryId,recipeId};

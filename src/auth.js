@@ -4,6 +4,7 @@ const {promisify}=require('node:util');
 const scrypt=promisify(crypto.scrypt);
 const SCRYPT={N:32768,r:8,p:1,maxmem:64*1024*1024};
 const HOURS=8;
+const {editCatalogRecipe,manualCatalogHash}=require('./catalog-edit');
 function userName(value){
  if(typeof value!=='string'||!/^[a-zA-Z0-9_.-]{3,50}$/.test(value))throw Error('Usuario inválido: usa 3 a 50 letras, números, punto, guion o guion bajo');
  return value.toLowerCase();
@@ -46,6 +47,21 @@ function makeAuth(pool){
   return rows.length?{id:rows[0].id,username:rows[0].username,role:rows[0].role}:null;
  }
  async function logout(token){if(token)await pool.execute('DELETE FROM auth_sessions WHERE token_hash=?',[tokenHash(token)]);}
+ async function saveCatalogRecipe(id,input){
+    if(typeof id!=='string'||!/^[a-z][a-z0-9_]{0,99}$/.test(id))throw Error('Identificador de receta inválido');
+    const conn=await pool.getConnection();
+    try{
+      await conn.beginTransaction();
+      const [rows]=await conn.execute('SELECT raw_data FROM private_catalog_recipes WHERE catalog_id=? FOR UPDATE',[id]);
+      if(!rows.length){const {ValidationError}=require('./domain');throw new ValidationError('Receta original no encontrada',404);}
+      const original=typeof rows[0].raw_data==='string'?JSON.parse(rows[0].raw_data):rows[0].raw_data;
+      const updated=editCatalogRecipe(original,input);
+      await conn.execute('UPDATE private_catalog_recipes SET title=?,review_status=?,raw_data=?,source_hash=? WHERE catalog_id=?',
+        [updated.nombre,updated.estado,JSON.stringify(updated),manualCatalogHash(updated),id]);
+      await conn.commit();
+      return {title:updated.nombre,status:updated.estado,data:updated};
+    }catch(e){try{await conn.rollback();}catch(_){}throw e;}finally{conn.release();}
+  }
  async function getCatalogRecipe(id){
   if(typeof id!=='string'||!/^[a-z][a-z0-9_]{0,99}$/.test(id))return null;
   const [rows]=await pool.execute('SELECT raw_data FROM private_catalog_recipes WHERE catalog_id=? LIMIT 1',[id]);
@@ -60,6 +76,6 @@ function makeAuth(pool){
   const parse=value=>typeof value==='string'?JSON.parse(value):value;
   return {recetas:recetas.map(r=>({title:r.title,status:r.review_status,data:parse(r.raw_data)})),productos:productos.map(r=>({title:r.title,data:parse(r.raw_data)})),rellenos:rellenos.map(r=>({title:r.title,type:r.filling_kind,data:parse(r.raw_data)}))};
  }
- return {createUser,login,userForToken,logout,privateCatalog,getCatalogRecipe};
+ return {createUser,login,userForToken,logout,privateCatalog,getCatalogRecipe,saveCatalogRecipe};
 }
 module.exports={makeAuth,userName,validatePassword,passwordHash,getCookieToken,cookieForToken,expiredCookie};

@@ -53,7 +53,7 @@ test('PAN-03 muestra aviso si la fórmula no tiene harina, sin inventar porcenta
   assert.match(out.note,/harina/i);
 });
 
-test('PAN-04 unidades sin equivalencia de peso no generan porcentajes falsos',()=>{
+test('PAN-04 leche líquida usa densidad conocida; nuez sin equivalencia conserva aviso',()=>{
   const ingredients=[
     {id:'harina',name:'Harina',unit:'g',stock:0,costPerUnit:0},
     {id:'leche',name:'Leche',unit:'ml',stock:0,costPerUnit:0},
@@ -62,7 +62,7 @@ test('PAN-04 unidades sin equivalencia de peso no generan porcentajes falsos',()
     {ingredientId:'harina',quantity:1000},{ingredientId:'leche',quantity:200},{ingredientId:'nuez',quantity:10}
   ]},ingredients);
   assert.equal(out.available,true);assert.equal(out.lines[0].percentage,100);
-  assert.equal(out.lines[1].percentage,null);assert.equal(out.lines[1].weightGrams,null);
+  assert.equal(out.lines[1].percentage,20.6);assert.equal(out.lines[1].weightGrams,206);
   assert.equal(out.lines[2].percentage,null);
 });
 

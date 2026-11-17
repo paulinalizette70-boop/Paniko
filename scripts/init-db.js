@@ -13,6 +13,10 @@ async function main(){
       const sql=fs.readFileSync(path.join(__dirname,'..','sql',schema),'utf8').replace(/^--.*$/gm,'');
       for(const statement of sql.split(';').map(s=>s.trim()).filter(Boolean)) await connection.query(statement);
     }
+    const {migrate}=require('./migrate-finance-and-starter');
+    await migrate(connection);
+    await require('./migrate-calendar-yields-081').migrate(connection);
+    await require('./migrate-starter-inventory-082').migrate(connection);
     console.log(`Esquema MySQL listo: ${database}`);
   }finally{await connection.end();}
 }

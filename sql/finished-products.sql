@@ -15,13 +15,15 @@ CREATE TABLE IF NOT EXISTS finished_products (
  stock INT NOT NULL DEFAULT 0,
  min_stock INT NULL,
  sale_price DECIMAL(14,2) NULL,
+ unit_cost DECIMAL(14,2) NULL,
  active TINYINT(1) NOT NULL DEFAULT 1,
  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
  CONSTRAINT fk_fp_category FOREIGN KEY(category_id) REFERENCES finished_product_categories(id),
  CONSTRAINT fk_fp_recipe FOREIGN KEY(operational_recipe_id) REFERENCES recipes(id) ON DELETE SET NULL,
  CONSTRAINT ck_fp_stock CHECK (stock >= 0),
  CONSTRAINT ck_fp_min CHECK (min_stock IS NULL OR min_stock >= 0),
- CONSTRAINT ck_fp_price CHECK (sale_price IS NULL OR sale_price >= 0)
+ CONSTRAINT ck_fp_price CHECK (sale_price IS NULL OR sale_price >= 0),
+ CONSTRAINT ck_fp_unit_cost CHECK (unit_cost IS NULL OR unit_cost >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS finished_product_movements (

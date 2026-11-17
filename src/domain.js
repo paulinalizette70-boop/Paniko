@@ -45,12 +45,15 @@ function convertQuantity(quantity, sourceUnit, targetUnit) {
 
 
 // Equivalencias de trabajo declaradas por la panadería: 1 huevo = 50 g sin cáscara.
-// Para Agua, 1 g ≈ 1 ml (aproximación culinaria). No aplicar a otros ingredientes.
+// Para Agua, 1 g ≈ 1 ml; para leche líquida de vaca 1 ml ≈ 1.03 g.
+// Esta densidad de leche es una aproximación culinaria, no sirve para leche en polvo/condensada/evaporada.
 const EGG_GRAMS_PER_PIECE = 50;
+const MILK_GRAMS_PER_ML = 1.03;
 function ingredientKind(name) {
   const key=String(name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase().replace(/\s+/g,' ');
   if (/^huevos?(?: (?:grandes?|medianos?|chicos?|enteros?))?$/.test(key)) return 'egg';
   if (/^agua(?: (?:potable|purificada|filtrada))?$/.test(key)) return 'water';
+  if (/^leche(?: (?:entera|tibia|fria|liquida|fresca|pasteurizada|deslactosada|descremada|semidescremada|de vaca|sin lactosa))*$/.test(key)) return 'milk';
   return null;
 }
 function convertIngredientQuantity(quantity,sourceUnit,targetUnit,ingredientName){
@@ -67,12 +70,16 @@ function convertIngredientQuantity(quantity,sourceUnit,targetUnit,ingredientName
     factors={g:1,kg:1000,pieza:EGG_GRAMS_PER_PIECE};
   else if(kind==='water'&&waterUnits.includes(sourceUnit)&&waterUnits.includes(targetUnit))
     factors={g:1,kg:1000,ml:1,l:1000};
+  else if(kind==='milk'&&waterUnits.includes(sourceUnit)&&waterUnits.includes(targetUnit))
+    factors={g:1,kg:1000,ml:MILK_GRAMS_PER_ML,l:1000*MILK_GRAMS_PER_ML};
   else throw new ValidationError(`Unidades incompatibles: no hay equivalencia de ${sourceUnit} a ${targetUnit} para ${ingredientName||'este ingrediente'}`);
   numberField(quantity,'Cantidad',{positive:true});
   const raw=quantity*factors[sourceUnit]/factors[targetUnit];
   const rounded=Math.round(raw*1e6)/1e6;
+  // La densidad de leche produce cocientes decimales no terminantes: redondear SOLO la salida
+  // a 6 decimales, sin aceptar entradas con más precisión ni cantidades que redondeen a cero.
   if(!Number.isFinite(raw)||raw>1e9||rounded<=0||
-     Math.abs(raw-rounded)>1e-10||Math.abs(quantity-Math.round(quantity*1e6)/1e6)>1e-10)
+     (kind!=='milk'&&Math.abs(raw-rounded)>1e-10)||Math.abs(quantity-Math.round(quantity*1e6)/1e6)>1e-10)
     throw new ValidationError('Cantidad fuera de precisión máxima de 6 decimales');
   return rounded;
 }
@@ -93,6 +100,8 @@ function validateRecipe(raw, ingredients) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new ValidationError('Receta inválida');
   const name = textField(raw.name, 'Nombre de receta');
   const baseYield = numberField(raw.baseYield, 'Rendimiento base', {positive: true, integer: true});
+  const yieldUnit = raw.yieldUnit ?? 'pieza';
+  if(!['pieza','g','ml'].includes(yieldUnit))throw new ValidationError('El rendimiento debe expresarse en piezas, gramos o mililitros');
   if (!Array.isArray(raw.items) || !raw.items.length || raw.items.length > 100) {
     throw new ValidationError('Agrega al menos un ingrediente a la receta');
   }
@@ -106,7 +115,7 @@ function validateRecipe(raw, ingredients) {
     const quantity=convertIngredientQuantity(item.quantity,item.unit ?? ingredient.unit,ingredient.unit,ingredient.name);
     return {ingredientId:item.ingredientId,quantity};
   });
-  return {name, baseYield, items};
+  return {name, baseYield, yieldUnit, items};
 }
 
 
@@ -124,6 +133,8 @@ function weightInGrams(quantity,unit,name){
   const kind=ingredientKind(name);
   if(kind==='water'&&unit==='ml')return quantity;
   if(kind==='water'&&unit==='l')return quantity*1000;
+  if(kind==='milk'&&unit==='ml')return quantity*MILK_GRAMS_PER_ML;
+  if(kind==='milk'&&unit==='l')return quantity*1000*MILK_GRAMS_PER_ML;
   if(kind==='egg'&&unit==='pieza')return quantity*EGG_GRAMS_PER_PIECE;
   return null;
 }
@@ -198,6 +209,7 @@ function scaleRecipe(recipe, ingredients, desiredYield) {
     recipeId: recipe.id,
     recipeName: recipe.name,
     desiredYield,
+    yieldUnit:recipe.yieldUnit||'pieza',
     factor,
     bakers,
     lines,
@@ -209,4 +221,4 @@ function scaleRecipe(recipe, ingredients, desiredYield) {
   };
 }
 
-module.exports = {ValidationError, validateIngredient, validateRecipe, scaleRecipe, maximumProducible, convertQuantity, convertIngredientQuantity, EGG_GRAMS_PER_PIECE, bakerPercentages, UNITS};
+module.exports = {ValidationError, validateIngredient, validateRecipe, scaleRecipe, maximumProducible, convertQuantity, convertIngredientQuantity, EGG_GRAMS_PER_PIECE, MILK_GRAMS_PER_ML, bakerPercentages, UNITS};
