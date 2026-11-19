@@ -25,7 +25,7 @@
     if(selected!==undefined&&selected!==null)s.value=selected;
     return s;
   };
-  const fmtMoney=n=>n===null?'Precio pendiente':new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(n);
+  const fmtMoney=n=>n==null||!Number.isFinite(n)?'Precio pendiente':new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(n);
   let currentUser=null,products=[],categories=[],recipes=[],movements=[];
   let previousProductionRecipeId=null;
   let hadLinkedProducts=false;
@@ -140,7 +140,8 @@
         const low=p.minStock!==null&&p.stock<=p.minStock;
         const count=el('span',`${p.stock} pieza${p.stock===1?'':'s'}${low?' · stock bajo':''}`,low?'finished-warning':'finished-sale');
         set(header,name,count);card.append(header);
-        const subtitle=el('p',`${fmtMoney(p.salePrice)} · ${p.active?'Activo':'Inactivo'} · Stock mínimo: ${p.minStock===null?'sin definir':p.minStock}`,'muted');card.append(subtitle);
+        const priceText=isAdmin()?fmtMoney(p.salePrice):'Precio reservado a administración';
+        const subtitle=el('p',`${priceText} · ${p.active?'Activo':'Inactivo'} · Stock mínimo: ${p.minStock===null?'sin definir':p.minStock}`,'muted');card.append(subtitle);
         {
           const details=el('details');set(details,el('summary','Editar producto'));
           const form=el('form');form.className='finished-editor';
