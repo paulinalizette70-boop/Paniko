@@ -24,6 +24,8 @@ function createApp({store, auth = null, products = null, finance = null, sourdou
   const assets = {
     '/': ['index.html', 'text/html; charset=utf-8'],
     '/styles.css': ['styles.css', 'text/css; charset=utf-8'],
+    '/design.css': ['design.css', 'text/css; charset=utf-8'],
+    '/design.js': ['design.js', 'application/javascript; charset=utf-8'],
     '/app.js': ['app.js', 'application/javascript; charset=utf-8'],
     '/products.js': ['products.js', 'application/javascript; charset=utf-8'],
     '/sourdough.js': ['sourdough.js', 'application/javascript; charset=utf-8'],
