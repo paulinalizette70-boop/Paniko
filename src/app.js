@@ -301,7 +301,7 @@ function createApp({store, auth = null, products = null, finance = null, sourdou
         if(preparations && (await preparations.list()).some(p=>p.recipeId===produce[1]))
           throw new ValidationError('Esta receta es una subpreparación: registra los gramos obtenidos desde Producción por formatos para actualizar inventario',409);
         const body = await bodyAsJson(req);
-        return respond( 201, await store.confirmProduction(produce[1], body.desiredYield, {productId:body.productId||null}));
+        return respond( 201, await store.confirmProduction(produce[1], body.desiredYield, {productId:body.productId||null,operationId:body.operationId||null}));
       }
       respond(404, {error: 'Ruta no encontrada'});
     } catch (error) {
