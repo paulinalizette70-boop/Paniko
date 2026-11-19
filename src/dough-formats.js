@@ -3,6 +3,7 @@
 // Los complementos son existencias reales (costra, mermelada, queso crema...),
 // NO se vuelve a ejecutar su subreceta al consumirlos aquí.
 const crypto=require('node:crypto');
+const {withRequest}=require('./idempotency');
 const {ValidationError,convertIngredientQuantity}=require('./domain');
 const {roundQuantity}=require('./inventory');
 const UUID=/^[a-f\d]{8}-(?:[a-f\d]{4}-){3}[a-f\d]{12}$/i;
@@ -218,6 +219,8 @@ function createDoughFormatStore(pool){
     const conn=await pool.getConnection();
     try{
       await conn.beginTransaction();
+      const result=await withRequest(conn,raw?.operationId,'dough-production',
+        {recipeId:raw?.recipeId,formats:raw?.formats},async()=>{
       const {plan,ingredients}=await getPlan(raw,conn,true);
       if(!plan.stockAvailable)throw new ValidationError('Faltan ingredientes: '+plan.consumptions.filter(x=>!x.sufficient).map(x=>x.name).join(', '),409);
       // Bloquear todos los productos en orden estable, revalidar vinculación y stock.
@@ -250,10 +253,11 @@ function createDoughFormatStore(pool){
         await conn.execute(`INSERT INTO production_batch_formats (batch_id,product_id,product_name,pieces,dough_grams_per_piece,dough_total_grams)
           VALUES (?,?,?,?,?,?)`,[batchId,item.productId,item.productName,item.pieces,item.doughGramsPerPiece,item.doughGrams]);
       }
-      await conn.commit();
       return {id:batchId,recipeId:plan.recipeId,recipeName:plan.recipeName,doughGrams:plan.doughGrams,totalPieces:plan.totalPieces,
         finishedProducts:finished.map(x=>({id:x.productId,name:x.productName,quantity:x.pieces,before:x.before,after:x.after})),
         estimatedTotalCost:plan.estimatedTotalCost};
+      });
+      await conn.commit();return result;
     }catch(err){await conn.rollback();throw err;}finally{conn.release();}
   }
   return {list,setBase,setFormat,createProduct,preview,confirm};
