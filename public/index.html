@@ -3,10 +3,11 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <meta name="theme-color" content="#f8f6f1"/>
+  <meta name="theme-color" content="#294638"/>
   <meta name="description" content="Paniko: inventario, recetas y producción para panaderías artesanales."/>
   <title>Paniko · Mi panadería</title>
   <link rel="stylesheet" href="/styles.css"/>
+  <link rel="stylesheet" href="/design.css"/>
 </head>
 <body>
   <svg xmlns="http://www.w3.org/2000/svg" class="svg-sprite" aria-hidden="true" focusable="false">
@@ -47,8 +48,9 @@
         <div class="sidebar-top">
           <div class="logo-mark" aria-hidden="true">✳</div>
           <div><div class="logo-text">paniko<span>.</span></div><div class="logo-caption">MI PANADERÍA</div></div>
+          <button id="mobile-menu-toggle" class="mobile-menu-toggle" type="button" aria-label="Abrir menú de navegación" aria-controls="main-navigation" aria-expanded="false">☰</button>
         </div>
-        <nav class="nav-list" aria-label="Secciones">
+        <nav id="main-navigation" class="nav-list" aria-label="Secciones">
           <button class="nav-link active" type="button" data-view-target="dashboard" aria-current="page"><svg class="icon"><use href="#i-home"/></svg><span>Inicio</span></button>
           <button class="nav-link" type="button" data-view-target="production"><svg class="icon"><use href="#i-bread"/></svg><span>Producción</span></button>
           <button class="nav-link" type="button" data-view-target="ingredients"><svg class="icon"><use href="#i-box"/></svg><span>Ingredientes</span></button>
@@ -64,16 +66,36 @@
       <div class="main-column">
         <header class="topbar">
           <div class="breadcrumb"><span>MI PANADERÍA</span><svg class="icon small"><use href="#i-chevron"/></svg><strong id="current-view-name">Inicio</strong></div>
+          <div class="topbar-tools">
+            <button id="workspace-search" class="workspace-search" type="button" aria-haspopup="dialog" aria-controls="paniko-command" aria-label="Buscar secciones de Paniko">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg><span>Buscar sección</span><kbd>Ctrl K</kbd>
+            </button>
+          </div>
           <div id="auth-bar" class="auth-bar" hidden><span class="avatar" aria-hidden="true">P</span><span id="auth-user"></span><button id="logout-button" class="text-button" type="button">Salir</button></div>
         </header>
         <main class="content-area" id="main-content">
           <div id="notification" class="toast" role="status" aria-live="polite" hidden></div>
           <section class="view" data-view="dashboard" aria-labelledby="dashboard-title">
             <div class="welcome-banner">
-              <div><span class="eyebrow light">TU PANADERÍA, EN ORDEN</span><h1 id="dashboard-title">Todo empieza<br/>con buen pan.</h1><p>Consulta lo importante y continúa con tu día, sin complicaciones.</p>
+              <div><div class="hero-meta"><span id="hero-greeting">Bienvenida a Paniko</span><span class="hero-divider"></span><span id="hero-day">Tu taller de panadería</span></div>
+              <span class="eyebrow light">PAN ARTESANAL · TODO EN SU LUGAR</span>
+              <h1 id="dashboard-title">Todo empieza<br/>con <em>buen pan.</em></h1>
+              <p>Tu inventario, tus recetas y cada tanda en un mismo lugar. Menos vueltas, más manos a la masa.</p>
               <button class="btn-cream" type="button" data-view-target="production">Comenzar producción <svg class="icon"><use href="#i-arrow"/></svg></button></div>
-              <div class="banner-art" aria-hidden="true"><span class="sun-circle"></span><span class="bread-illustration">✳</span><span class="banner-stamp">HECHO CON<br/>CARIÑO</span></div>
+              <div class="banner-art" aria-hidden="true"><span class="sun-circle"></span>
+                <svg class="hero-bread" viewBox="0 0 390 310" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                  <ellipse cx="197" cy="259" rx="144" ry="23" fill="#19382c" opacity=".23"/>
+                  <g class="hero-wheat"><path d="M59 224 Q30 176 51 105 M47 152 Q28 141 28 122 M48 158 Q66 144 66 123 M51 135 Q37 121 39 104 M53 127 Q68 115 69 100 M317 223 Q353 168 335 110 M340 166 Q358 149 359 132 M340 152 Q322 140 321 125 M338 132 Q357 116 358 97 M336 124 Q321 110 324 94"/></g>
+                  <path class="hero-loaf-crust" d="M70 183C64 107 123 69 182 75C247 60 304 106 314 173C323 219 282 251 194 253C119 255 73 238 70 183Z"/>
+                  <path class="hero-loaf-body" d="M80 168C79 115 122 85 182 86C244 74 291 110 303 163C313 207 272 234 192 239C123 242 85 219 80 168Z"/>
+                  <path d="M84 199Q191 253 301 195" fill="none" stroke="#c58755" stroke-width="12" opacity=".65"/>
+                  <path class="hero-loaf-cut" d="M137 121Q122 149 142 166M193 105Q180 134 201 151M245 126Q238 149 253 168" fill="none"/>
+                  <path d="M84 173C88 115 130 83 182 88" fill="none" stroke="#f4d7a2" stroke-width="3" opacity=".7"/>
+                </svg>
+                <span class="banner-stamp">HECHO CON<br/>CARIÑO</span>
+              </div>
             </div>
+            <div class="dashboard-intro-line"><span class="today-line"><span class="today-dot"></span><strong id="paniko-today">Hoy</strong><span>· Un día a la vez, un pan a la vez.</span></span><span class="tiny muted" id="paniko-dashboard-status" role="status" aria-live="polite">Tu espacio de trabajo está listo.</span></div>
             <div class="section-heading"><div><span class="eyebrow">DE UN VISTAZO</span><h2>Así va tu panadería</h2></div><span class="heading-note">Información de tu inventario actual</span></div>
             <div class="stats-grid">
               <div class="stat-card"><span class="stat-icon accent-olive"><svg class="icon"><use href="#i-box"/></svg></span><div><span class="stat-label">Ingredientes registrados</span><strong id="dashboard-ingredients">—</strong><small>En tu almacén</small></div></div>
@@ -276,11 +298,25 @@
       </div>
     </div>
   </div>
+  <div id="paniko-command" class="command-shell" hidden>
+    <div class="command-backdrop" data-command-close></div>
+    <section class="command-panel" role="dialog" aria-modal="true" aria-labelledby="paniko-command-title" aria-describedby="paniko-command-help">
+      <h2 id="paniko-command-title" class="visually-hidden">Ir a una sección de Paniko</h2>
+      <div class="command-header">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg>
+        <input id="paniko-command-input" class="command-input" type="search" placeholder="¿A dónde vamos?" autocomplete="off" aria-label="Buscar sección"/>
+        <button id="paniko-command-close" class="command-close" type="button" aria-label="Cerrar búsqueda">Esc</button>
+      </div>
+      <div id="paniko-command-results" class="command-results" aria-label="Secciones encontradas"></div>
+      <div class="command-footer" id="paniko-command-help">Usa ↑ ↓ para moverte, Enter para abrir y Esc para cerrar.</div>
+    </section>
+  </div>
   <script src="/app.js" defer></script>
   <script src="/products.js" defer></script>
   <script src="/starter-status.js" defer></script>
   <script src="/sourdough.js" defer></script>
   <script src="/calendar.js" defer></script>
   <script src="/dough.js" defer></script>
+  <script src="/design.js" defer></script>
 </body>
 </html>
