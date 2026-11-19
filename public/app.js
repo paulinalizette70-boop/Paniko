@@ -388,9 +388,13 @@ $('adjust-stock-form').addEventListener('submit',async event=>{
     form.elements.newStock.value='';form.elements.reason.value='';await refresh();notify('Existencia ajustada. Movimiento registrado.');
   }catch(error){notify(error.message,true);}
 });
+let productionInFlight=false;
+let pendingProduction=null;
+let productionPreviewAvailable=false;
 function renderPreview(result) {
   const container=$('scale-results');container.replaceChildren();
-  $('produce-button').disabled=!result.stockAvailable;
+  productionPreviewAvailable=Boolean(result.stockAvailable);
+  $('produce-button').disabled=!result.stockAvailable||productionInFlight;
   container.append(make('p', `${result.recipeName} · ${result.desiredYield} ${yieldLabel(result.yieldUnit)}`+(currentUser?.role==='admin'?` · costo estimado ${money(result.estimatedTotalCost)}`:'')));
   container.append(make('p', `Capacidad con existencias actuales: hasta ${result.maxProducible} ${yieldLabel(result.yieldUnit)}.`, result.maxProducible>0?'good':'warning'));
   if(result.limitingIngredients?.length)container.append(make('p', `Insumo(s) limitante(s): ${result.limitingIngredients.join(', ')}`, 'muted'));
@@ -421,6 +425,7 @@ async function selectedPreview(){
   return result;
 }
 function resetCapacitySuggestion(){
+  productionPreviewAvailable=false;
   const button=$('max-production-button');
   button.disabled=true;delete button.dataset.maximum;delete button.dataset.recipeId;
   $('produce-button').disabled=true;
@@ -451,18 +456,27 @@ $('scale-form').addEventListener('submit', async(event)=>{
   event.preventDefault();try{await selectedPreview();notify('Vista previa calculada. No se modificó el inventario.');}catch(e){notify(e.message,true);}
 });
 $('produce-button').addEventListener('click',async()=>{
+  if(productionInFlight)return;
+  productionInFlight=true;
+  $('produce-button').disabled=true;
   try {
     const result=await selectedPreview();
     if(!result.stockAvailable) throw new Error('No puedes confirmar: inventario insuficiente.');
     const selectedProduct=$('finished-product-selector').value;
     const details=selectedProduct?'También aumentará la existencia del producto terminado vinculado.':'No se seleccionó producto terminado; solo se descontarán ingredientes.';
     if(!confirm(`¿Confirmas ${result.desiredYield} ${yieldLabel(result.yieldUnit)} de ${result.recipeName}? Se descontarán ingredientes. ${details}`)) return;
-    const done=await post(`/api/recipes/${result.recipeId}/produce`,{desiredYield:result.desiredYield,productId:selectedProduct||null});
+    const payload={desiredYield:result.desiredYield,productId:selectedProduct||null};
+    const signature=JSON.stringify({recipeId:result.recipeId,...payload});
+    if(!pendingProduction||pendingProduction.signature!==signature)
+      pendingProduction={signature,operationId:crypto.randomUUID()};
+    const done=await post(`/api/recipes/${result.recipeId}/produce`,{...payload,operationId:pendingProduction.operationId});
+    pendingProduction=null;
     await refresh();await window.PanikoFinishedProducts?.refresh?.();
     document.dispatchEvent(new Event('paniko:production-saved'));
     resetCapacitySuggestion();
     notify(done.finishedProduct ? `Producción registrada: ingredientes descontados y ${done.desiredYield} piezas añadidas a ${done.finishedProduct.name}.` : `Producción confirmada (${done.id}). Solo se descontaron ingredientes: no seleccionaste un producto vinculado.`);
   }catch(e){notify(e.message,true);}
+  finally{productionInFlight=false;$('produce-button').disabled=!productionPreviewAvailable;}
 });
 function showAuthUI(user,required){
   $('workspace').hidden=Boolean(required&&!user);
