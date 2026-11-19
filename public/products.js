@@ -192,13 +192,22 @@
           const reason=input('text','reason','',{required:'',maxlength:150,placeholder:'Motivo de este movimiento'});
           const save=el('button','Registrar movimiento');save.type='submit';
           set(form,label('Tipo de movimiento',type),label('Piezas',qty),label('Motivo',reason),save);
+          let submittingMovement=false,pendingMovement=null;
           form.addEventListener('submit',async e=>{
             e.preventDefault();
+            if(submittingMovement)return;
             if(type.value==='produccion_manual'&&!confirm('Esta entrada suma piezas terminadas, pero NO descuenta ingredientes. ¿Continuar?'))return;
+            const payload={type:type.value,quantity:Number(qty.value),reason:reason.value};
+            const signature=JSON.stringify(payload);
+            if(!pendingMovement||pendingMovement.signature!==signature)
+              pendingMovement={signature,operationId:crypto.randomUUID()};
+            submittingMovement=true;save.disabled=true;
             try{
-              const result=await post(`/api/products/${p.id}/movements`,{type:type.value,quantity:Number(qty.value),reason:reason.value});
+              const result=await post(`/api/products/${p.id}/movements`,{...payload,operationId:pendingMovement.operationId});
+              pendingMovement=null;
               await refresh();status(`${p.name}: ${result.before} → ${result.after} piezas.`);
             }catch(err){status(err.message,true);}
+            finally{submittingMovement=false;save.disabled=false;}
           });
           box.append(form);card.append(box);
         } else {
