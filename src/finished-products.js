@@ -1,5 +1,6 @@
 'use strict';
 const crypto=require('node:crypto');
+const {withRequest}=require('./idempotency');
 const {ValidationError}=require('./domain');
 
 const TYPES=['produccion_manual','venta','merma','ajuste_entrada','ajuste_salida'];
@@ -129,7 +130,8 @@ function createFinishedProductStore(pool){
     if(!TYPES.includes(type))throw new ValidationError('Tipo de movimiento inválido');
     const qty=quantity(raw?.quantity);
     const reason=text(raw?.reason,'Motivo');
-    return tx(pool,async c=>{
+    return tx(pool,async c=>withRequest(c,raw?.operationId,'finished-movement',
+      {productId:id,type,quantity:qty,reason},async()=>{
       const [rows]=await c.execute('SELECT id,name,stock,active,sale_price,unit_cost FROM finished_products WHERE id=? FOR UPDATE',[id]);
       if(!rows.length)throw new ValidationError('Producto no encontrado',404);
       if(!rows[0].active)throw new ValidationError('No se permiten movimientos de un producto inactivo',409);
@@ -148,7 +150,7 @@ function createFinishedProductStore(pool){
         (movement_id,product_id,product_name,quantity,unit_price,unit_cost) VALUES (?,?,?,?,?,?)`,
         [movementId,id,rows[0].name,qty,rows[0].sale_price??null,rows[0].unit_cost??null]);
       return {id:movementId,productId:id,name:rows[0].name,type,quantity:qty,before,after,reason};
-    });
+    }));
   }
   async function importCatalog(){
     return tx(pool,async c=>{

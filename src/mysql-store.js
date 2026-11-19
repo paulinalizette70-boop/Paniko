@@ -1,5 +1,6 @@
 'use strict';
 const crypto = require('node:crypto');
+const {withRequest}=require('./idempotency');
 const {promoteCatalogRecipe} = require('./catalog-to-recipe');
 const {ValidationError, validateIngredient, validateRecipe, scaleRecipe} = require('./domain');
 const {stockEntry, stockExit, stockAdjustment, validateProduction, safeStockSum, roundQuantity} = require('./inventory');
@@ -186,7 +187,8 @@ function createMysqlStore(pool) {
     });
   }
   async function confirmProduction(id,desiredYield,options={}) {
-    return inTransaction(pool,async c=>{
+    return inTransaction(pool,async c=>withRequest(c,options?.operationId,'recipe-production',
+      {recipeId:id,desiredYield,productId:options?.productId||null},async()=>{
       const recipe=await getRecipe(id,c);
       if(!recipe) throw new ValidationError('Receta no encontrada',404);
       // Orden estable para minimizar interbloqueos entre producciones concurrentes.
@@ -228,7 +230,7 @@ function createMysqlStore(pool) {
       }
       return {id:batchId,recipeId:recipe.id,recipeName:recipe.name,desiredYield,yieldUnit:recipe.yieldUnit||'pieza',estimatedTotalCost:result.estimatedTotalCost,
         finishedProduct:finished,lines:result.lines.map(line=>({ingredientId:line.ingredientId,name:line.name,unit:line.unit,quantity:line.required,estimatedCost:line.estimatedCost}))};
-    });
+    }));
   }
   return {listIngredients,updateIngredientCost,importCatalogRecipe,listRecipes,getRecipe,addIngredient,addRecipe,updateRecipe,preview,listMovements,listProduction,getProductionBatch,stockIn,stockOut,adjustStock,confirmProduction};
 }

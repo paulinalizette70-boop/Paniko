@@ -2,6 +2,7 @@
 // Subpreparaciones: el inventario de preparacion se crea desde su receta.
 // Un lote consume materias primas y suma la preparacion terminada, todo en MySQL.
 const {randomUUID}=require('node:crypto');
+const {withRequest}=require('./idempotency');
 const {ValidationError,convertQuantity}=require('./domain');
 const {roundQuantity,safeStockSum}=require('./inventory');
 const UUID=/^[a-f\d]{8}-(?:[a-f\d]{4}-){3}[a-f\d]{12}$/i;
@@ -121,6 +122,8 @@ function createPreparationStore(pool){
     const conn=await pool.getConnection();
     try{
       await conn.beginTransaction();
+      const result=await withRequest(conn,raw?.operationId,'preparation-production',
+        {recipeId:raw?.recipeId,quantity:raw?.quantity},async()=>{
       const plan=await getPlan(raw,conn,true);
       if(!plan.stockAvailable)
         throw new ValidationError('Inventario insuficiente: '+plan.lines.filter(x=>!x.sufficient).map(x=>x.name).join(', '),409);
@@ -146,10 +149,11 @@ function createPreparationStore(pool){
       if(out.affectedRows!==1)throw new ValidationError('No se pudo registrar la preparacion',409);
       await conn.execute("INSERT INTO inventory_movements (id,ingredient_id,movement_type,quantity,stock_before,stock_after,reason,batch_id) VALUES (?,?,'entrada',?,?,?,?,?)",
         [randomUUID(),plan.outputIngredientId,plan.addedQuantity,plan.stockBefore,stockAfter,'Preparacion terminada '+batchId,batchId]);
-      await conn.commit();
       return {id:batchId,recipeId:plan.recipeId,recipeName:plan.recipeName,quantity:plan.quantity,
         yieldUnit:plan.yieldUnit,ingredientId:plan.outputIngredientId,ingredientName:plan.outputName,
         addedQuantity:plan.addedQuantity,unit:plan.outputUnit,stockAfter};
+      });
+      await conn.commit();return result;
     }catch(err){await conn.rollback();throw err;}finally{conn.release()}
   }
   return {list,register,preview,produce};

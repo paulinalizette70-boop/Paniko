@@ -9,6 +9,7 @@
   const formBase=$('dough-base-form'),formFormat=$('dough-format-form'),formBatch=$('dough-batch-form');
   let user=null,config={bases:[],formats:[]},preparations=[],products=[],ingredients=[],recipes=[],lastPreview=null,lastPayload=null;
   let requestedRecipeId=null,prepPreview=null,prepPayload=null;
+  let confirmingPrep=false,confirmingDough=false,pendingPrep=null,pendingDough=null;
   const fetchJSON=async(url,opt={})=>{
     const res=await fetch(url,{credentials:'same-origin',...opt});
     const body=await res.json();if(!res.ok)throw Error(body.error||'No se pudo realizar la operación');return body;
@@ -191,22 +192,25 @@
       }
       box.append(el('p',plan.stockAvailable?'Existencias suficientes para preparar.':'Inventario insuficiente. No se puede confirmar.',
         plan.stockAvailable?'good':'warning'));
-      prepPayload=data;prepPreview=plan;$('dough-prep-confirm').disabled=!plan.stockAvailable;
+      prepPayload=data;prepPreview=plan;$('dough-prep-confirm').disabled=!plan.stockAvailable||confirmingPrep;
     }catch(err){status(err.message,true);}
   });
   $('dough-prep-confirm').addEventListener('click',async()=>{
-    if(!prepPreview?.stockAvailable||!prepPayload)return;
+    if(confirmingPrep||!prepPreview?.stockAvailable||!prepPayload)return;
     if(!confirm('¿Confirmas '+prepPreview.quantity+' '+prepPreview.yieldUnit+' de '+prepPreview.recipeName+
        '? Se descontarán sus insumos y aumentará el inventario de la preparación.'))return;
-    $('dough-prep-confirm').disabled=true;
+    const signature=JSON.stringify(prepPayload);
+    if(!pendingPrep||pendingPrep.signature!==signature)pendingPrep={signature,operationId:crypto.randomUUID()};
+    confirmingPrep=true;$('dough-prep-confirm').disabled=true;
     try{
-      const result=await post('/api/dough/preparations/produce',prepPayload);
+      const result=await post('/api/dough/preparations/produce',{...prepPayload,operationId:pendingPrep.operationId});
+      pendingPrep=null;
       status('Preparación registrada: +'+num(result.addedQuantity)+' '+result.unit+' de '+result.ingredientName+'.');
       await refresh();
       await window.PanikoRefreshInventory?.();
       await window.PanikoFinishedProducts?.refresh?.();
     }catch(err){status(err.message,true);}
-    finally{clearPrepPreview();}
+    finally{confirmingPrep=false;clearPrepPreview();}
   });
   window.PanikoDough={selectRecipe(id){
     requestedRecipeId=id;
@@ -230,21 +234,24 @@
         result.append(el('div',msg,line.sufficient?'list-row':'list-row warning'));
       }
       result.append(el('p',plan.stockAvailable?'Inventario suficiente: puedes confirmar.':'Inventario insuficiente. No puedes confirmar esta tanda.',plan.stockAvailable?'good':'warning'));
-      $('dough-confirm').disabled=!plan.stockAvailable;
+      $('dough-confirm').disabled=!plan.stockAvailable||confirmingDough;
     }catch(err){clearPreview();status(err.message,true)}
   });
   $('dough-confirm').addEventListener('click',async()=>{
-    if(!lastPayload||!lastPreview?.stockAvailable)return;
+    if(confirmingDough||!lastPayload||!lastPreview?.stockAvailable)return;
     const summary=lastPreview.formats.map(f=>`${f.pieces} × ${f.productName}`).join(', ');
     if(!confirm(`¿Confirmas ${summary}? Se descontarán los ingredientes y complementos y se registrarán los productos terminados.`))return;
-    const button=$('dough-confirm');button.disabled=true;
+    const signature=JSON.stringify(lastPayload);
+    if(!pendingDough||pendingDough.signature!==signature)pendingDough={signature,operationId:crypto.randomUUID()};
+    const button=$('dough-confirm');confirmingDough=true;button.disabled=true;
     try{
-      const r=await post('/api/dough/confirm',lastPayload);
+      const r=await post('/api/dough/confirm',{...lastPayload,operationId:pendingDough.operationId});
+      pendingDough=null;
       clearPreview();for(const inp of formBatch.querySelectorAll('.dough-pieces'))inp.value='0';
       status(`Lote registrado: ${r.totalPieces} piezas de ${r.finishedProducts.length} formatos. Se actualizaron las existencias.`);
       await Promise.all([window.PanikoRefreshInventory?.(),window.PanikoFinishedProducts?.refresh?.()]);
     }catch(err){status(err.message,true)}
-    finally{button.disabled=!lastPreview?.stockAvailable;}
+    finally{confirmingDough=false;button.disabled=!lastPreview?.stockAvailable;}
   });
   document.addEventListener('paniko:auth',e=>{
     user=e.detail?.user||null;
