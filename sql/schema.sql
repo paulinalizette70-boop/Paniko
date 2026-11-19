@@ -71,3 +71,14 @@ CREATE TABLE IF NOT EXISTS production_batch_items (
   CONSTRAINT fk_bi_batch FOREIGN KEY(batch_id) REFERENCES production_batches(id),
   CONSTRAINT fk_bi_ing FOREIGN KEY(ingredient_id) REFERENCES ingredients(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+-- Previene descuentos duplicados tras doble clic o reintentos con el mismo ID.
+CREATE TABLE IF NOT EXISTS operation_requests (
+  operation_id CHAR(36) NOT NULL PRIMARY KEY,
+  operation_type VARCHAR(50) NOT NULL,
+  payload_hash CHAR(64) NOT NULL,
+  result_json JSON NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX ix_operation_requests_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
