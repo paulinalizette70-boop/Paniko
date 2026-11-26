@@ -8,7 +8,7 @@ const {getCookieToken,cookieForToken,expiredCookie}=require('./auth');
 
 // Los costos y el presupuesto son información de administración, no del equipo operativo.
 // Filtrar también los campos anidados: ocultar botones NO protege la API.
-const FINANCIAL_KEYS=/^(costPerUnit|unitCost|estimatedCost|estimatedTotalCost|cost(?:s|_.*)?|costo(?:s|_.*)?|precio(?:$|[_-].*)|price(?:$|[_-].*)|presupuesto|margen|utilidad|ganancia|gasto(?:s|_.*)?|ingreso(?:s|_.*)?|inversion|inversión|valorInventario)$/i;
+const FINANCIAL_KEYS=/^(salePrice|costPerUnit|unitCost|outputUnitCost|estimatedCost|estimatedTotalCost|cost(?:s|_.*)?|costo(?:s|_.*)?|precio(?:$|[_-].*)|price(?:$|[_-].*)|presupuesto|margen|utilidad|ganancia|gasto(?:s|_.*)?|ingreso(?:s|_.*)?|inversion|inversión|valorInventario)$/i;
 function operationalData(value){
   if(Array.isArray(value))return value.map(operationalData);
   if(value&&typeof value==='object'&&!(value instanceof Date)){
@@ -19,13 +19,17 @@ function operationalData(value){
 }
 
 
-function createApp({store, auth = null, products = null, dataFile = path.join(__dirname, '..', 'data', 'paniko.json')} = {}) {
+function createApp({store, auth = null, products = null, finance = null, sourdough = null, calendar = null, dough = null, preparations = null, dataFile = path.join(__dirname, '..', 'data', 'paniko.json')} = {}) {
   store = store || createStore(dataFile);
   const assets = {
     '/': ['index.html', 'text/html; charset=utf-8'],
     '/styles.css': ['styles.css', 'text/css; charset=utf-8'],
     '/app.js': ['app.js', 'application/javascript; charset=utf-8'],
     '/products.js': ['products.js', 'application/javascript; charset=utf-8'],
+    '/sourdough.js': ['sourdough.js', 'application/javascript; charset=utf-8'],
+    '/starter-status.js': ['starter-status.js', 'application/javascript; charset=utf-8'],
+    '/calendar.js': ['calendar.js', 'application/javascript; charset=utf-8'],
+    '/dough.js': ['dough.js', 'application/javascript; charset=utf-8'],
   };
   async function bodyAsJson(req) {
     let size = 0; const chunks=[];
@@ -124,6 +128,106 @@ function createApp({store, auth = null, products = null, dataFile = path.join(__
         if(move&&req.method==='POST')return respond(201,await products.recordMovement(move[1],await bodyAsJson(req)));
         return respond(404,{error:'Ruta de productos no encontrada'});
       }
+      // Masa compartida: varios productos desde una receta base, con extras en inventario.
+      if(pathname.startsWith('/api/dough/')){
+        if(!auth||!loggedInUser)return respond(401,{error:'Inicia sesión para producir por formatos'});
+        if(!dough)return respond(503,{error:'Producción por formatos no disponible: revisa la migración MySQL'});
+        // Subpreparaciones: convertir una receta en existencias de costra, mermelada, etc.
+        if(pathname==='/api/dough/preparations'&&req.method==='GET'){
+          if(!preparations)return respond(503,{error:'Prepara la migracion MySQL de subpreparaciones'});
+          return respond(200,await preparations.list());
+        }
+        if(pathname==='/api/dough/preparations'&&req.method==='POST'){
+          if(loggedInUser.role!=='admin')return respond(403,{error:'Solo administracion puede vincular preparaciones'});
+          if(!preparations)return respond(503,{error:'Subpreparaciones no disponibles'});
+          return respond(201,await preparations.register(await bodyAsJson(req)));
+        }
+        if(pathname==='/api/dough/preparations/preview'&&req.method==='POST'){
+          if(!preparations)return respond(503,{error:'Subpreparaciones no disponibles'});
+          return respond(200,await preparations.preview(await bodyAsJson(req)));
+        }
+        if(pathname==='/api/dough/preparations/produce'&&req.method==='POST'){
+          if(!preparations)return respond(503,{error:'Subpreparaciones no disponibles'});
+          return respond(201,await preparations.produce(await bodyAsJson(req)));
+        }
+        if(pathname==='/api/dough/config'&&req.method==='GET')return respond(200,await dough.list());
+        if(pathname==='/api/dough/base'&&req.method==='POST'){
+          if(loggedInUser.role!=='admin')return respond(403,{error:'Solo administración puede configurar la receta base'});
+          return respond(200,await dough.setBase(await bodyAsJson(req)));
+        }
+        if(pathname==='/api/dough/product'&&req.method==='POST'){
+          if(loggedInUser.role!=='admin')return respond(403,{error:'Solo administracion puede crear productos desde la receta'});
+          return respond(201,await dough.createProduct(await bodyAsJson(req)));
+        }
+        if(pathname==='/api/dough/format'&&req.method==='POST'){
+          if(loggedInUser.role!=='admin')return respond(403,{error:'Solo administración puede configurar formatos y rellenos'});
+          return respond(200,await dough.setFormat(await bodyAsJson(req)));
+        }
+        if(pathname==='/api/dough/preview'&&req.method==='POST')
+          return respond(200,await dough.preview(await bodyAsJson(req)));
+        if(pathname==='/api/dough/confirm'&&req.method==='POST')
+          return respond(201,await dough.confirm(await bodyAsJson(req)));
+        return respond(404,{error:'Acción de producción por formatos no encontrada'});
+      }
+      // Calendario de trabajo: los planes son distintos de las producciones confirmadas.
+      if(pathname==='/api/calendar'&&req.method==='GET'){
+        if(!auth||!loggedInUser||!calendar)return respond(503,{error:'Calendario no disponible: verifica MySQL y la migración'});
+        return respond(200,await calendar.month(url.searchParams.get('month')));
+      }
+      if(pathname==='/api/calendar/events'&&req.method==='POST'){
+        if(!auth||!loggedInUser||!calendar)return respond(503,{error:'Calendario no disponible'});
+        return respond(201,await calendar.create(await bodyAsJson(req)));
+      }
+      const calendarEvent=pathname.match(/^\/api\/calendar\/events\/([a-f\d-]{36})\/(status|delete)$/i);
+      if(calendarEvent&&req.method==='POST'){
+        if(!auth||!loggedInUser||!calendar)return respond(503,{error:'Calendario no disponible'});
+        if(calendarEvent[2]==='status')return respond(200,await calendar.setStatus(calendarEvent[1],(await bodyAsJson(req)).status));
+        return respond(200,await calendar.remove(calendarEvent[1]));
+      }
+      // Seguimiento de masa madre: vinculación, conteo físico y alimentaciones transaccionales.
+      if(pathname.startsWith('/api/sourdough/')){
+        if(!auth||!sourdough)return respond(503,{error:'Módulo de masa madre no disponible: verifica la migración MySQL'});
+        if(!loggedInUser)return respond(401,{error:'Inicia sesión para continuar'});
+        if(pathname==='/api/sourdough/starters'){
+          if(req.method==='GET')return respond(200,await sourdough.listStarters());
+          if(req.method==='POST')return respond(201,await sourdough.createStarter(await bodyAsJson(req)));
+        }
+        const starterAction=pathname.match(/^\/api\/sourdough\/starters\/([a-f\d-]{36})\/(update|feed|feedings|link-inventory|reconcile-inventory)$/i);
+        if(starterAction){
+          const [,id,action]=starterAction;
+          if(action==='update'&&req.method==='POST')return respond(200,await sourdough.updateStarter(id,await bodyAsJson(req)));
+          if(action==='link-inventory'&&req.method==='POST')return respond(200,await sourdough.linkInventory(id,await bodyAsJson(req)));
+          if(action==='reconcile-inventory'&&req.method==='POST')return respond(200,await sourdough.reconcileInventory(id,await bodyAsJson(req)));
+          if(action==='feed'&&req.method==='POST')return respond(201,await sourdough.feed(id,await bodyAsJson(req)));
+          if(action==='feedings'&&req.method==='GET')return respond(200,await sourdough.feedings(id));
+        }
+        return respond(404,{error:'Operación de masa madre no encontrada'});
+      }
+      // Control financiero exclusivo de administración, también a nivel de API.
+      if(pathname==='/api/finance/dashboard'&&req.method==='GET'){
+        if(!auth||loggedInUser?.role!=='admin')return respond(403,{error:'Solo administración puede consultar las ganancias'});
+        if(!finance)return respond(503,{error:'Panel financiero no disponible: verifica la migración MySQL'});
+        const days=Number(url.searchParams.get('days')||7);
+        return respond(200,await finance.dashboard(days));
+      }
+      if(pathname==='/api/finance/expenses'&&req.method==='POST'){
+        if(!auth||loggedInUser?.role!=='admin')return respond(403,{error:'Solo administración puede registrar gastos'});
+        if(!finance)return respond(503,{error:'Panel financiero no disponible: verifica la migración MySQL'});
+        return respond(201,await finance.addExpense(await bodyAsJson(req)));
+      }
+      if(pathname==='/api/finance/products'&&req.method==='GET'){
+        if(!auth||!loggedInUser||loggedInUser.role!=='admin')
+          return respond(403,{error:'Solo administración puede consultar los costos de productos'});
+        if(!products?.listFinancials)return respond(503,{error:'El inventario de productos requiere MySQL'});
+        return respond(200,await products.listFinancials());
+      }
+      const financialProduct=pathname.match(/^\/api\/finance\/products\/([a-f\d-]+)\/pricing$/i);
+      if(financialProduct&&req.method==='POST'){
+        if(!auth||!loggedInUser||loggedInUser.role!=='admin')
+          return respond(403,{error:'Solo administración puede editar costos y precios de productos'});
+        if(!products?.updateFinancials)return respond(503,{error:'El inventario de productos requiere MySQL'});
+        return respond(200,await products.updateFinancials(financialProduct[1],await bodyAsJson(req)));
+      }
       if(pathname==='/api/finance/overview'&&req.method==='GET'){
         if(!auth||!loggedInUser||loggedInUser.role!=='admin')return respond(403,{error:'Acceso exclusivo a administración'});
         const [ingredients,batches]=await Promise.all([store.listIngredients(),store.listProduction()]);
@@ -144,6 +248,11 @@ function createApp({store, auth = null, products = null, dataFile = path.join(__
         if(loggedInUser?.role==='operador')input.costPerUnit=0;
         return respond(201, await store.addIngredient(input));
       }
+      const originalEdit=pathname.match(/^\/api\/catalog\/recipes\/([a-z][a-z0-9_]{0,99})\/save$/);
+      if(originalEdit&&req.method==='POST'){
+        if(!auth?.saveCatalogRecipe)return respond(503,{error:'Se requiere MySQL e inicio de sesión para editar recetas originales'});
+        return respond(200,await auth.saveCatalogRecipe(originalEdit[1],await bodyAsJson(req)));
+      }
       const fromCatalog=pathname.match(/^\/api\/recipes\/from-catalog\/([a-z][a-z0-9_]{0,99})$/);
       if(fromCatalog&&req.method==='POST'){
         if(!auth?.getCatalogRecipe||!store.importCatalogRecipe)
@@ -151,11 +260,13 @@ function createApp({store, auth = null, products = null, dataFile = path.join(__
         const source=await auth.getCatalogRecipe(fromCatalog[1]);
         if(!source)return respond(404,{error:'Receta original no encontrada'});
         const input=await bodyAsJson(req);
-        const result=await store.importCatalogRecipe(source,input?.baseYield??null);
+        const result=await store.importCatalogRecipe(source,input?.baseYield??null,input?.yieldUnit??null);
         return respond(result.existing?200:201,result);
       }
       if (req.method === 'GET' && pathname === '/api/recipes') return respond( 200, await store.listRecipes());
       if (req.method === 'POST' && pathname === '/api/recipes') return respond( 201, await store.addRecipe(await bodyAsJson(req)));
+      const recipeEdit=pathname.match(/^\/api\/recipes\/([a-f\d]{8}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{12})\/update$/i);
+      if(recipeEdit&&req.method==='POST')return respond(200,await store.updateRecipe(recipeEdit[1],await bodyAsJson(req)));
       if(req.method==='POST' && pathname==='/api/recipes/bakers-preview'){
         const input=await bodyAsJson(req);
         const ingredients=await store.listIngredients();
@@ -187,8 +298,10 @@ function createApp({store, auth = null, products = null, dataFile = path.join(__
       }
       const produce = pathname.match(/^\/api\/recipes\/([a-f\d-]+)\/produce$/i);
       if (produce && req.method === 'POST') {
+        if(preparations && (await preparations.list()).some(p=>p.recipeId===produce[1]))
+          throw new ValidationError('Esta receta es una subpreparación: registra los gramos obtenidos desde Producción por formatos para actualizar inventario',409);
         const body = await bodyAsJson(req);
-        return respond( 201, await store.confirmProduction(produce[1], body.desiredYield, {productId:body.productId||null}));
+        return respond( 201, await store.confirmProduction(produce[1], body.desiredYield, {productId:body.productId||null,operationId:body.operationId||null}));
       }
       respond(404, {error: 'Ruta no encontrada'});
     } catch (error) {

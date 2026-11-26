@@ -25,7 +25,7 @@
     if(selected!==undefined&&selected!==null)s.value=selected;
     return s;
   };
-  const fmtMoney=n=>n===null?'Precio pendiente':new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(n);
+  const fmtMoney=n=>n==null||!Number.isFinite(n)?'Precio pendiente':new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(n);
   let currentUser=null,products=[],categories=[],recipes=[],movements=[];
   let previousProductionRecipeId=null;
   let hadLinkedProducts=false;
@@ -51,7 +51,8 @@
     const old=recipePicker.value;
     const recipeId=document.getElementById('scale-form')?.elements.recipe?.value;
     const changed=recipeId!==previousProductionRecipeId;
-    const linked=products.filter(p=>p.active&&p.operationalRecipeId===recipeId);
+    const recipe=recipes.find(r=>r.id===recipeId);
+    const linked=(recipe?.yieldUnit&&recipe.yieldUnit!=='pieza')?[]:products.filter(p=>p.active&&p.operationalRecipeId===recipeId);
     recipePicker.replaceChildren();
     const empty=el('option','Sin producto vinculado: solo descuenta ingredientes');empty.value='';recipePicker.append(empty);
     for(const product of linked){
@@ -66,7 +67,7 @@
   }
   document.getElementById('scale-form')?.elements.recipe?.addEventListener('change',updateProductionOptions);
   function categoryChoices(){return categories.map(c=>({label:c.name,value:c.id}));}
-  function recipeChoices(){return [{label:'Sin vincular — no suma stock automáticamente',value:''},...recipes.map(r=>({label:r.name+' ('+r.baseYield+' piezas)',value:r.id}))];}
+  function recipeChoices(){return [{label:'Sin vincular — no suma stock automáticamente',value:''},...recipes.map(r=>({label:r.name+' ('+r.baseYield+' '+(r.yieldUnit==='g'?'g':r.yieldUnit==='ml'?'ml':'piezas')+')',value:r.id}))];}
   function render(){
     root.replaceChildren();
     const metrics=el('div',undefined,'finished-metrics');
@@ -86,6 +87,11 @@
       const newBtn=button('Registrar producto','secondary');
       const newCatBtn=button('Crear categoría','secondary');
       toolbar.append(importBtn,newBtn,newCatBtn);
+      if(isAdmin()){
+        const costs=button('Editar costos y precios en Finanzas','btn-soft');
+        costs.addEventListener('click',()=>window.PanikoNavigate?.('finance'));
+        toolbar.append(costs);
+      }
       const newBox=el('div');newBox.hidden=true;
       const form=el('form');form.className='finished-editor';
       const productName=input('text','productName','',{required:'',maxlength:150});
@@ -134,7 +140,8 @@
         const low=p.minStock!==null&&p.stock<=p.minStock;
         const count=el('span',`${p.stock} pieza${p.stock===1?'':'s'}${low?' · stock bajo':''}`,low?'finished-warning':'finished-sale');
         set(header,name,count);card.append(header);
-        const subtitle=el('p',`${fmtMoney(p.salePrice)} · ${p.active?'Activo':'Inactivo'} · Stock mínimo: ${p.minStock===null?'sin definir':p.minStock}`,'muted');card.append(subtitle);
+        const priceText=isAdmin()?fmtMoney(p.salePrice):'Precio reservado a administración';
+        const subtitle=el('p',`${priceText} · ${p.active?'Activo':'Inactivo'} · Stock mínimo: ${p.minStock===null?'sin definir':p.minStock}`,'muted');card.append(subtitle);
         {
           const details=el('details');set(details,el('summary','Editar producto'));
           const form=el('form');form.className='finished-editor';
@@ -185,13 +192,22 @@
           const reason=input('text','reason','',{required:'',maxlength:150,placeholder:'Motivo de este movimiento'});
           const save=el('button','Registrar movimiento');save.type='submit';
           set(form,label('Tipo de movimiento',type),label('Piezas',qty),label('Motivo',reason),save);
+          let submittingMovement=false,pendingMovement=null;
           form.addEventListener('submit',async e=>{
             e.preventDefault();
+            if(submittingMovement)return;
             if(type.value==='produccion_manual'&&!confirm('Esta entrada suma piezas terminadas, pero NO descuenta ingredientes. ¿Continuar?'))return;
+            const payload={type:type.value,quantity:Number(qty.value),reason:reason.value};
+            const signature=JSON.stringify(payload);
+            if(!pendingMovement||pendingMovement.signature!==signature)
+              pendingMovement={signature,operationId:crypto.randomUUID()};
+            submittingMovement=true;save.disabled=true;
             try{
-              const result=await post(`/api/products/${p.id}/movements`,{type:type.value,quantity:Number(qty.value),reason:reason.value});
+              const result=await post(`/api/products/${p.id}/movements`,{...payload,operationId:pendingMovement.operationId});
+              pendingMovement=null;
               await refresh();status(`${p.name}: ${result.before} → ${result.after} piezas.`);
             }catch(err){status(err.message,true);}
+            finally{submittingMovement=false;save.disabled=false;}
           });
           box.append(form);card.append(box);
         } else {
