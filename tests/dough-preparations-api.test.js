@@ -10,7 +10,8 @@ test('PREP-API: solo administracion vincula recetas y crea productos; operador p
  const admin='A'.repeat(43),operator='B'.repeat(43);
  const rid=randomUUID();let products=0,registrations=0,productions=0;
  const auth={async userForToken(token){return token===admin?{role:'admin'}:token===operator?{role:'operador'}:null;}};
- const dough={list:async()=>({bases:[],formats:[]}),createProduct:async()=>{products++;return{id:randomUUID()}}};
+ const baseRecipe=randomUUID(),formattedProduct=randomUUID();
+ const dough={list:async()=>({bases:[{recipeId:baseRecipe}],formats:[{recipeId:baseRecipe,productId:formattedProduct,active:true}]}),createProduct:async()=>{products++;return{id:randomUUID()}}};
  const preparations={
    list:async()=>[{recipeId:rid,ingredientId:randomUUID(),stock:100}],
    register:async()=>{registrations++;return{ok:true}},
@@ -43,6 +44,12 @@ test('PREP-API: solo administracion vincula recetas y crea productos; operador p
  const old=await req('/api/recipes/'+rid+'/produce',operator,'POST',{desiredYield:100});
  assert.equal(old.status,409);
  assert.match((await old.json()).error,/subpreparaci[oó]n/i);
+ const traditional=await req('/api/recipes/'+baseRecipe+'/produce',operator,'POST',{desiredYield:20});
+ assert.equal(traditional.status,409);
+ assert.match((await traditional.json()).error,/formatos configurados/);
+ const bypass=await req('/api/recipes/'+randomUUID()+'/produce',operator,'POST',{desiredYield:20,productId:formattedProduct});
+ assert.equal(bypass.status,409);
+
 });
 test('PREP-UI: crear desde Recetas, preparar costra y no agregar menu lateral',()=>{
  const html=fs.readFileSync(path.join(__dirname,'../public/index.html'),'utf8');
