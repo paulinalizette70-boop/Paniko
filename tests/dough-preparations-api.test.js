@@ -8,13 +8,14 @@ const os=require('node:os'),fs=require('node:fs'),path=require('node:path');
 test('PREP-API: solo administracion vincula recetas y crea productos; operador puede producir',async t=>{
  const folder=fs.mkdtempSync(path.join(os.tmpdir(),'paniko-prep-'));
  const admin='A'.repeat(43),operator='B'.repeat(43);
- const rid=randomUUID();let products=0,registrations=0,productions=0;
+ const rid=randomUUID();let products=0,registrations=0,productions=0,creations=0;
  const auth={async userForToken(token){return token===admin?{role:'admin'}:token===operator?{role:'operador'}:null;}};
  const baseRecipe=randomUUID(),formattedProduct=randomUUID();
  const dough={list:async()=>({bases:[{recipeId:baseRecipe}],formats:[{recipeId:baseRecipe,productId:formattedProduct,active:true}]}),createProduct:async()=>{products++;return{id:randomUUID()}}};
  const preparations={
    list:async()=>[{recipeId:rid,ingredientId:randomUUID(),stock:100}],
    register:async()=>{registrations++;return{ok:true}},
+   create:async data=>{creations++;return{recipeId:rid,name:data.name}},
    preview:async()=>({recipeId:rid,estimatedTotalCost:500,outputUnitCost:32,stockAvailable:true,
      lines:[{name:'Azucar',required:20,unitCost:15,estimatedCost:300}]}),
    produce:async()=>{productions++;return{ok:true}}
@@ -30,6 +31,10 @@ test('PREP-API: solo administracion vincula recetas y crea productos; operador p
  assert.equal((await req('/api/dough/preparations',operator,'POST')).status,403);
  assert.equal((await req('/api/dough/product',operator,'POST')).status,403);
  assert.equal(products,0);assert.equal(registrations,0);
+ assert.equal((await req('/api/dough/preparations/create',operator,'POST',{name:'Costra'})).status,403);
+ assert.equal(creations,0);
+ assert.equal((await req('/api/dough/preparations/create',admin,'POST',{name:'Costra'})).status,201);
+ assert.equal(creations,1);
  assert.equal((await req('/api/dough/preparations',admin,'POST')).status,201);
  assert.equal((await req('/api/dough/product',admin,'POST')).status,201);
  assert.equal(products,1);assert.equal(registrations,1);
@@ -157,6 +162,7 @@ async function exerciseDough(source,html,assert,execute){
  const batch=form('dough-batch-form',{recipeId:'select'});batch.append($('dough-batch-formats'),$('dough-calculate'));
  const prep=form('dough-prep-batch-form',{recipeId:'select',quantity:'input'});
  form('dough-prep-link-form',{recipeId:'select',ingredientId:'select'});
+ const create=form('dough-prep-create-form',{name:'input',baseYield:'input',yieldUnit:'select',ingredientId:'select'});create.elements.yieldUnit.value='g';
  const root=$('dough-production'),nav={};
  for(const name of ['batch','prep','settings']){const b=new Node('button');b.dataset.doughPanel=name;root.append(b);nav[name]=b;}
  const doc=new Node();doc.getElementById=$;doc.createElement=t=>new Node(t);
@@ -188,6 +194,13 @@ async function exerciseDough(source,html,assert,execute){
        jamStock-=n*15;creamStock-=n*0.01;bunStock+=n;
        return response({totalPieces:n,finishedProducts:[{id:'bun'}]});
      }
+   }
+   if(opt.method==='POST'&&url==='/api/dough/preparations/create'){
+     const data=JSON.parse(opt.body);
+     records['/api/recipes'].push({id:'new-prep',name:data.name,baseYield:data.baseYield,yieldUnit:data.yieldUnit,items:data.items});
+     records['/api/ingredients'].push({id:'new-output',name:'Preparacion: '+data.name,unit:data.yieldUnit,stock:0});
+     records['/api/dough/preparations'].push({recipeId:'new-prep',ingredientId:'new-output',recipeName:data.name,yieldUnit:data.yieldUnit,unit:data.yieldUnit,baseYield:data.baseYield,stock:0});
+     return response({recipeId:'new-prep',ingredientId:'new-output',name:data.name});
    }
    if(opt.method==='POST'&&url==='/api/dough/preparations'){
      records['/api/ingredients'].push({id:'jam',name:'Preparacion: Mermelada de guayaba',unit:'g',stock:0});
@@ -286,6 +299,23 @@ async function exerciseDough(source,html,assert,execute){
  assert.equal(bunQty().value,'0');
  assert.equal($('dough-confirm').disabled,true);
  assert.equal(posts.filter(p=>p.url==='/api/dough/confirm').length,1);
+ await nav.prep.fire('click');
+ await $('dough-prep-new').fire('click');
+ assert.equal(create.hidden,false);
+ create.elements.name.value='Crema de prueba';create.elements.baseYield.value='600';
+ const item=$('dough-prep-create-items').children[0];
+ item.children[0].value='cream';await item.children[0].fire('change');
+ item.children[1].value='100';
+ assert.equal(item.children[2].value,'g');
+ await create.fire('submit');
+ const newPrep=posts.find(p=>p.url==='/api/dough/preparations/create').data;
+ assert.equal(newPrep.name,'Crema de prueba');
+ assert.equal(newPrep.baseYield,600);
+ assert.equal(newPrep.items[0].quantity,100);
+ assert.equal(newPrep.items[0].unit,'g');
+ assert.equal(prep.elements.recipeId.value,'new-prep');
+ assert.equal(records['/api/ingredients'].find(i=>i.id==='new-output').stock,0);
+ assert.equal(posts.filter(p=>p.url==='/api/dough/preparations/produce').length,1);
 }
 
 test('PREP-UI-07: recorrido simulado conserva piezas y descarta vista previa obsoleta',async()=>{
