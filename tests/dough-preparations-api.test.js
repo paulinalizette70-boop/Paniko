@@ -123,3 +123,73 @@ test('PREP-UI-06: producción diaria primero, paneles separados y controles disp
  assert.match(html,/id="dough-panel-prep" hidden/);
  assert.match(html,/id="dough-panel-settings" hidden/);
 });
+
+async function exerciseDough(source,html,assert,execute){
+ class Node{
+  constructor(tag='div'){this.tag=tag;this.children=[];this.dataset={};this.handlers={};this.attributes={};this.value='';this.textContent='';this.className='';this.disabled=false;this.hidden=false;this.elements={};}
+  append(...items){this.children.push(...items);}
+  replaceChildren(...items){this.children=items; if(this.tag==='select')this.value='';this.textContent='';}
+  get options(){return this.children;}
+  setAttribute(k,v){this.attributes[k]=v;}
+  addEventListener(k,f){(this.handlers[k]??=[]).push(f);}
+  async fire(k,props={}){for(const f of this.handlers[k]||[])await f({preventDefault(){},...props});}
+  remove(){}
+  focus(){}
+  scrollIntoView(){}
+  matches(s){return s.startsWith('.')?this.className.split(' ').includes(s.slice(1)):s==='[data-dough-panel]'?!!this.dataset.doughPanel:s==='[data-dough-go]'?!!this.dataset.doughGo:s==='[data-dough-panel="settings"]'?this.dataset.doughPanel==='settings':s==='[data-dough-go="settings"]'?this.dataset.doughGo==='settings':s==='button[type=submit]'?this.tag==='button'&&this.type==='submit':this.tag===s;}
+  querySelectorAll(s){const parts=s.split(',');const all=this.children.flatMap(n=>[n,...n.querySelectorAll(s)]);return all.filter((n,i)=>parts.some(p=>n.matches(p))&&all.indexOf(n)===i);}
+  querySelector(s){return this.querySelectorAll(s)[0]||null;}
+ }
+ const ids=new Map();
+ for(const m of html.matchAll(/<([a-z]+)[^>]*\bid="([^"]+)"/g))ids.set(m[2],new Node(m[1]));
+ const $=id=>{if(!ids.has(id))throw Error('Falta ID '+id);return ids.get(id)};
+ function form(id,fields){const f=$(id);for(const [name,tag] of Object.entries(fields)){const n=new Node(tag);f.elements[name]=n;f.append(n);}const b=new Node('button');b.type='submit';f.append(b);return f;}
+ const base=form('dough-base-form',{recipeId:'select',referenceGrams:'input'});
+ const format=form('dough-format-form',{recipeId:'select',productMode:'select',productId:'select',productName:'input',doughGrams:'input'});
+ format.elements.productMode.value='new';
+ const batch=form('dough-batch-form',{recipeId:'select'});batch.append($('dough-batch-formats'),$('dough-calculate'));
+ const prep=form('dough-prep-batch-form',{recipeId:'select',quantity:'input'});
+ form('dough-prep-link-form',{recipeId:'select',ingredientId:'select'});
+ const root=$('dough-production'),nav={};
+ for(const name of ['batch','prep','settings']){const b=new Node('button');b.dataset.doughPanel=name;root.append(b);nav[name]=b;}
+ const doc=new Node();doc.getElementById=$;doc.createElement=t=>new Node(t);
+ const formats=[{recipeId:'brioche',productId:'concha',productName:'Concha',active:true,doughGrams:45,extras:[]},{recipeId:'brioche',productId:'bollo',productName:'Bollo',active:true,doughGrams:35,extras:[]}];
+ const records={'/api/dough/config':{bases:[{recipeId:'brioche',recipeName:'Brioche',referenceGrams:2000}],formats},'/api/products':formats.map(f=>({id:f.productId,name:f.productName,active:true,operationalRecipeId:'brioche'})),'/api/ingredients':[{id:'crust',name:'Costra',unit:'g'}],'/api/recipes':[{id:'brioche',name:'Brioche',baseYield:2000,yieldUnit:'g'},{id:'crust-recipe',name:'Costra',baseYield:500,yieldUnit:'g'}],'/api/dough/preparations':[{recipeId:'crust-recipe',ingredientId:'crust',recipeName:'Costra',yieldUnit:'g',unit:'g',baseYield:500,stock:200}]};
+ let resolvePreview,posts=[];
+ const response=x=>({ok:true,json:async()=>x});
+ const fetch=async(url,opt={})=>{
+   if(opt.method==='POST'){posts.push({url,data:JSON.parse(opt.body)});if(url==='/api/dough/preview')return new Promise(resolve=>{resolvePreview=()=>resolve(response({totalPieces:20,doughGrams:900,recipeName:'Brioche',formats:[{productName:'Concha',pieces:20,doughGramsPerPiece:45,doughGrams:900}],consumptions:[],stockAvailable:true}));});}
+   if(!(url in records))throw Error('Ruta inesperada '+url);return response(records[url]);
+ };
+ const win={};
+ execute(source,doc,win,fetch);
+ await doc.fire('paniko:auth',{detail:{user:{role:'admin'}}});
+ for(let i=0;i<30;i++)await Promise.resolve();
+ assert.equal(batch.elements.recipeId.value,'brioche');
+ assert.equal(format.elements.productName.disabled,false);
+ assert.equal(format.elements.productId.disabled,true);
+ assert.equal($('dough-batch-formats').children.length,2);
+ const qty=()=>$('dough-batch-formats').children[0].querySelector('.dough-pieces');
+ qty().value='20';await batch.fire('input');
+ assert.equal($('dough-live-totals').children[0].children[1].textContent,'20');
+ assert.equal($('dough-live-totals').children[1].children[1].textContent,'900 g');
+ await nav.prep.fire('click');assert.equal($('dough-panel-prep').hidden,false);
+ await nav.batch.fire('click');assert.equal(qty().value,'20');
+ await $('dough-reload').fire('click');for(let i=0;i<30;i++)await Promise.resolve();
+ assert.equal(qty().value,'20');
+ const pending=batch.fire('submit');await Promise.resolve();
+ assert.equal(posts[0].data.formats[0].pieces,20);
+ qty().value='21';await batch.fire('input');resolvePreview();await pending;
+ assert.equal($('dough-confirm').disabled,true);
+ assert.equal($('dough-batch-preview').children.length,0);
+ assert.equal(posts.filter(p=>p.url.endsWith('/confirm')).length,0);
+ await nav.settings.fire('click');
+ await $('dough-add-extra').fire('click');
+ assert.equal($('dough-extra-items').children[0].children[0].options[1].value,'crust');
+}
+
+test('PREP-UI-07: recorrido simulado conserva piezas y descarta vista previa obsoleta',async()=>{
+ const source=fs.readFileSync(path.join(__dirname,'../public/dough.js'),'utf8');
+ const html=fs.readFileSync(path.join(__dirname,'../public/index.html'),'utf8');
+ await exerciseDough(source,html,assert,(s,doc,win,fetch)=>require('node:vm').runInNewContext(s,{document:doc,window:win,fetch,confirm:()=>true,crypto:{randomUUID:()=>randomUUID()}}));
+});
