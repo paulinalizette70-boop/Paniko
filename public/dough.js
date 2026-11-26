@@ -280,6 +280,8 @@ if(typeof module==='object'&&module.exports){
       if(!user||revision!==refreshRevision)return false;
       [config,products,ingredients,recipes,preparations]=loaded;
       renderForms();root.hidden=false;$('dough-settings').hidden=user.role!=='admin';$('dough-prep-link-details').hidden=user.role!=='admin';
+      $('dough-prep-admin-actions').hidden=user.role!=='admin';
+      if(user.role!=='admin'){$('dough-prep-create-form').hidden=true;$('dough-prep-catalog-list').hidden=true;}
       for(const b of root.querySelectorAll('[data-dough-panel="settings"],[data-dough-go="settings"]'))b.hidden=user.role!=='admin';
       if(user.role!=='admin'&&!$('dough-panel-settings').hidden)showPanel('batch');
       if(message||!$('dough-status').textContent)status(message|| (config.bases.length?'Captura las piezas y revisa el consumo.':'Configura primero el rendimiento de tu masa base.'));
@@ -368,7 +370,117 @@ if(typeof module==='object'&&module.exports){
       if(refreshed&&editing)loadSelectedFormat();
     }catch(err){status(err.message,true)}finally{savingFormat=false;button.disabled=false;}
   });
-  const prepLinkForm=$('dough-prep-link-form'),prepBatchForm=$('dough-prep-batch-form');
+  const prepLinkForm=$('dough-prep-link-form'),prepBatchForm=$('dough-prep-batch-form'),prepCreateForm=$('dough-prep-create-form');
+  let savingNewPrep=false;
+  function syncNewPrepOutput(){
+    const linked=new Set(preparations.map(p=>p.ingredientId));
+    const used=new Set([...$('dough-prep-create-items').children].map(row=>row.querySelector('select').value));
+    const unit=prepCreateForm.elements.yieldUnit.value;
+    fillSelect(prepCreateForm.elements.ingredientId,ingredients.filter(i=>!linked.has(i.id)&&!used.has(i.id)&&(unit==='g'?['g','kg'].includes(i.unit):['ml','l'].includes(i.unit))).map(i=>({id:i.id,name:i.name+' ('+i.unit+')'})),'Crear existencia nueva en cero');
+  }
+  function addPrepItem(){
+    const row=el('div',undefined,'dough-extra-row');
+    const select=el('select');select.required=true;select.setAttribute('aria-label','Ingrediente de la preparación');
+    const qty=el('input');qty.type='number';qty.required=true;qty.min='0.000001';qty.step='0.000001';qty.placeholder='Cantidad';qty.setAttribute('aria-label','Cantidad de ingrediente');
+    const unit=el('select');unit.required=true;unit.setAttribute('aria-label','Unidad del ingrediente');
+    const remove=el('button','Quitar','btn-soft');remove.type='button';remove.addEventListener('click',()=>{row.remove();syncNewPrepOutput();});
+    const update=(preserve=false)=>{
+      const old=unit.value,ing=ingredients.find(i=>i.id===select.value);
+      unit.replaceChildren();
+      for(const u of unitsFor(ing)){const opt=el('option',u);opt.value=u;unit.append(opt);}
+      unit.value=preserve&&[...unit.options].some(o=>o.value===old)?old:ing?.unit==='kg'?'g':ing?.unit==='l'?'ml':ing?.unit||'';
+    };
+    row.refreshItem=()=>{fillSelect(select,ingredients.map(i=>({id:i.id,name:i.name+' ('+i.unit+')'})),'Selecciona ingrediente');update(true);};
+    select.addEventListener('change',()=>{update();syncNewPrepOutput();});
+    row.append(select,qty,unit,remove);$('dough-prep-create-items').append(row);row.refreshItem();
+    return row;
+  }
+  function openNewPrep(name=''){
+    if(user?.role!=='admin')return;
+    showPanel('prep');$('dough-prep-catalog-list').hidden=true;
+    prepCreateForm.hidden=false;
+    if(name&&!prepCreateForm.elements.name.value)prepCreateForm.elements.name.value=name;
+    if(! $('dough-prep-create-items').children.length)addPrepItem();
+    syncNewPrepOutput();prepCreateForm.elements.name.focus();
+  }
+  $('dough-prep-new').addEventListener('click',()=>openNewPrep());
+  $('dough-prep-cancel').addEventListener('click',()=>{prepCreateForm.hidden=true;});
+  $('dough-prep-add-item').addEventListener('click',addPrepItem);
+  prepCreateForm.elements.yieldUnit.addEventListener('change',syncNewPrepOutput);
+  $('dough-prep-existing').addEventListener('click',()=>{
+    $('dough-prep-catalog-list').hidden=true;
+    $('dough-prep-link-details').open=true;prepLinkForm.elements.recipeId.focus();
+  });
+  prepCreateForm.addEventListener('submit',async e=>{
+    e.preventDefault();if(savingNewPrep||savingPrep||user?.role!=='admin')return;
+    const button=$('dough-prep-save');
+    const data={name:prepCreateForm.elements.name.value.trim(),baseYield:Number(prepCreateForm.elements.baseYield.value),yieldUnit:prepCreateForm.elements.yieldUnit.value,
+      items:[...$('dough-prep-create-items').children].map(row=>({ingredientId:row.querySelector('select').value,quantity:Number(row.querySelector('input').value),unit:row.querySelectorAll('select')[1].value}))};
+    if(prepCreateForm.elements.ingredientId.value)data.ingredientId=prepCreateForm.elements.ingredientId.value;
+    if(!data.name||!Number.isSafeInteger(data.baseYield)||data.baseYield<1||!data.items.length||data.items.some(x=>!x.ingredientId||!x.unit||!Number.isFinite(x.quantity)||x.quantity<=0)){
+      status('Completa el nombre, rendimiento real e ingredientes de la preparación.',true);return;
+    }
+    savingNewPrep=true;button.disabled=true;
+    try{
+      const result=await post('/api/dough/preparations/create',data);
+      prepCreateForm.elements.name.value='';prepCreateForm.elements.baseYield.value='';prepCreateForm.elements.ingredientId.value='';
+      $('dough-prep-create-items').replaceChildren();prepCreateForm.hidden=true;
+      const loaded=await refresh('Preparación guardada. Ahora puedes registrar los gramos elaborados; todavía no se descontó inventario.');
+      if(loaded){prepBatchForm.elements.recipeId.value=result.recipeId;prepBatchForm.elements.quantity.value='';syncPrepQuantityLabel();prepBatchForm.elements.quantity.focus();}
+      await window.PanikoRefreshInventory?.();
+    }catch(err){status(err.message,true);}finally{savingNewPrep=false;button.disabled=false;}
+  });
+  function catalogYield(raw){
+    const u=String(raw?.unidad||'').toLowerCase().trim(),n=Number(raw?.cantidad);
+    const map={g:['g',1],gramos:['g',1],gramo:['g',1],kg:['g',1000],kilogramos:['g',1000],kilogramo:['g',1000],ml:['ml',1],mililitros:['ml',1],l:['ml',1000],litros:['ml',1000],litro:['ml',1000]};
+    const x=map[u];return x&&Number.isSafeInteger(n*x[1])&&n>0?{baseYield:n*x[1],yieldUnit:x[0]}:null;
+  }
+  $('dough-prep-catalog').addEventListener('click',async()=>{
+    if(user?.role!=='admin')return;
+    const box=$('dough-prep-catalog-list');box.hidden=false;box.replaceChildren(el('p','Cargando tus recetas…','hint'));
+    try{
+      const catalog=await fetchJSON('/api/private/catalog');
+      box.replaceChildren(el('h4','Recetas de tu catálogo'));
+      const all=[...(catalog.recetas||[]).map(r=>({...r,importable:true})),...(catalog.rellenos||[]).map(r=>({...r,importable:false}))];
+      const search=el('input');search.type='search';search.placeholder='Buscar mermelada, costra…';search.setAttribute('aria-label','Buscar recetas del catálogo');box.append(search);
+      const list=el('div',undefined,'dough-product-cards');box.append(list);
+      const render=()=>{
+        list.replaceChildren();
+        const query=search.value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+        for(const record of all.filter(r=>String(r.title).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().includes(query))){
+          const card=el('div',undefined,'dough-product-card'),raw=record.data||{};
+          card.append(el('strong',record.title));
+          const existing=recipes.find(r=>r.name.toLowerCase().trim()===String(record.title).toLowerCase().trim()||r.name.toLowerCase().trim()===String(raw.nombre||'').toLowerCase().trim());
+          const action=el('button',existing?'Usar ficha existente':'Crear ficha de preparación','btn-soft');action.type='button';
+          const openExisting=id=>{box.hidden=true;$('dough-prep-link-details').open=true;prepLinkForm.elements.recipeId.value=id;syncExistingIngredientChoices();prepLinkForm.elements.recipeId.focus();};
+          if(existing){
+            const linked=preparations.find(p=>p.recipeId===existing.id);
+            action.textContent=linked?'Registrar cantidad': ['g','ml'].includes(existing.yieldUnit)?'Usar ficha existente':'Revisar rendimiento en Recetas';
+            action.addEventListener('click',()=>{if(linked){box.hidden=true;prepBatchForm.elements.recipeId.value=existing.id;syncPrepQuantityLabel();prepBatchForm.elements.quantity.focus();}else if(['g','ml'].includes(existing.yieldUnit))openExisting(existing.id);else{status('Edita el rendimiento real de la ficha existente en Recetas. No crees una copia.',true);window.PanikoNavigate?.('recipes');}});
+          }else if(record.importable&&raw.estado==='confirmada'&&raw.id&&/^[a-z][a-z0-9_]{0,99}$/.test(raw.id)&&!raw.componentes?.length&&Array.isArray(raw.ingredientes)&&raw.ingredientes.length&&raw.ingredientes.every(i=>Number.isFinite(i.cantidad)&&i.cantidad>0&&['g','kg','ml','l','pieza'].includes(i.unidad))){
+            const known=catalogYield(raw.rendimiento);
+            const yieldInput=el('input');yieldInput.type='number';yieldInput.min='1';yieldInput.step='1';yieldInput.placeholder='Rendimiento real';
+            const measure=el('select');for(const v of ['g','ml']){const o=el('option',v);o.value=v;measure.append(o);}measure.value='g';
+            if(!known)card.append(el('small','Indica el rendimiento real en g o ml. Si la receta original está en piezas, corrígela primero en Recetas.'),yieldInput,measure);
+            else card.append(el('small',known.baseYield+' '+known.yieldUnit+' por receta'));
+            action.addEventListener('click',async()=>{
+              const data=known||{baseYield:Number(yieldInput.value),yieldUnit:measure.value};
+              if(!Number.isSafeInteger(data.baseYield)||data.baseYield<1){status('Indica el rendimiento real de la receta.',true);return;}
+              if(!confirm('¿Crear ficha escalable de '+record.title+'? No se descontará inventario.'))return;
+              action.disabled=true;
+              try{const result=await post('/api/recipes/from-catalog/'+raw.id,data);if(await refresh('Ficha disponible. Selecciona o crea su existencia para terminar.'))openExisting(result.id);}
+              catch(err){status(err.message,true);}finally{action.disabled=false;}
+            });
+          }else{
+            card.append(el('small','Fórmula pendiente o relleno de consulta. Crea su ficha con cantidades y rendimiento confirmados, o completa la receta original.'));
+            action.addEventListener('click',()=>openNewPrep(record.title));
+          }
+          card.append(action);list.append(card);
+        }
+        if(!list.children.length)list.append(el('p','No se encontraron recetas. Puedes crear una preparación nueva.','hint'));
+      };search.addEventListener('input',render);render();
+    }catch(err){box.replaceChildren(el('p','No se pudo abrir el catálogo: '+err.message,'warning'));}
+  });
   function syncExistingIngredientChoices(){
     const r=recipes.find(x=>x.id===prepLinkForm.elements.recipeId.value);
     const linkedIds=new Set(preparations.map(p=>p.ingredientId));
@@ -385,7 +497,7 @@ if(typeof module==='object'&&module.exports){
     fillSelect(prepBatchForm.elements.recipeId,preparations.map(p=>({id:p.recipeId,name:p.recipeName+' · '+p.yieldUnit})),
       'Selecciona una preparación vinculada');
     const root=$('dough-prep-list');root.replaceChildren();
-    if(!preparations.length)root.append(el('p','Aún no hay recetas complementarias vinculadas. Puedes comenzar con la costra de concha.','muted'));
+    if(!preparations.length)root.append(el('p',user?.role==='admin'?'Aún no tienes preparaciones guardadas. Pulsa Nueva preparación o Usar receta existente.':'Pide a administración que configure las preparaciones que vas a elaborar.','muted'));
     for(const p of preparations){
       const card=el('div',undefined,'dough-prep-card');
       card.append(el('strong',p.recipeName),
@@ -396,6 +508,8 @@ if(typeof module==='object'&&module.exports){
         prepBatchForm.elements.recipeId.value=p.recipeId;syncPrepQuantityLabel();clearPrepPreview();prepBatchForm.elements.quantity.focus();
       });card.append(action);root.append(card);
     }
+    for(const row of $('dough-prep-create-items').children)row.refreshItem?.();
+    syncNewPrepOutput();
     clearPrepPreview();syncPrepQuantityLabel();
   }
   function clearPrepPreview(){
@@ -549,6 +663,6 @@ if(typeof module==='object'&&module.exports){
   document.addEventListener('paniko:auth',e=>{
     user=e.detail?.user||null;
     root.hidden=!user;
-    if(user)void refresh();else {returnToBatch=false;refreshRevision++;config={bases:[],formats:[]};preparations=[];pieceDrafts.clear();$('dough-batch-formats').replaceChildren();clearPreview();clearPrepPreview();showPanel('batch');root.hidden=true;}
+    if(user)void refresh();else {prepCreateForm.hidden=true;prepCreateForm.elements.name.value='';prepCreateForm.elements.baseYield.value='';$('dough-prep-create-items').replaceChildren();$('dough-prep-catalog-list').replaceChildren();$('dough-prep-catalog-list').hidden=true;returnToBatch=false;refreshRevision++;config={bases:[],formats:[]};preparations=[];pieceDrafts.clear();$('dough-batch-formats').replaceChildren();clearPreview();clearPrepPreview();showPanel('batch');root.hidden=true;}
   });
 })();
