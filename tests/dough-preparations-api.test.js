@@ -8,12 +8,14 @@ const os=require('node:os'),fs=require('node:fs'),path=require('node:path');
 test('PREP-API: solo administracion vincula recetas y crea productos; operador puede producir',async t=>{
  const folder=fs.mkdtempSync(path.join(os.tmpdir(),'paniko-prep-'));
  const admin='A'.repeat(43),operator='B'.repeat(43);
- const rid=randomUUID();let products=0,registrations=0,productions=0;
+ const rid=randomUUID();let products=0,registrations=0,productions=0,creations=0;
  const auth={async userForToken(token){return token===admin?{role:'admin'}:token===operator?{role:'operador'}:null;}};
- const dough={list:async()=>({bases:[],formats:[]}),createProduct:async()=>{products++;return{id:randomUUID()}}};
+ const baseRecipe=randomUUID(),formattedProduct=randomUUID();
+ const dough={list:async()=>({bases:[{recipeId:baseRecipe}],formats:[{recipeId:baseRecipe,productId:formattedProduct,active:true}]}),createProduct:async()=>{products++;return{id:randomUUID()}}};
  const preparations={
    list:async()=>[{recipeId:rid,ingredientId:randomUUID(),stock:100}],
    register:async()=>{registrations++;return{ok:true}},
+   create:async data=>{creations++;return{recipeId:rid,name:data.name}},
    preview:async()=>({recipeId:rid,estimatedTotalCost:500,outputUnitCost:32,stockAvailable:true,
      lines:[{name:'Azucar',required:20,unitCost:15,estimatedCost:300}]}),
    produce:async()=>{productions++;return{ok:true}}
@@ -29,6 +31,10 @@ test('PREP-API: solo administracion vincula recetas y crea productos; operador p
  assert.equal((await req('/api/dough/preparations',operator,'POST')).status,403);
  assert.equal((await req('/api/dough/product',operator,'POST')).status,403);
  assert.equal(products,0);assert.equal(registrations,0);
+ assert.equal((await req('/api/dough/preparations/create',operator,'POST',{name:'Costra'})).status,403);
+ assert.equal(creations,0);
+ assert.equal((await req('/api/dough/preparations/create',admin,'POST',{name:'Costra'})).status,201);
+ assert.equal(creations,1);
  assert.equal((await req('/api/dough/preparations',admin,'POST')).status,201);
  assert.equal((await req('/api/dough/product',admin,'POST')).status,201);
  assert.equal(products,1);assert.equal(registrations,1);
@@ -43,6 +49,12 @@ test('PREP-API: solo administracion vincula recetas y crea productos; operador p
  const old=await req('/api/recipes/'+rid+'/produce',operator,'POST',{desiredYield:100});
  assert.equal(old.status,409);
  assert.match((await old.json()).error,/subpreparaci[oó]n/i);
+ const traditional=await req('/api/recipes/'+baseRecipe+'/produce',operator,'POST',{desiredYield:20});
+ assert.equal(traditional.status,409);
+ assert.match((await traditional.json()).error,/formatos configurados/);
+ const bypass=await req('/api/recipes/'+randomUUID()+'/produce',operator,'POST',{desiredYield:20,productId:formattedProduct});
+ assert.equal(bypass.status,409);
+
 });
 test('PREP-UI: crear desde Recetas, preparar costra y no agregar menu lateral',()=>{
  const html=fs.readFileSync(path.join(__dirname,'../public/index.html'),'utf8');
@@ -54,4 +66,302 @@ test('PREP-UI: crear desde Recetas, preparar costra y no agregar menu lateral',(
  assert.match(dough,/\/api\/dough\/product/);
  assert.match(dough,/\/api\/dough\/preparations\/produce/);
  assert.doesNotMatch(html,/<button class="nav-link"[^>]+(?:Brioche|Preparaciones)/);
+});
+
+test('PREP-UI-02: selector de preparados excluye materias primas y el directo excluye preparados',()=>{
+ const {doughComplementChoices}=require('../public/dough.js');
+ const ingredients=[
+   {id:'flour',name:'Harina',unit:'kg'},
+   {id:'cream',name:'Queso crema',unit:'g'},
+   {id:'crust',name:'Costra de prueba',unit:'g'},
+   {id:'jam',name:'Mermelada de prueba',unit:'kg'}
+ ];
+ const preparations=[{ingredientId:'crust'},{ingredientId:'jam'}];
+ assert.deepEqual(doughComplementChoices(ingredients,preparations,'prepared').map(x=>x.id),['crust','jam']);
+ assert.deepEqual(doughComplementChoices(ingredients,preparations,'direct').map(x=>x.id),['flour','cream']);
+ assert.deepEqual(doughComplementChoices(ingredients,[],'prepared'),[]);
+ assert.equal(ingredients.length,4);
+ const html=fs.readFileSync(path.join(__dirname,'../public/index.html'),'utf8');
+ assert.match(html,/id="dough-add-extra"[^>]*>\+ Agregar preparación/);
+ assert.match(html,/id="dough-add-direct-extra"[^>]*>\+ Agregar ingrediente directo/);
+});
+
+test('PREP-UI-03: crear producto habilita nombre y elimina cualquier selección anterior',()=>{
+ const {syncDoughProductMode}=require('../public/dough.js');
+ const fields={productMode:{value:'new'},productId:{value:'old-product'},productName:{value:'Concha nueva'}};
+ assert.equal(syncDoughProductMode(fields),false);
+ assert.equal(fields.productId.value,'');
+ assert.equal(fields.productId.disabled,true);
+ assert.equal(fields.productId.required,false);
+ assert.equal(fields.productName.disabled,false);
+ assert.equal(fields.productName.required,true);
+ assert.equal(fields.productName.value,'Concha nueva');
+ fields.productMode.value='edit';fields.productId.value='existing';
+ assert.equal(syncDoughProductMode(fields),true);
+ assert.equal(fields.productId.disabled,false);
+ assert.equal(fields.productId.required,true);
+ assert.equal(fields.productName.disabled,true);
+ assert.equal(fields.productName.required,false);
+ fields.productMode.value='new';
+ syncDoughProductMode(fields);
+ assert.equal(fields.productId.value,'');
+ assert.equal(fields.productName.disabled,false);
+ const html=fs.readFileSync(path.join(__dirname,'../public/index.html'),'utf8');
+ assert.match(html,/<option value="new" selected>Crear producto nuevo/);
+ assert.match(html,/<select name="productId" disabled>/);
+});
+
+test('PREP-UI-04: jornada de producción calcula piezas y masa sin redondear ni sumar complementos',()=>{
+ const {doughBatchTotals}=require('../public/dough.js');
+ const formats=[{productId:'concha',doughGrams:45},{productId:'hamburguesa',doughGrams:60},{productId:'bollo',doughGrams:35},{productId:'bun',doughGrams:70}];
+ assert.deepEqual(doughBatchTotals(formats,{concha:20,hamburguesa:12,bollo:10,bun:10}),{pieces:52,grams:2670,valid:true});
+ assert.deepEqual(doughBatchTotals(formats,{}),{pieces:0,grams:0,valid:true});
+ assert.equal(doughBatchTotals(formats,{concha:1.5}).valid,false);
+ assert.equal(doughBatchTotals(formats,{concha:-1}).valid,false);
+ assert.equal(doughBatchTotals(formats,{concha:1000001}).valid,false);
+});
+test('PREP-UI-05: no ofrece editar productos de otra masa ni productos inactivos',()=>{
+ const {doughEditableProducts}=require('../public/dough.js');
+ const products=[{id:'a',active:true,operationalRecipeId:'brioche'},{id:'b',active:true,operationalRecipeId:'other'},{id:'c',active:false},{id:'d',active:true},{id:'e',active:true}];
+ assert.deepEqual(doughEditableProducts(products,[{productId:'e',recipeId:'other'}],'brioche').map(p=>p.id),['a','d']);
+ assert.deepEqual(doughEditableProducts(products,[],''),[]);
+});
+test('PREP-UI-06: producción diaria primero, paneles separados y controles disponibles',()=>{
+ const html=fs.readFileSync(path.join(__dirname,'../public/index.html'),'utf8');
+ assert.ok(html.indexOf('id="dough-panel-batch"')<html.indexOf('id="dough-panel-prep"'));
+ assert.ok(html.indexOf('id="dough-panel-prep"')<html.indexOf('id="dough-panel-settings"'));
+ for(const id of ['dough-live-totals','dough-clear-pieces','dough-calculate','dough-product-cards','dough-reload','dough-prep-quantity-label'])
+   assert.ok(html.includes('id="'+id+'"'),id);
+ assert.match(html,/id="dough-panel-prep" hidden/);
+ assert.match(html,/id="dough-panel-settings" hidden/);
+});
+
+async function exerciseDough(source,html,assert,execute){
+ class Node{
+  constructor(tag='div'){this.tag=tag;this.children=[];this.dataset={};this.handlers={};this.attributes={};this.value='';this.textContent='';this.className='';this.disabled=false;this.hidden=false;this.elements={};}
+  append(...items){this.children.push(...items);}
+  replaceChildren(...items){this.children=items; if(this.tag==='select')this.value='';this.textContent='';}
+  get options(){return this.children;}
+  setAttribute(k,v){this.attributes[k]=v;}
+  addEventListener(k,f){(this.handlers[k]??=[]).push(f);}
+  async fire(k,props={}){for(const f of this.handlers[k]||[])await f({preventDefault(){},...props});}
+  remove(){}
+  focus(){}
+  scrollIntoView(){}
+  matches(s){return s.startsWith('.')?this.className.split(' ').includes(s.slice(1)):s==='[data-dough-panel]'?!!this.dataset.doughPanel:s==='[data-dough-go]'?!!this.dataset.doughGo:s==='[data-dough-panel="settings"]'?this.dataset.doughPanel==='settings':s==='[data-dough-go="settings"]'?this.dataset.doughGo==='settings':s==='button[type=submit]'?this.tag==='button'&&this.type==='submit':this.tag===s;}
+  querySelectorAll(s){const parts=s.split(',');const all=this.children.flatMap(n=>[n,...n.querySelectorAll(s)]);return all.filter((n,i)=>parts.some(p=>n.matches(p))&&all.indexOf(n)===i);}
+  querySelector(s){return this.querySelectorAll(s)[0]||null;}
+ }
+ const ids=new Map();
+ for(const m of html.matchAll(/<([a-z]+)[^>]*\bid="([^"]+)"/g))ids.set(m[2],new Node(m[1]));
+ const $=id=>{if(!ids.has(id))throw Error('Falta ID '+id);return ids.get(id)};
+ function form(id,fields){const f=$(id);for(const [name,tag] of Object.entries(fields)){const n=new Node(tag);f.elements[name]=n;f.append(n);}const b=new Node('button');b.type='submit';f.append(b);return f;}
+ const base=form('dough-base-form',{recipeId:'select',referenceGrams:'input'});
+ const format=form('dough-format-form',{recipeId:'select',productMode:'select',productId:'select',productName:'input',doughGrams:'input'});
+ format.elements.productMode.value='new';
+ const batch=form('dough-batch-form',{recipeId:'select'});batch.append($('dough-batch-formats'),$('dough-calculate'));
+ const prep=form('dough-prep-batch-form',{recipeId:'select',quantity:'input'});
+ form('dough-prep-link-form',{recipeId:'select',ingredientId:'select'});
+ const create=form('dough-prep-create-form',{name:'input',baseYield:'input',yieldUnit:'select',ingredientId:'select'});create.elements.yieldUnit.value='g';
+ const root=$('dough-production'),nav={};
+ for(const name of ['batch','prep','settings']){const b=new Node('button');b.dataset.doughPanel=name;root.append(b);nav[name]=b;}
+ const doc=new Node();doc.getElementById=$;doc.createElement=t=>new Node(t);
+ const formats=[{recipeId:'brioche',productId:'concha',productName:'Concha',active:true,doughGrams:45,extras:[]},{recipeId:'brioche',productId:'bollo',productName:'Bollo',active:true,doughGrams:35,extras:[]}];
+ const records={'/api/dough/config':{bases:[{recipeId:'brioche',recipeName:'Brioche',referenceGrams:2000}],formats},'/api/products':formats.map(f=>({id:f.productId,name:f.productName,active:true,operationalRecipeId:'brioche'})),'/api/ingredients':[{id:'crust',name:'Costra',unit:'g'},{id:'cream',name:'Queso crema',unit:'kg'}],'/api/recipes':[{id:'brioche',name:'Brioche',baseYield:2000,yieldUnit:'g'},{id:'crust-recipe',name:'Costra',baseYield:500,yieldUnit:'g'},{id:'jam-recipe',name:'Mermelada de guayaba',baseYield:600,yieldUnit:'g'},{id:'unmeasured',name:'Otra costra',baseYield:1,yieldUnit:'pieza'}],'/api/dough/preparations':[{recipeId:'crust-recipe',ingredientId:'crust',recipeName:'Costra',yieldUnit:'g',unit:'g',baseYield:500,stock:200}]};
+ let resolvePreview,posts=[],jamStock=0,creamStock=0.5,bunStock=0;
+ const response=x=>({ok:true,json:async()=>x});
+ const fetch=async(url,opt={})=>{
+   if(opt.method==='POST'){
+     const data=JSON.parse(opt.body);posts.push({url,data});
+     if(url==='/api/dough/preview'){
+       if(data.formats.some(f=>f.productId==='bun')){
+         const n=data.formats.find(f=>f.productId==='bun').pieces,needed=n*15;
+         return response({totalPieces:n,doughGrams:n*50,recipeName:'Brioche',formats:[{productName:'Bun',pieces:n,doughGramsPerPiece:50,doughGrams:n*50}],consumptions:[
+           {ingredientId:'jam',name:'Mermelada de guayaba',required:needed/1000,stock:jamStock/1000,unit:'kg',shortage:Math.max(0,needed-jamStock)/1000,sufficient:jamStock>=needed},
+           {ingredientId:'cream',name:'Queso crema',required:n*0.01,stock:creamStock,unit:'kg',shortage:0,sufficient:true}
+         ],stockAvailable:jamStock>=needed});
+       }
+       return new Promise(resolve=>{resolvePreview=()=>resolve(response({totalPieces:20,doughGrams:900,recipeName:'Brioche',formats:[{productName:'Concha',pieces:20,doughGramsPerPiece:45,doughGrams:900}],consumptions:[],stockAvailable:true}));});
+     }
+     if(url==='/api/dough/preparations/preview')return response({quantity:data.quantity,yieldUnit:'g',recipeName:'Mermelada de guayaba',addedQuantity:data.quantity/1000,outputUnit:'kg',outputName:'Mermelada de guayaba',lines:[],stockAvailable:true});
+     if(url==='/api/dough/preparations/produce'){
+       jamStock+=data.quantity;
+       records['/api/dough/preparations'].find(p=>p.recipeId==='jam-recipe').stock=jamStock/1000;
+       return response({addedQuantity:data.quantity/1000,unit:'kg',ingredientName:'Mermelada de guayaba'});
+     }
+     if(url==='/api/dough/confirm'){
+       const n=data.formats.find(f=>f.productId==='bun').pieces;
+       jamStock-=n*15;creamStock-=n*0.01;bunStock+=n;
+       return response({totalPieces:n,finishedProducts:[{id:'bun'}]});
+     }
+   }
+   if(opt.method==='POST'&&url==='/api/dough/preparations/create'){
+     const data=JSON.parse(opt.body);
+     records['/api/recipes'].push({id:'new-prep',name:data.name,baseYield:data.baseYield,yieldUnit:data.yieldUnit,items:data.items});
+     records['/api/ingredients'].push({id:'new-output',name:'Preparacion: '+data.name,unit:data.yieldUnit,stock:0});
+     records['/api/dough/preparations'].push({recipeId:'new-prep',ingredientId:'new-output',recipeName:data.name,yieldUnit:data.yieldUnit,unit:data.yieldUnit,baseYield:data.baseYield,stock:0});
+     return response({recipeId:'new-prep',ingredientId:'new-output',name:data.name});
+   }
+   if(opt.method==='POST'&&url==='/api/dough/preparations'){
+     records['/api/ingredients'].push({id:'jam',name:'Preparacion: Mermelada de guayaba',unit:'g',stock:0});
+     records['/api/dough/preparations'].push({recipeId:'jam-recipe',ingredientId:'jam',recipeName:'Mermelada de guayaba',yieldUnit:'g',unit:'g',baseYield:600,stock:0});
+     return response({recipeId:'jam-recipe',ingredientId:'jam'});
+   }
+   if(opt.method==='POST'&&url==='/api/dough/product'){
+     formats.push({recipeId:'brioche',productId:'bun',productName:'Bun',active:true,doughGrams:50,extras:[{ingredientId:'jam',name:'Mermelada',quantityPerPiece:15,unit:'g'},{ingredientId:'cream',name:'Queso crema',quantityPerPiece:0.01,unit:'kg'}]});
+     records['/api/products'].push({id:'bun',name:'Bun',active:true,operationalRecipeId:'brioche'});
+     return response({id:'bun'});
+   }
+   if(!(url in records))throw Error('Ruta inesperada '+url);return response(records[url]);
+ };
+ const win={};
+ execute(source,doc,win,fetch);
+ await doc.fire('paniko:auth',{detail:{user:{role:'admin'}}});
+ for(let i=0;i<30;i++)await Promise.resolve();
+ assert.equal(batch.elements.recipeId.value,'brioche');
+ assert.equal(format.elements.productName.disabled,false);
+ assert.equal(format.elements.productId.disabled,true);
+ assert.equal($('dough-batch-formats').children.length,2);
+ const qty=()=>$('dough-batch-formats').children[0].querySelector('.dough-pieces');
+ qty().value='20';await batch.fire('input');
+ assert.equal($('dough-live-totals').children[0].children[1].textContent,'20');
+ assert.equal($('dough-live-totals').children[1].children[1].textContent,'900 g');
+ await nav.prep.fire('click');assert.equal($('dough-panel-prep').hidden,false);
+ await nav.batch.fire('click');assert.equal(qty().value,'20');
+ await $('dough-reload').fire('click');for(let i=0;i<30;i++)await Promise.resolve();
+ assert.equal(qty().value,'20');
+ const pending=batch.fire('submit');await Promise.resolve();
+ assert.equal(posts[0].data.formats[0].pieces,20);
+ qty().value='21';await batch.fire('input');resolvePreview();await pending;
+ assert.equal($('dough-confirm').disabled,true);
+ assert.equal($('dough-batch-preview').children.length,0);
+ assert.equal(posts.filter(p=>p.url.endsWith('/confirm')).length,0);
+ await nav.settings.fire('click');
+ await $('dough-add-extra').fire('click');
+ assert.equal($('dough-extra-items').children[0].children[0].options[1].value,'crust');
+ // Bun de guayaba: conservar el borrador al vincular una preparación que aún no está en inventario.
+ format.elements.productName.value='Bun de guayaba y queso crema';
+ format.elements.doughGrams.value='50';
+ const row=$('dough-extra-items').children[0],select=row.children[0];
+ assert.ok(select.options.some(o=>o.value==='recipe:jam-recipe'));
+ select.value='recipe:jam-recipe';await select.fire('change');
+ row.children[1].value='15';
+ assert.equal(row.children[2].value,'g');
+ assert.equal(row.children[4].hidden,false);
+ await $('dough-add-direct-extra').fire('click');
+ const creamRow=$('dough-extra-items').children[1];
+ creamRow.children[0].value='cream';await creamRow.children[0].fire('change');
+ creamRow.children[1].value='10';
+ assert.equal(creamRow.children[2].value,'g');
+ await format.fire('submit');
+ assert.equal(posts.filter(p=>p.url==='/api/dough/product').length,0);
+ await row.children[4].children[1].fire('click');
+ assert.equal(posts.filter(p=>p.url==='/api/dough/preparations').length,1);
+ assert.equal(select.value,'jam');
+ assert.equal(row.children[1].value,'15');
+ assert.equal(creamRow.children[1].value,'10');
+ assert.equal(format.elements.productName.value,'Bun de guayaba y queso crema');
+ assert.equal(format.elements.doughGrams.value,'50');
+ await format.fire('submit');
+ const saved=posts.find(p=>p.url==='/api/dough/product').data;
+ assert.equal(saved.name,'Bun de guayaba y queso crema');
+ assert.equal(saved.doughGrams,50);
+ assert.equal(JSON.stringify(saved.extras),JSON.stringify([{ingredientId:'jam',quantity:15,unit:'g'},{ingredientId:'cream',quantity:10,unit:'g'}]));
+ assert.equal(posts.filter(p=>p.url.endsWith('/confirm')||p.url.endsWith('/produce')).length,0);
+ // Producción del bun: faltante de 0.2 kg, preparación de 200 g y vuelta al lote.
+ jamStock=100;
+ records['/api/dough/preparations'].find(p=>p.recipeId==='jam-recipe').stock=0.1;
+ await nav.batch.fire('click');
+ qty().value='0';
+ const bunQty=()=>$('dough-batch-formats').children.find(x=>x.dataset.productId==='bun').querySelector('.dough-pieces');
+ bunQty().value='20';await batch.fire('input');
+ await batch.fire('submit');
+ assert.equal($('dough-confirm').disabled,true);
+ const shortcut=$('dough-batch-preview').querySelector('button');
+ assert.equal(shortcut.textContent,'Preparar 200 g faltantes');
+ await shortcut.fire('click');
+ assert.equal($('dough-panel-prep').hidden,false);
+ assert.equal(prep.elements.recipeId.value,'jam-recipe');
+ assert.equal(prep.elements.quantity.value,'200');
+ await prep.fire('submit');
+ assert.equal($('dough-prep-confirm').disabled,false);
+ await $('dough-prep-confirm').fire('click');
+ assert.equal(jamStock,300);
+ assert.equal($('dough-panel-batch').hidden,false);
+ assert.equal(bunQty().value,'20');
+ assert.equal($('dough-confirm').disabled,true);
+ await batch.fire('submit');
+ assert.equal($('dough-confirm').disabled,false);
+ await $('dough-confirm').fire('click');
+ assert.equal(bunStock,20);
+ assert.equal(jamStock,0);
+ assert.equal(creamStock,0.3);
+ assert.equal(bunQty().value,'0');
+ assert.equal($('dough-confirm').disabled,true);
+ assert.equal(posts.filter(p=>p.url==='/api/dough/confirm').length,1);
+ await nav.prep.fire('click');
+ await $('dough-prep-new').fire('click');
+ assert.equal(create.hidden,false);
+ create.elements.name.value='Crema de prueba';create.elements.baseYield.value='600';
+ const item=$('dough-prep-create-items').children[0];
+ item.children[0].value='cream';await item.children[0].fire('change');
+ item.children[1].value='100';
+ assert.equal(item.children[2].value,'g');
+ await create.fire('submit');
+ const newPrep=posts.find(p=>p.url==='/api/dough/preparations/create').data;
+ assert.equal(newPrep.name,'Crema de prueba');
+ assert.equal(newPrep.baseYield,600);
+ assert.equal(newPrep.items[0].quantity,100);
+ assert.equal(newPrep.items[0].unit,'g');
+ assert.equal(prep.elements.recipeId.value,'new-prep');
+ assert.equal(records['/api/ingredients'].find(i=>i.id==='new-output').stock,0);
+ assert.equal(posts.filter(p=>p.url==='/api/dough/preparations/produce').length,1);
+}
+
+test('PREP-UI-07: recorrido simulado conserva piezas y descarta vista previa obsoleta',async()=>{
+ const source=fs.readFileSync(path.join(__dirname,'../public/dough.js'),'utf8');
+ const html=fs.readFileSync(path.join(__dirname,'../public/index.html'),'utf8');
+ await exerciseDough(source,html,assert,(s,doc,win,fetch)=>require('node:vm').runInNewContext(s,{document:doc,window:win,fetch,confirm:()=>true,crypto:{randomUUID:()=>randomUUID()}}));
+});
+
+test('PREP-UI-08: incluye fichas de mermelada sin vincular y detecta existencia equivalente',()=>{
+ const {doughPreparationChoices,doughMatchingStock}=require('../public/dough.js');
+ const jam={id:'recipe-jam',name:'Mermelada de guayaba',yieldUnit:'g',items:[{ingredientId:'fruit'}]};
+ const recipes=[jam,{id:'base',name:'Brioche',yieldUnit:'g'},{id:'other',name:'Costra',yieldUnit:'pieza'}];
+ const ingredients=[{id:'jam',name:'Preparación: Mermelada de guayaba',unit:'kg'},{id:'fruit',name:'Guayaba',unit:'kg'},{id:'cream',name:'Queso crema',unit:'kg'}];
+ const options=doughPreparationChoices(ingredients,[],recipes,[{recipeId:'base'}]);
+ assert.equal(options.some(o=>o.id==='recipe:recipe-jam'),true);
+ assert.equal(options.some(o=>o.id==='recipe:base'),false);
+ assert.match(options.find(o=>o.id==='recipe:other').name,/falta rendimiento/);
+ assert.deepEqual(doughMatchingStock(jam,ingredients,[]).map(i=>i.id),['jam']);
+ assert.deepEqual(doughMatchingStock(jam,ingredients,[{ingredientId:'jam'}]),[]);
+});
+test('PREP-BUN-01: 20 buns consumen 1000 g masa, 200 g queso y 300 g mermelada',()=>{
+ const {validateFormat,buildPlan}=require('../src/dough-formats');
+ const [rid,pid,flour,cream,jam]=Array.from({length:5},()=>randomUUID());
+ const ingredients=[{id:flour,name:'Harina de prueba',unit:'g',stock:3000,costPerUnit:0.01},{id:cream,name:'Queso crema',unit:'kg',stock:0.5,costPerUnit:100},{id:jam,name:'Mermelada de guayaba',unit:'g',stock:300,costPerUnit:0.1}];
+ const recipe={id:rid,name:'Brioche de prueba',baseYield:2000,yieldUnit:'g',items:[{ingredientId:flour,quantity:1000}]};
+ const f=validateFormat({recipeId:rid,productId:pid,doughGrams:50,extras:[{ingredientId:cream,quantity:10,unit:'g'},{ingredientId:jam,quantity:15,unit:'g'}]},ingredients);
+ const formats=[{...f,productName:'Bun de guayaba',active:true}];
+ const plan=buildPlan(recipe,2000,formats,[{productId:pid,pieces:20}],ingredients);
+ assert.equal(plan.totalPieces,20);assert.equal(plan.doughGrams,1000);
+ assert.equal(plan.consumptions.find(x=>x.ingredientId===cream).required,0.2);
+ assert.equal(plan.consumptions.find(x=>x.ingredientId===jam).required,300);
+ assert.equal(plan.consumptions.find(x=>x.ingredientId===flour).required,500);
+ assert.equal(plan.stockAvailable,true);
+ ingredients[2].stock=100;
+ const shortage=buildPlan(recipe,2000,formats,[{productId:pid,pieces:20}],ingredients);
+ assert.equal(shortage.stockAvailable,false);
+ assert.equal(shortage.consumptions.find(x=>x.ingredientId===jam).shortage,200);
+});
+
+test('PREP-UI-09: convierte faltantes de kg a g y de l a ml sin redondear hacia abajo',()=>{
+ const {doughPreparationShortage,doughReadableAmount}=require('../public/dough.js');
+ const prep=[{ingredientId:'jam',recipeId:'recipe',recipeName:'Guayaba',yieldUnit:'g'}];
+ assert.deepEqual(doughPreparationShortage({ingredientId:'jam',shortage:0.2,unit:'kg'},prep),{recipeId:'recipe',recipeName:'Guayaba',quantity:200,yieldUnit:'g'});
+ assert.equal(doughPreparationShortage({ingredientId:'jam',shortage:0.2001,unit:'kg'},prep).quantity,201);
+ assert.equal(doughPreparationShortage({ingredientId:'cream',shortage:0.2,unit:'kg'},prep),null);
+ assert.deepEqual(doughReadableAmount(.01,'kg'),{quantity:10,unit:'g'});
+ assert.deepEqual(doughReadableAmount(.015,'kg'),{quantity:15,unit:'g'});
+ assert.equal(doughPreparationShortage({ingredientId:'jam',shortage:0.25,unit:'l'},[{...prep[0],yieldUnit:'ml'}]).quantity,250);
 });

@@ -142,6 +142,11 @@ function createApp({store, auth = null, products = null, finance = null, sourdou
           if(!preparations)return respond(503,{error:'Subpreparaciones no disponibles'});
           return respond(201,await preparations.register(await bodyAsJson(req)));
         }
+        if(pathname==='/api/dough/preparations/create'&&req.method==='POST'){
+          if(loggedInUser.role!=='admin')return respond(403,{error:'Solo administración puede crear fichas de preparación'});
+          if(!preparations)return respond(503,{error:'Subpreparaciones no disponibles'});
+          return respond(201,await preparations.create(await bodyAsJson(req)));
+        }
         if(pathname==='/api/dough/preparations/preview'&&req.method==='POST'){
           if(!preparations)return respond(503,{error:'Subpreparaciones no disponibles'});
           return respond(200,await preparations.preview(await bodyAsJson(req)));
@@ -301,6 +306,11 @@ function createApp({store, auth = null, products = null, finance = null, sourdou
         if(preparations && (await preparations.list()).some(p=>p.recipeId===produce[1]))
           throw new ValidationError('Esta receta es una subpreparación: registra los gramos obtenidos desde Producción por formatos para actualizar inventario',409);
         const body = await bodyAsJson(req);
+        if(dough&&typeof dough.list==='function'){
+          const configured=await dough.list();
+          if(configured.formats.some(f=>f.active&&(f.recipeId===produce[1]||f.productId===body.productId)))
+            throw new ValidationError('Esta masa o producto tiene formatos configurados. Usa Producción por formatos para incluir sus gramajes y complementos sin descontar dos veces.',409);
+        }
         return respond( 201, await store.confirmProduction(produce[1], body.desiredYield, {productId:body.productId||null,operationId:body.operationId||null}));
       }
       respond(404, {error: 'Ruta no encontrada'});

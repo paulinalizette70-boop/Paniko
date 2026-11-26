@@ -87,3 +87,75 @@ test('DB-PREP-02 reutiliza la existencia ya registrada de una receta de mermelad
     assert.equal((await inv.listIngredients()).find(x=>x.id===output.id).stock,.6);
   }finally{await db.end();}
 });
+
+test('DB-PREP-03 jornada bun: faltante de guayaba, preparación y lote sin doble descuento',
+ {skip:!enabled?'Solo MySQL de pruebas con nombre *_test':false},async()=>{
+  if(!/_test$/.test(process.env.DB_NAME||''))throw Error('Base no aislada');
+  const {poolFromEnv}=require('../src/database');
+  const {createMysqlStore}=require('../src/mysql-store');
+  const {createFinishedProductStore}=require('../src/finished-products');
+  const {createDoughFormatStore}=require('../src/dough-formats');
+  const {createPreparationStore}=require('../src/dough-preparations');
+  const db=poolFromEnv();
+  try{
+    const inv=createMysqlStore(db),prep=createPreparationStore(db),dough=createDoughFormatStore(db),products=createFinishedProductStore(db),suffix=randomUUID();
+    const flour=await inv.addIngredient({name:'Harina bun '+suffix,unit:'g',stock:3000,costPerUnit:.02});
+    const cream=await inv.addIngredient({name:'Queso bun '+suffix,unit:'kg',stock:.5,costPerUnit:100});
+    const fruit=await inv.addIngredient({name:'Guayaba prueba '+suffix,unit:'g',stock:1000,costPerUnit:.05});
+    const jam=await inv.addIngredient({name:'Mermelada prueba '+suffix,unit:'kg',stock:.1,costPerUnit:100});
+    const base=await inv.addRecipe({name:'Brioche bun '+suffix,baseYield:2000,yieldUnit:'g',items:[{ingredientId:flour.id,quantity:1000,unit:'g'}]});
+    const jamRecipe=await inv.addRecipe({name:'Guayaba preparada '+suffix,baseYield:600,yieldUnit:'g',items:[{ingredientId:fruit.id,quantity:600,unit:'g'}]});
+    await prep.register({recipeId:jamRecipe.id,ingredientId:jam.id});
+    await dough.setBase({recipeId:base.id,referenceGrams:2000});
+    const bun=await dough.createProduct({recipeId:base.id,name:'Bun guayaba '+suffix,doughGrams:50,extras:[{ingredientId:cream.id,quantity:10,unit:'g'},{ingredientId:jam.id,quantity:15,unit:'g'}]});
+    const stock=async id=>(await inv.listIngredients()).find(x=>x.id===id).stock;
+    assert.equal(await stock(jam.id),.1);
+    const payload={recipeId:base.id,formats:[{productId:bun.id,pieces:20}],operationId:randomUUID()};
+    const missing=await dough.preview(payload);
+    assert.equal(missing.stockAvailable,false);
+    assert.equal(missing.consumptions.find(x=>x.ingredientId===jam.id).shortage,.2);
+    await assert.rejects(()=>dough.confirm(payload),/Faltan ingredientes/);
+    assert.equal(await stock(flour.id),3000);
+    const prepPayload={recipeId:jamRecipe.id,quantity:200,operationId:randomUUID()};
+    assert.equal((await prep.preview(prepPayload)).stockAvailable,true);
+    await prep.produce(prepPayload);
+    await prep.produce(prepPayload);
+    assert.equal(await stock(jam.id),.3);
+    assert.equal(await stock(fruit.id),800);
+    const ready=await dough.preview(payload);
+    assert.equal(ready.stockAvailable,true);
+    assert.equal(ready.doughGrams,1000);
+    const done=await dough.confirm(payload);
+    const repeat=await dough.confirm(payload);
+    assert.equal(done.id,repeat.id);
+    assert.equal(await stock(jam.id),0);
+    assert.equal(await stock(cream.id),.3);
+    assert.equal(await stock(flour.id),2500);
+    assert.equal(await stock(fruit.id),800);
+    assert.equal((await products.listProducts()).find(p=>p.id===bun.id).stock,20);
+  }finally{await db.end();}
+});
+
+test('DB-PREP-04 alta directa de costra guarda ficha y existencia sin consumir materias primas',
+ {skip:!enabled?'Solo MySQL de pruebas con nombre *_test':false},async()=>{
+  if(!/_test$/.test(process.env.DB_NAME||''))throw Error('Base no aislada');
+  const {poolFromEnv}=require('../src/database');
+  const {createMysqlStore}=require('../src/mysql-store');
+  const {createPreparationStore}=require('../src/dough-preparations');
+  const db=poolFromEnv();
+  try{
+    const inv=createMysqlStore(db),prep=createPreparationStore(db),suffix=randomUUID();
+    const sugar=await inv.addIngredient({name:'Azucar nueva '+suffix,unit:'kg',stock:2,costPerUnit:30});
+    const butter=await inv.addIngredient({name:'Mantequilla nueva '+suffix,unit:'g',stock:1000,costPerUnit:.12});
+    const input={name:'Costra nueva '+suffix,baseYield:600,yieldUnit:'g',items:[{ingredientId:sugar.id,quantity:300,unit:'g'},{ingredientId:butter.id,quantity:300,unit:'g'}]};
+    const saved=await prep.create(input);
+    const stock=async id=>(await inv.listIngredients()).find(x=>x.id===id).stock;
+    assert.equal(await stock(sugar.id),2);assert.equal(await stock(butter.id),1000);assert.equal(await stock(saved.ingredientId),0);
+    assert.equal((await inv.listRecipes()).find(r=>r.id===saved.recipeId).baseYield,600);
+    await assert.rejects(()=>prep.create(input),/Ya existe/);
+    assert.equal((await inv.listRecipes()).filter(r=>r.name===input.name).length,1);
+    assert.equal((await prep.preview({recipeId:saved.recipeId,quantity:300})).stockAvailable,true);
+    await prep.produce({recipeId:saved.recipeId,quantity:300,operationId:randomUUID()});
+    assert.equal(await stock(saved.ingredientId),300);assert.equal(await stock(sugar.id),1.85);assert.equal(await stock(butter.id),850);
+  }finally{await db.end();}
+});

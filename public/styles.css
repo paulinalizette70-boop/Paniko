@@ -370,3 +370,47 @@ h3{font-size:1rem;font-weight:750}
 .dough-prep-card strong,.dough-prep-card small{display:block}.dough-prep-card small{color:var(--muted,#82786c);margin-top:7px;line-height:1.4}
 .dough-prep-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 @media(max-width:760px){.dough-prep-fields{grid-template-columns:1fr}}
+
+/* Mesa de trabajo: producir primero, administrar cuando haga falta. */
+.dough-work-nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:16px 0 12px}
+.dough-work-nav button{min-height:48px;white-space:normal;text-align:center;border:1px solid #dce4d4}
+.dough-work-nav button[aria-pressed="true"]{background:#4c684e;color:#fff;border-color:#4c684e}
+.dough-feedback{margin:10px 0 16px;padding:10px 12px;border-radius:10px;background:#f1f4eb}
+.dough-feedback.warning{background:#fff0e9;color:#943a2c}
+.dough-daily-heading{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.dough-daily-heading h3{margin:0 0 4px}
+.dough-live-totals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:12px;background:#edf2e7;border:1px solid #dce4d4;border-radius:12px}
+.dough-live-totals div{display:grid;gap:5px;min-width:0}
+.dough-live-totals small{font-size:.78rem;color:#596b56}
+.dough-live-totals strong{font-size:1.2rem;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;color:#344d38}
+.dough-live-totals p{grid-column:1/-1;margin:0}
+.dough-quick-actions{display:flex;flex-wrap:wrap;gap:8px}
+.dough-batch-row{grid-template-columns:minmax(0,1fr) 145px;gap:14px}
+.dough-piece-controls{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.dough-piece-controls button{min-height:36px;padding:4px 10px}
+.dough-pieces{font-size:1.1rem;text-align:center;min-height:44px}
+.dough-config-grid{align-items:start;grid-template-columns:minmax(0,1fr)}
+.dough-config-grid .form-stack{align-content:start;background:#fafaf6;padding:16px;border:1px solid #e4e6db;border-radius:12px;gap:12px}
+.dough-product-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:12px 0}
+.dough-product-card{display:grid;align-content:start;gap:6px;border:1px solid #e0e4d8;border-radius:12px;padding:14px;background:#f6f7ef}
+.dough-product-card small{color:#687367;line-height:1.4}
+.dough-product-card button{margin-top:4px;justify-self:start}
+.dough-prep-area{margin-top:0;padding-top:0;border-top:0}
+#dough-panel-batch,#dough-panel-prep,#dough-panel-settings{padding-top:5px}
+#dough-panel-batch>button,#dough-panel-prep>button,#dough-panel-settings>button{margin:10px 0}
+@media(max-width:760px){
+ .dough-work-nav{grid-template-columns:1fr}
+ .dough-daily-heading{align-items:stretch;flex-direction:column}
+ .dough-live-totals{grid-template-columns:1fr 1fr}
+ .dough-batch-row{grid-template-columns:minmax(0,1fr) 108px}
+ .dough-quick-actions button{width:100%}
+}
+
+.dough-inline-link{grid-column:1/-1;background:#f0f4e9;border:1px solid #dce4d4;border-radius:9px;padding:10px;display:grid;gap:8px}
+.dough-inline-link p{margin:0;line-height:1.5}
+.dough-inline-link button{justify-self:start;white-space:normal;text-align:left}
+
+.dough-prep-editor{margin:16px 0;padding:18px;background:#f8faf4;border:1px solid #dce4d4;border-radius:12px}
+#dough-prep-admin-actions{margin:14px 0}
+#dough-prep-catalog-list{margin:16px 0;padding:14px;border:1px solid #dce4d4;border-radius:12px}
+#dough-prep-catalog-list input[type=search]{width:100%;margin:8px 0}
