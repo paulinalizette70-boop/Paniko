@@ -141,16 +141,31 @@
               </article>
             </div>
             <section class="panel dough-feature" id="dough-production" data-component="dough" hidden>
-            <div class="section-heading panel-heading"><div><span class="eyebrow">UNA MASA, VARIOS PANES</span><h2>Producción por formatos</h2><p class="muted">Selecciona una receta base y crea desde ella conchas, bollos o buns. Cada producto conserva su gramaje y sus rellenos.</p></div></div>
-            <p class="hint">Las costras, mermeladas y otros complementos pueden convertirse en inventario desde su propia ficha técnica, sin registrarlos dos veces. Solo se descontarán de existencias cuando produzcas los panes.</p>
-            <div id="dough-status" class="hint" role="status" aria-live="polite"></div>
-            <details class="action-details dough-admin" id="dough-settings" hidden>
-              <summary><strong>Configurar masa base y formatos</strong> · Administración</summary>
-              <div class="dough-config-grid">
-                <form id="dough-base-form" class="form-stack"><h3>Masa base</h3><label>Receta existente<select name="recipeId" required></select></label><label>Gramos de masa que rinde esa receta completa<input name="referenceGrams" type="number" min="1" step="1" required placeholder="Ej. 5000"/></label><p class="hint">Si la ficha técnica ya está en gramos, deben coincidir. Si está en piezas, indica el peso real total del lote.</p><button type="submit" class="btn-soft">Guardar masa base</button></form>
-                <form id="dough-format-form" class="form-stack"><h3>Crear producto desde esta masa</h3><label>Receta base<select name="recipeId" required></select></label><label>¿Qué deseas hacer?<select name="productMode"><option value="new" selected>Crear producto nuevo</option><option value="edit">Editar producto existente</option></select></label><label id="dough-existing-product-field" hidden>Producto que deseas editar<select name="productId" disabled><option value="">Selecciona un producto</option></select></label><label id="dough-new-product-field">Nombre del nuevo producto<input name="productName" maxlength="150" placeholder="Ej. Concha de brioche" required/></label><label>Gramos de masa por pieza<input name="doughGrams" type="number" min="1" max="1000000" step="1" required placeholder="Ej. 45"/></label><h4>Rellenos o cubiertas por pieza</h4><p class="hint">Agrega costra, mermelada u otras preparaciones vinculadas a una ficha técnica. Para queso crema, chocolate u otros ingredientes sin preparar, usa Ingrediente directo.</p><div id="dough-extra-items"></div><button id="dough-add-extra" type="button" class="btn-soft">+ Agregar preparación</button><button id="dough-add-direct-extra" type="button" class="btn-soft">+ Agregar ingrediente directo</button><button id="dough-save-product" type="submit" class="btn-primary">Crear producto y guardar formato</button></form>
-              </div>
-            </details>
+              <div class="section-heading panel-heading"><div><span class="eyebrow">TU MESA DE TRABAJO</span><h2>Producción por formatos</h2><p class="muted">Una masa base, todos tus panes. Configura una vez y produce cada día.</p></div><button type="button" id="dough-reload" class="btn-soft">Actualizar existencias</button></div>
+              <nav class="dough-work-nav" aria-label="Flujo de producción por formatos">
+                <button type="button" class="btn-soft" data-dough-panel="batch" aria-pressed="true">1. Producir panes</button>
+                <button type="button" class="btn-soft" data-dough-panel="prep" aria-pressed="false">2. Preparaciones</button>
+                <button type="button" class="btn-soft" data-dough-panel="settings" aria-pressed="false" hidden>3. Configurar productos</button>
+              </nav>
+              <div id="dough-status" class="hint dough-feedback" role="status" aria-live="polite"></div>
+              <section id="dough-panel-batch">
+                <form id="dough-batch-form" class="form-stack">
+                  <label>Masa base de hoy<select name="recipeId" required></select></label>
+                  <div id="dough-base-note" class="hint"></div>
+                  <div class="dough-daily-heading"><div><h3>¿Cuántos panes vas a hacer?</h3><p class="hint">Deja en cero los productos que no vas a producir.</p></div><button type="button" id="dough-clear-pieces" class="btn-soft">Limpiar cantidades</button></div>
+                  <div id="dough-batch-formats" class="dough-batch-formats"></div>
+                  <div id="dough-live-totals" class="dough-live-totals" aria-live="polite"></div>
+                  <div class="dough-quick-actions">
+                    <button type="button" class="btn-soft" data-dough-go="prep">Ver o preparar complementos</button>
+                    <button type="button" class="btn-soft" data-dough-go="settings" hidden>Crear o editar un producto</button>
+                  </div>
+                  <button type="submit" class="btn-primary" id="dough-calculate">Revisar consumo y faltantes</button>
+                </form>
+                <div id="dough-batch-preview" class="dough-batch-preview" aria-live="polite"></div>
+                <button type="button" id="dough-confirm" class="btn-primary" disabled>Confirmar lote de varios formatos</button>
+                <p class="hint">Solo confirma después de elaborar los panes. El lote descuenta ingredientes y suma productos terminados.</p>
+              </section>
+              <section id="dough-panel-prep" hidden>
             <section class="dough-prep-area">
               <div class="section-heading"><div><span class="eyebrow">INGREDIENTES QUE TÚ PREPARAS</span><h3>Costras, mermeladas y otras subpreparaciones</h3><p class="muted">Vincula una receta que rinda gramos o mililitros; al confirmarla, sus insumos se descontarán y su preparación aparecerá entre los complementos disponibles.</p></div></div>
               <details id="dough-prep-link-details" class="action-details dough-admin" hidden><summary><strong>Vincular receta como subpreparación</strong> · Administración</summary>
@@ -164,18 +179,28 @@
               <div id="dough-prep-list" class="dough-prep-list" aria-live="polite"></div>
               <form id="dough-prep-batch-form" class="form-stack">
                 <div class="dough-prep-fields">
-                  <label>¿Qué preparación hiciste?<select name="recipeId" required></select></label>
-                  <label>Cantidad obtenida (g o ml)<input name="quantity" type="number" step="1" min="1" max="1000000000" required placeholder="Ej. 600"/></label>
+                  <label>Preparación que vas a registrar<select name="recipeId" required></select></label>
+                  <label><span id="dough-prep-quantity-label">Cantidad obtenida (g o ml)</span><input name="quantity" type="number" step="1" min="1" max="1000000000" required placeholder="Ej. 600"/></label>
                 </div>
                 <button type="submit" class="btn-soft">Revisar consumo y existencias</button>
               </form>
               <div id="dough-prep-preview" aria-live="polite"></div>
               <button type="button" class="btn-primary" id="dough-prep-confirm" disabled>Confirmar preparación y actualizar inventario</button>
             </section>
-            <div class="divider"></div>
-            <form id="dough-batch-form" class="form-stack"><label>¿Qué masa vas a utilizar?<select name="recipeId" required></select></label><div id="dough-batch-formats" class="dough-batch-formats"></div><button type="submit" class="btn-soft">Calcular masa y complementos</button></form>
-            <div id="dough-batch-preview" class="dough-batch-preview" aria-live="polite"></div>
-            <button type="button" id="dough-confirm" class="btn-primary" disabled>Confirmar lote de varios formatos</button>
+                <button type="button" class="btn-soft" data-dough-go="batch">Volver a mi lote</button>
+              </section>
+              <section id="dough-panel-settings" hidden>
+                <h3>Productos de esta masa</h3><p class="hint">Configura el rendimiento una sola vez. Puedes modificar las fichas sin cambiar las existencias.</p>
+                <div id="dough-product-cards" class="dough-product-cards"></div>
+            <details class="action-details dough-admin" id="dough-settings" open hidden>
+              <summary><strong>Masa base y ficha del producto</strong> · Administración</summary>
+              <div class="dough-config-grid">
+                <form id="dough-base-form" class="form-stack"><h3>Masa base</h3><label>Receta existente<select name="recipeId" required></select></label><label>Peso total de una receta completa (g)<input name="referenceGrams" type="number" min="1" step="1" required placeholder="Ej. 5000"/></label><p class="hint">Si la ficha técnica ya está en gramos, deben coincidir. Si está en piezas, indica el peso real total del lote.</p><button type="submit" class="btn-soft">Guardar rendimiento</button></form>
+                <form id="dough-format-form" class="form-stack"><h3>Ficha de producto</h3><label>Receta base<select name="recipeId" required></select></label><label>¿Qué deseas hacer?<select name="productMode"><option value="new" selected>Crear producto nuevo</option><option value="edit">Editar producto existente</option></select></label><label id="dough-existing-product-field" hidden>Producto que deseas editar<select name="productId" disabled><option value="">Selecciona un producto</option></select></label><label id="dough-new-product-field">Nombre del nuevo producto<input name="productName" maxlength="150" placeholder="Ej. Concha de brioche" required/></label><label>Gramos de masa por pieza<input name="doughGrams" type="number" min="1" max="1000000" step="1" required placeholder="Ej. 45"/></label><h4>Complementos por pieza (opcionales)</h4><p class="hint">Agrega costra, mermelada u otras preparaciones vinculadas a una ficha técnica. Para queso crema, chocolate u otros ingredientes sin preparar, usa Ingrediente directo.</p><div id="dough-extra-items"></div><button id="dough-add-extra" type="button" class="btn-soft">+ Agregar preparación</button><button id="dough-add-direct-extra" type="button" class="btn-soft">+ Agregar ingrediente directo</button><button id="dough-save-product" type="submit" class="btn-primary">Crear producto y guardar formato</button></form>
+              </div>
+            </details>
+                <button type="button" class="btn-soft" data-dough-go="batch">Volver a producir</button>
+              </section>
             </section>
           </section>
           <section class="view" data-view="ingredients" aria-labelledby="ingredients-title" hidden>
