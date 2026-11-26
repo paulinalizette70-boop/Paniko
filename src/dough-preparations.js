@@ -3,7 +3,7 @@
 // Un lote consume materias primas y suma la preparacion terminada, todo en MySQL.
 const {randomUUID}=require('node:crypto');
 const {withRequest}=require('./idempotency');
-const {ValidationError,convertQuantity}=require('./domain');
+const {ValidationError,convertQuantity,validateRecipe}=require('./domain');
 const {roundQuantity,safeStockSum}=require('./inventory');
 const UUID=/^[a-f\d]{8}-(?:[a-f\d]{4}-){3}[a-f\d]{12}$/i;
 const money=n=>Math.round((n+Number.EPSILON)*100)/100;
@@ -71,6 +71,42 @@ function createPreparationStore(pool){
       if(err?.code==='ER_DUP_ENTRY')throw new ValidationError('La preparacion o su nombre ya existe; selecciona el ingrediente existente para vincularlo',409);
       throw err;
     }finally{conn.release();}
+  }
+  // Crear ficha y existencia en una sola transacción, sin movimientos de inventario.
+  async function create(raw){
+    if(!['g','ml'].includes(raw?.yieldUnit))throw new ValidationError('Indica el rendimiento real en gramos o mililitros');
+    const conn=await pool.getConnection();
+    try{
+      await conn.beginTransaction();
+      const [rows]=await conn.execute('SELECT id,name,unit,cost_per_unit,stock FROM ingredients ORDER BY id FOR UPDATE');
+      const ingredients=rows.map(i=>({id:i.id,name:i.name,unit:i.unit,costPerUnit:Number(i.cost_per_unit),stock:Number(i.stock)}));
+      const recipe=validateRecipe(raw,ingredients);
+      quantity(recipe.baseYield);
+      const [existing]=await conn.execute('SELECT id FROM recipes WHERE name=? FOR UPDATE',[recipe.name]);
+      if(existing.length)throw new ValidationError('Ya existe una ficha con ese nombre. Usa la opción de receta existente.',409);
+      const normalize=v=>String(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/^preparacion:\s*/,'').trim();
+      const matches=ingredients.filter(i=>normalize(i.name)===normalize(recipe.name));
+      let ingredientId;
+      if(raw.ingredientId){
+        ingredientId=id(raw.ingredientId,'Existencia');
+        const ing=ingredients.find(i=>i.id===ingredientId);
+        if(!ing)throw new ValidationError('Existencia no encontrada',404);
+        validateUnit(recipe.yieldUnit,ing.unit);
+        if(recipe.items.some(i=>i.ingredientId===ingredientId))throw new ValidationError('La preparación no puede consumirse a sí misma');
+        const [linked]=await conn.execute('SELECT recipe_id FROM dough_prepared_recipes WHERE ingredient_id=?',[ingredientId]);
+        if(linked.length)throw new ValidationError('Esta existencia ya está vinculada a otra preparación',409);
+      }else{
+        if(matches.length)throw new ValidationError('Ya existe un ingrediente con ese nombre. Selecciona la existencia correcta para no duplicar inventario.',409);
+        ingredientId=randomUUID();
+        await conn.execute('INSERT INTO ingredients (id,name,unit,cost_per_unit,stock) VALUES (?,?,?,0,0)',[ingredientId,('Preparacion: '+recipe.name).slice(0,100),recipe.yieldUnit]);
+      }
+      const recipeId=randomUUID();
+      await conn.execute('INSERT INTO recipes (id,name,base_yield,yield_unit) VALUES (?,?,?,?)',[recipeId,recipe.name,recipe.baseYield,recipe.yieldUnit]);
+      for(const item of recipe.items)await conn.execute('INSERT INTO recipe_items (recipe_id,ingredient_id,quantity) VALUES (?,?,?)',[recipeId,item.ingredientId,item.quantity]);
+      await conn.execute('INSERT INTO dough_prepared_recipes (recipe_id,ingredient_id) VALUES (?,?)',[recipeId,ingredientId]);
+      await conn.commit();
+      return {recipeId,ingredientId,name:recipe.name};
+    }catch(err){await conn.rollback();if(err?.code==='ER_DUP_ENTRY')throw new ValidationError('La preparación o existencia ya existe. Revisa las recetas existentes.',409);throw err;}finally{conn.release();}
   }
   async function getPlan(raw,conn=pool,locked=false){
     const recipeId=id(raw?.recipeId);
@@ -156,6 +192,6 @@ function createPreparationStore(pool){
       await conn.commit();return result;
     }catch(err){await conn.rollback();throw err;}finally{conn.release()}
   }
-  return {list,register,preview,produce};
+  return {list,register,create,preview,produce};
 }
 module.exports={createPreparationStore};
