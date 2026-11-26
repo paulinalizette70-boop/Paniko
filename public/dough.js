@@ -22,6 +22,18 @@ function doughMatchingStock(recipe,ingredients,preparations){
   const units=recipe.yieldUnit==='g'?['g','kg']:recipe.yieldUnit==='ml'?['ml','l']:[];
   return ingredients.filter(i=>!linked.has(i.id)&&!components.has(i.id)&&units.includes(i.unit)&&normalize(i.name)===normalize(recipe.name));
 }
+function doughPreparationShortage(line,preparations){
+  const prep=preparations.find(p=>p.ingredientId===line.ingredientId);
+  if(!prep||!(line.shortage>0))return null;
+  const scale=prep.yieldUnit==='g'?(line.unit==='kg'?1000:line.unit==='g'?1:0):prep.yieldUnit==='ml'?(line.unit==='l'?1000:line.unit==='ml'?1:0):0;
+  if(!scale)return null;
+  return {recipeId:prep.recipeId,recipeName:prep.recipeName,quantity:Math.ceil(Number((line.shortage*scale).toFixed(6))),yieldUnit:prep.yieldUnit};
+}
+function doughReadableAmount(quantity,unit){
+  if(unit==='kg'&&quantity<1)return {quantity:Number((quantity*1000).toFixed(6)),unit:'g'};
+  if(unit==='l'&&quantity<1)return {quantity:Number((quantity*1000).toFixed(6)),unit:'ml'};
+  return {quantity,unit};
+}
 function syncDoughProductMode(fields){
   const editing=fields.productMode.value==='edit';
   fields.productId.disabled=!editing;
@@ -46,7 +58,7 @@ function doughEditableProducts(products,formats,recipeId){
     !formats.some(f=>f.productId===p.id&&f.recipeId!==recipeId));
 }
 if(typeof module==='object'&&module.exports){
-  module.exports={doughComplementChoices,doughPreparationChoices,doughMatchingStock,syncDoughProductMode,doughBatchTotals,doughEditableProducts};
+  module.exports={doughComplementChoices,doughPreparationChoices,doughMatchingStock,doughPreparationShortage,doughReadableAmount,syncDoughProductMode,doughBatchTotals,doughEditableProducts};
 }else (()=>{
   const $=id=>document.getElementById(id), root=$('dough-production');
   if(!root)return;
@@ -59,12 +71,15 @@ if(typeof module==='object'&&module.exports){
   let confirmingPrep=false,confirmingDough=false,pendingPrep=null,pendingDough=null;
   let batchRevision=0,prepRevision=0,refreshRevision=0,savingBase=false,savingFormat=false,savingPrep=false;
   const pieceDrafts=new Map();
+  let returnToBatch=false;
+  const amount=(q,u)=>{const a=doughReadableAmount(q,u);return num(a.quantity)+' '+a.unit;};
   const selectedFormats=()=>config.formats.filter(f=>f.recipeId===formBatch.elements.recipeId.value&&f.active&&products.some(p=>p.id===f.productId&&p.active));
   function showPanel(panel){
     if(panel==='settings'&&user?.role!=='admin')panel='batch';
     for(const name of ['batch','prep','settings'])$('dough-panel-'+name).hidden=name!==panel;
     for(const b of root.querySelectorAll('[data-dough-panel]'))b.setAttribute('aria-pressed',String(b.dataset.doughPanel===panel));
     if(panel==='settings')$('dough-settings').open=true;
+    if(panel==='batch')returnToBatch=false;
   }
   for(const b of root.querySelectorAll('[data-dough-panel],[data-dough-go]'))b.addEventListener('click',()=>showPanel(b.dataset.doughPanel||b.dataset.doughGo));
   $('dough-reload').addEventListener('click',()=>{if(!confirmingDough&&!confirmingPrep)void refresh('Existencias actualizadas. Revisa el consumo antes de confirmar.');});
@@ -94,7 +109,7 @@ if(typeof module==='object'&&module.exports){
     if(!formats.length)box.append(el('p','Todavía no hay productos configurados para esta masa. Crea el primero en la ficha.','hint'));
     for(const f of formats){
       const card=el('div',undefined,'dough-product-card');
-      card.append(el('strong',f.productName),el('small',num(f.doughGrams)+' g de masa por pieza'),el('small',f.extras.length?f.extras.map(e=>num(e.quantityPerPiece)+' '+e.unit+' '+e.name).join(' · '):'Sin complementos'));
+      card.append(el('strong',f.productName),el('small',num(f.doughGrams)+' g de masa por pieza'),el('small',f.extras.length?f.extras.map(e=>amount(e.quantityPerPiece,e.unit)+' '+e.name).join(' · '):'Sin complementos'));
       const edit=el('button','Editar formato','btn-soft');edit.type='button';
       edit.addEventListener('click',()=>{
         formFormat.elements.productMode.value='edit';syncProductChoices();formFormat.elements.productId.value=f.productId;
@@ -191,13 +206,17 @@ if(typeof module==='object'&&module.exports){
     select.addEventListener('change',()=>update());
     row.append(select,qty,unit,del,linkArea);$('dough-extra-items').append(row);
     row.refreshComplement=()=>{
-      if(kind!=='prepared')return;
       const recipe=getRecipe(),linked=recipe&&preparations.find(p=>p.recipeId===recipe.id);
-      fillSelect(select,choicesForRow(),'Selecciona preparación');
+      if(kind==='direct'&&preparations.some(p=>p.ingredientId===select.value))kind='prepared';
+      fillSelect(select,choicesForRow(),kind==='prepared'?'Selecciona preparación':'Selecciona ingrediente directo');
       if(linked)select.value=linked.ingredientId;
       update(true);
     };
-    if(known){select.value=known.ingredientId;update();qty.value=String(known.quantityPerPiece);unit.value=known.unit||ingredients.find(x=>x.id===known.ingredientId)?.unit||'';}
+    if(known){
+      select.value=known.ingredientId;update();
+      const display=doughReadableAmount(known.quantityPerPiece,known.unit||ingredients.find(x=>x.id===known.ingredientId)?.unit);
+      qty.value=String(display.quantity);unit.value=display.unit||'';
+    }
     else update();
   }
   function renderForms(){
@@ -237,7 +256,7 @@ if(typeof module==='object'&&module.exports){
     for(const item of formats){
       const row=el('div',undefined,'dough-batch-row');row.dataset.productId=item.productId;
       const description=el('div');description.append(el('strong',item.productName),el('small',`${item.doughGrams} g de masa por pieza`));
-      if(item.extras.length)description.append(el('small',item.extras.map(e=>`${num(e.quantityPerPiece)} ${e.unit} ${e.name}`).join(' + ')));
+      if(item.extras.length)description.append(el('small',item.extras.map(e=>`${amount(e.quantityPerPiece,e.unit)} ${e.name}`).join(' + ')));
       const label=el('label','Piezas');
       const qty=el('input');qty.type='number';qty.min='0';qty.step='1';qty.max='1000000';qty.value=pieceDrafts.get(item.productId)??'0';qty.className='dough-pieces';qty.required=true;label.append(qty);
       const controls=el('div',undefined,'dough-piece-controls');
@@ -268,10 +287,11 @@ if(typeof module==='object'&&module.exports){
   }
   function selectedPayload(){
     const recipeId=formBatch.elements.recipeId.value;
-    const formats=[...$('dough-batch-formats').children].filter(e=>e.dataset.productId)
-      .map(e=>({productId:e.dataset.productId,pieces:Number(e.querySelector('.dough-pieces').value)})).filter(x=>x.pieces>0);
+    const rows=[...$('dough-batch-formats').children].filter(e=>e.dataset.productId)
+      .map(e=>({productId:e.dataset.productId,pieces:Number(e.querySelector('.dough-pieces').value)}));
+    if(rows.some(x=>!Number.isSafeInteger(x.pieces)||x.pieces<0||x.pieces>1000000))throw Error('Las cantidades deben ser piezas enteras entre 0 y 1000000.');
+    const formats=rows.filter(x=>x.pieces>0);
     if(!recipeId||!formats.length)throw Error('Selecciona una masa y al menos un formato con piezas.');
-    if(formats.some(x=>!Number.isSafeInteger(x.pieces)))throw Error('Las cantidades deben ser piezas enteras.');
     return {recipeId,formats};
   }
   formBase.elements.recipeId.addEventListener('change',()=>{
@@ -351,13 +371,14 @@ if(typeof module==='object'&&module.exports){
   function syncExistingIngredientChoices(){
     const r=recipes.find(x=>x.id===prepLinkForm.elements.recipeId.value);
     const linkedIds=new Set(preparations.map(p=>p.ingredientId));
-    const list=ingredients.filter(i=>!linkedIds.has(i.id)&&(r?.yieldUnit==='g'?['g','kg'].includes(i.unit):r?.yieldUnit==='ml'?['ml','l'].includes(i.unit):false))
+    const components=new Set((r?.items||[]).map(x=>x.ingredientId));
+    const list=ingredients.filter(i=>!linkedIds.has(i.id)&&!components.has(i.id)&&(r?.yieldUnit==='g'?['g','kg'].includes(i.unit):r?.yieldUnit==='ml'?['ml','l'].includes(i.unit):false))
       .map(i=>({id:i.id,name:i.name+' ('+i.unit+')'}));
     fillSelect(prepLinkForm.elements.ingredientId,list,'Crear existencia nueva automáticamente');
   }
   function renderPreparationForms(){
     const already=new Set(preparations.map(x=>x.recipeId));
-    fillSelect(prepLinkForm.elements.recipeId,recipes.filter(r=>['g','ml'].includes(r.yieldUnit)&&!already.has(r.id))
+    fillSelect(prepLinkForm.elements.recipeId,recipes.filter(r=>['g','ml'].includes(r.yieldUnit)&&!already.has(r.id)&&!config.bases.some(b=>b.recipeId===r.id))
       .map(r=>({id:r.id,name:r.name+' · '+r.baseYield+' '+r.yieldUnit})),'Selecciona una receta complementaria');
     syncExistingIngredientChoices();
     fillSelect(prepBatchForm.elements.recipeId,preparations.map(p=>({id:p.recipeId,name:p.recipeName+' · '+p.yieldUnit})),
@@ -432,7 +453,12 @@ if(typeof module==='object'&&module.exports){
       const result=await post('/api/dough/preparations/produce',{...prepPayload,operationId:pendingPrep.operationId});
       pendingPrep=null;
       prepBatchForm.elements.quantity.value='';
-      await refresh('Preparación registrada: +'+num(result.addedQuantity)+' '+result.unit+' de '+result.ingredientName+'.');
+      const resume=returnToBatch;
+      const loaded=await refresh('Preparación registrada: +'+amount(result.addedQuantity,result.unit)+' de '+result.ingredientName+'.');
+      if(resume&&loaded){
+        showPanel('batch');
+        status('Preparación registrada. Conservamos tus piezas; vuelve a revisar el consumo del lote.');
+      }
       await window.PanikoRefreshInventory?.();
       await window.PanikoFinishedProducts?.refresh?.();
     }catch(err){status(err.message,true);}
@@ -475,9 +501,25 @@ if(typeof module==='object'&&module.exports){
       for(const f of plan.formats)result.append(el('div',`${f.productName}: ${f.pieces} piezas × ${f.doughGramsPerPiece} g = ${f.doughGrams} g de masa`,'list-row'));
       result.append(el('h4','Ingredientes y complementos a descontar'));
       for(const line of plan.consumptions){
-        const msg=`${line.name}: ${num(line.required)} ${line.unit} · disponible ${num(line.stock)} ${line.unit}`+
-          (line.shortage>0?` · faltan ${num(line.shortage)} ${line.unit}`:'');
-        result.append(el('div',msg,line.sufficient?'list-row':'list-row warning'));
+        const msg=`${line.name}: ${amount(line.required,line.unit)} · disponible ${amount(line.stock,line.unit)}`+
+          (line.shortage>0?` · faltan ${amount(line.shortage,line.unit)}`:'');
+        const lineBox=el('div',undefined,line.sufficient?'list-row':'list-row warning');
+        lineBox.append(el('span',msg));
+        const need=doughPreparationShortage(line,preparations);
+        if(need){
+          const action=el('button','Preparar '+num(need.quantity)+' '+need.yieldUnit+' faltantes','btn-soft');
+          action.type='button';
+          action.addEventListener('click',()=>{
+            if(confirmingDough||confirmingPrep)return;
+            savePieceDraft();returnToBatch=true;showPanel('prep');
+            prepBatchForm.elements.recipeId.value=need.recipeId;
+            prepBatchForm.elements.quantity.value=String(need.quantity);
+            syncPrepQuantityLabel();clearPrepPreview();
+            status('Faltan '+num(need.quantity)+' '+need.yieldUnit+' de '+need.recipeName+'. Revisa su consumo y confirma solo la cantidad realmente preparada.');
+            prepBatchForm.elements.quantity.focus();
+          });lineBox.append(action);
+        }
+        result.append(lineBox);
       }
       result.append(el('p',plan.stockAvailable?'Inventario suficiente: puedes confirmar.':'Inventario insuficiente. No puedes confirmar esta tanda.',plan.stockAvailable?'good':'warning'));
       $('dough-confirm').disabled=!plan.stockAvailable||confirmingDough;
@@ -506,6 +548,6 @@ if(typeof module==='object'&&module.exports){
   document.addEventListener('paniko:auth',e=>{
     user=e.detail?.user||null;
     root.hidden=!user;
-    if(user)void refresh();else {refreshRevision++;config={bases:[],formats:[]};preparations=[];pieceDrafts.clear();$('dough-batch-formats').replaceChildren();clearPreview();clearPrepPreview();showPanel('batch');root.hidden=true;}
+    if(user)void refresh();else {returnToBatch=false;refreshRevision++;config={bases:[],formats:[]};preparations=[];pieceDrafts.clear();$('dough-batch-formats').replaceChildren();clearPreview();clearPrepPreview();showPanel('batch');root.hidden=true;}
   });
 })();
