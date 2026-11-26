@@ -405,3 +405,7 @@ h3{font-size:1rem;font-weight:750}
  .dough-batch-row{grid-template-columns:minmax(0,1fr) 108px}
  .dough-quick-actions button{width:100%}
 }
+
+.dough-inline-link{grid-column:1/-1;background:#f0f4e9;border:1px solid #dce4d4;border-radius:9px;padding:10px;display:grid;gap:8px}
+.dough-inline-link p{margin:0;line-height:1.5}
+.dough-inline-link button{justify-self:start;white-space:normal;text-align:left}
