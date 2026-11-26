@@ -98,3 +98,28 @@ test('PREP-UI-03: crear producto habilita nombre y elimina cualquier selección 
  assert.match(html,/<option value="new" selected>Crear producto nuevo/);
  assert.match(html,/<select name="productId" disabled>/);
 });
+
+test('PREP-UI-04: jornada de producción calcula piezas y masa sin redondear ni sumar complementos',()=>{
+ const {doughBatchTotals}=require('../public/dough.js');
+ const formats=[{productId:'concha',doughGrams:45},{productId:'hamburguesa',doughGrams:60},{productId:'bollo',doughGrams:35},{productId:'bun',doughGrams:70}];
+ assert.deepEqual(doughBatchTotals(formats,{concha:20,hamburguesa:12,bollo:10,bun:10}),{pieces:52,grams:2670,valid:true});
+ assert.deepEqual(doughBatchTotals(formats,{}),{pieces:0,grams:0,valid:true});
+ assert.equal(doughBatchTotals(formats,{concha:1.5}).valid,false);
+ assert.equal(doughBatchTotals(formats,{concha:-1}).valid,false);
+ assert.equal(doughBatchTotals(formats,{concha:1000001}).valid,false);
+});
+test('PREP-UI-05: no ofrece editar productos de otra masa ni productos inactivos',()=>{
+ const {doughEditableProducts}=require('../public/dough.js');
+ const products=[{id:'a',active:true,operationalRecipeId:'brioche'},{id:'b',active:true,operationalRecipeId:'other'},{id:'c',active:false},{id:'d',active:true},{id:'e',active:true}];
+ assert.deepEqual(doughEditableProducts(products,[{productId:'e',recipeId:'other'}],'brioche').map(p=>p.id),['a','d']);
+ assert.deepEqual(doughEditableProducts(products,[],''),[]);
+});
+test('PREP-UI-06: producción diaria primero, paneles separados y controles disponibles',()=>{
+ const html=fs.readFileSync(path.join(__dirname,'../public/index.html'),'utf8');
+ assert.ok(html.indexOf('id="dough-panel-batch"')<html.indexOf('id="dough-panel-prep"'));
+ assert.ok(html.indexOf('id="dough-panel-prep"')<html.indexOf('id="dough-panel-settings"'));
+ for(const id of ['dough-live-totals','dough-clear-pieces','dough-calculate','dough-product-cards','dough-reload','dough-prep-quantity-label'])
+   assert.ok(html.includes('id="'+id+'"'),id);
+ assert.match(html,/id="dough-panel-prep" hidden/);
+ assert.match(html,/id="dough-panel-settings" hidden/);
+});
