@@ -167,7 +167,27 @@
               </section>
               <section id="dough-panel-prep" hidden>
             <section class="dough-prep-area">
-              <div class="section-heading"><div><span class="eyebrow">INGREDIENTES QUE TÚ PREPARAS</span><h3>Costras, mermeladas y otras subpreparaciones</h3><p class="muted">Vincula una receta que rinda gramos o mililitros; al confirmarla, sus insumos se descontarán y su preparación aparecerá entre los complementos disponibles.</p></div></div>
+              <div class="section-heading"><div><span class="eyebrow">INGREDIENTES QUE TÚ PREPARAS</span><h3>Costras, mermeladas y otras subpreparaciones</h3><p class="muted">Crea una ficha, usa una receta existente o registra una cantidad elaborada. Las preparaciones guardadas estarán disponibles como complementos de tus panes.</p></div></div>
+              <div id="dough-prep-admin-actions" class="dough-quick-actions" hidden>
+                <button id="dough-prep-new" type="button" class="btn-primary">+ Nueva preparación</button>
+                <button id="dough-prep-existing" type="button" class="btn-soft">Usar receta existente</button>
+                <button id="dough-prep-catalog" type="button" class="btn-soft">Recetas de mi catálogo</button>
+              </div>
+              <div id="dough-prep-catalog-list" hidden></div>
+              <form id="dough-prep-create-form" class="form-stack dough-prep-editor" hidden>
+                <h4>Nueva preparación</h4>
+                <label>Nombre<input name="name" required maxlength="100" placeholder="Ej. Mermelada de guayaba"/></label>
+                <div class="dough-prep-fields">
+                  <label>Rendimiento real de la receta completa<input name="baseYield" type="number" min="1" max="1000000000" step="1" required placeholder="Ej. 600"/></label>
+                  <label>Unidad del rendimiento<select name="yieldUnit"><option value="g">Gramos (g)</option><option value="ml">Mililitros (ml)</option></select></label>
+                </div>
+                <h4>Ingredientes de la receta completa</h4>
+                <div id="dough-prep-create-items"></div>
+                <button id="dough-prep-add-item" type="button" class="btn-soft">+ Agregar ingrediente</button>
+                <label>Existencia ya registrada (opcional)<select name="ingredientId"><option value="">Crear existencia nueva en cero</option></select></label>
+                <p class="hint">Si ya tienes esta preparación en inventario, selecciónala para conservar su stock. Guardar la ficha no consume ingredientes.</p>
+                <div class="dough-quick-actions"><button id="dough-prep-save" class="btn-primary" type="submit">Guardar preparación</button><button id="dough-prep-cancel" class="btn-soft" type="button">Cerrar formulario</button></div>
+              </form>
               <details id="dough-prep-link-details" class="action-details dough-admin" hidden><summary><strong>Vincular receta como subpreparación</strong> · Administración</summary>
                 <form id="dough-prep-link-form" class="form-stack">
                   <label>Ficha técnica de costra, mermelada, crumble…<select name="recipeId" required></select></label>
