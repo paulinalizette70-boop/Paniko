@@ -116,7 +116,7 @@ if(typeof module==='object'&&module.exports){
       status(kind==='prepared'?'Aún no hay preparaciones vinculadas. Vincula una ficha de costra o mermelada en el apartado de subpreparaciones.':'No hay ingredientes directos disponibles en inventario.',true);
       if(kind==='prepared'){
         const details=$('dough-prep-link-details');
-        if(details&&!details.hidden){details.open=true;details.scrollIntoView({block:'start',behavior:'smooth'});}
+        if(details&&!details.hidden){showPanel('prep');details.open=true;details.scrollIntoView({block:'start',behavior:'smooth'});}
       }
       return;
     }
@@ -140,6 +140,7 @@ if(typeof module==='object'&&module.exports){
     fillSelect(formBatch.elements.recipeId,bases,'Selecciona una masa configurada');
     const requested=requestedRecipeId;
     requestedRecipeId=null;
+    const oldFormatBase=formFormat.elements.recipeId.value;
     if(requested&&recipes.some(r=>r.id===requested)){
       formBase.elements.recipeId.value=requested;
       if(config.bases.some(b=>b.recipeId===requested)){
@@ -153,7 +154,9 @@ if(typeof module==='object'&&module.exports){
     }
     if(!formFormat.elements.recipeId.value&&!requested)formFormat.elements.recipeId.value=formBatch.elements.recipeId.value;
     if(!formBase.elements.recipeId.value&&!requested)formBase.elements.recipeId.value=formFormat.elements.recipeId.value;
-    syncBaseWeight();syncProductChoices();syncProductMode();renderProductCards();renderPreparationForms();renderBatchRows();
+    syncBaseWeight();syncProductChoices();syncProductMode();
+    if(oldFormatBase!==formFormat.elements.recipeId.value&&formFormat.elements.productMode.value==='edit')loadSelectedFormat();
+    renderProductCards();renderPreparationForms();renderBatchRows();
   }
   function renderBatchRows(){
     savePieceDraft();clearPreview();
@@ -182,6 +185,7 @@ if(typeof module==='object'&&module.exports){
   async function refresh(message){
     if(!user)return false;
     const revision=++refreshRevision;
+    clearPreview();clearPrepPreview();
     try{
       const loaded=await Promise.all([
         fetchJSON('/api/dough/config'),fetchJSON('/api/products'),fetchJSON('/api/ingredients'),fetchJSON('/api/recipes'),fetchJSON('/api/dough/preparations')]);
@@ -205,7 +209,9 @@ if(typeof module==='object'&&module.exports){
   formBase.elements.recipeId.addEventListener('change',()=>{
     syncBaseWeight();
     if(config.bases.some(b=>b.recipeId===formBase.elements.recipeId.value)){
-      formFormat.elements.recipeId.value=formBase.elements.recipeId.value;syncProductChoices();renderProductCards();
+      const changed=formFormat.elements.recipeId.value!==formBase.elements.recipeId.value;
+      formFormat.elements.recipeId.value=formBase.elements.recipeId.value;syncProductChoices();syncProductMode();renderProductCards();
+      if(changed&&formFormat.elements.productMode.value==='edit')loadSelectedFormat();
     }
   });
   function syncProductMode(){
@@ -275,7 +281,8 @@ if(typeof module==='object'&&module.exports){
   const prepLinkForm=$('dough-prep-link-form'),prepBatchForm=$('dough-prep-batch-form');
   function syncExistingIngredientChoices(){
     const r=recipes.find(x=>x.id===prepLinkForm.elements.recipeId.value);
-    const list=ingredients.filter(i=>r?.yieldUnit==='g'?['g','kg'].includes(i.unit):r?.yieldUnit==='ml'?['ml','l'].includes(i.unit):false)
+    const linkedIds=new Set(preparations.map(p=>p.ingredientId));
+    const list=ingredients.filter(i=>!linkedIds.has(i.id)&&(r?.yieldUnit==='g'?['g','kg'].includes(i.unit):r?.yieldUnit==='ml'?['ml','l'].includes(i.unit):false))
       .map(i=>({id:i.id,name:i.name+' ('+i.unit+')'}));
     fillSelect(prepLinkForm.elements.ingredientId,list,'Crear existencia nueva automáticamente');
   }
@@ -292,7 +299,11 @@ if(typeof module==='object'&&module.exports){
       const card=el('div',undefined,'dough-prep-card');
       card.append(el('strong',p.recipeName),
         el('small','Disponible: '+num(p.stock)+' '+p.unit+' · Rinde '+num(p.baseYield)+' '+p.yieldUnit+' por receta'));
-      root.append(card);
+      const action=el('button','Registrar preparación','btn-soft');action.type='button';
+      action.addEventListener('click',()=>{
+        if(confirmingPrep)return;
+        prepBatchForm.elements.recipeId.value=p.recipeId;syncPrepQuantityLabel();clearPrepPreview();prepBatchForm.elements.quantity.focus();
+      });card.append(action);root.append(card);
     }
     clearPrepPreview();syncPrepQuantityLabel();
   }
@@ -302,14 +313,16 @@ if(typeof module==='object'&&module.exports){
   }
   prepLinkForm.elements.recipeId.addEventListener('change',syncExistingIngredientChoices);
   prepLinkForm.addEventListener('submit',async e=>{
-    e.preventDefault();
+    e.preventDefault();if(savingPrep)return;
+    savingPrep=true;const button=prepLinkForm.querySelector('button[type=submit]');button.disabled=true;
     try{
       const payload={recipeId:prepLinkForm.elements.recipeId.value};
       if(prepLinkForm.elements.ingredientId.value)payload.ingredientId=prepLinkForm.elements.ingredientId.value;
       await post('/api/dough/preparations',payload);
-      status('Receta complementaria vinculada. Ahora puedes registrar los gramos preparados.');
-      await refresh();await window.PanikoRefreshInventory?.();
-    }catch(err){status(err.message,true);}
+      const loaded=await refresh('Receta vinculada. Registra la cantidad preparada o vuelve a configurar tu producto.');
+      if(loaded){prepBatchForm.elements.recipeId.value=payload.recipeId;syncPrepQuantityLabel();}
+      await window.PanikoRefreshInventory?.();
+    }catch(err){status(err.message,true);}finally{savingPrep=false;button.disabled=false;}
   });
   function syncPrepQuantityLabel(){
     const p=preparations.find(x=>x.recipeId===prepBatchForm.elements.recipeId.value);
@@ -338,12 +351,14 @@ if(typeof module==='object'&&module.exports){
     }catch(err){if(revision===prepRevision)status(err.message,true);}
   });
   $('dough-prep-confirm').addEventListener('click',async()=>{
-    if(confirmingPrep||!prepPreview?.stockAvailable||!prepPayload)return;
+    if(confirmingPrep||confirmingDough||!prepPreview?.stockAvailable||!prepPayload)return;
     if(!confirm('¿Confirmas '+prepPreview.quantity+' '+prepPreview.yieldUnit+' de '+prepPreview.recipeName+
        '? Se descontarán sus insumos y aumentará el inventario de la preparación.'))return;
     const signature=JSON.stringify(prepPayload);
     if(!pendingPrep||pendingPrep.signature!==signature)pendingPrep={signature,operationId:crypto.randomUUID()};
     confirmingPrep=true;$('dough-prep-confirm').disabled=true;
+    const enabled=[...prepBatchForm.querySelectorAll('input,select,button')].filter(x=>!x.disabled);
+    for(const x of enabled)x.disabled=true;
     try{
       const result=await post('/api/dough/preparations/produce',{...prepPayload,operationId:pendingPrep.operationId});
       pendingPrep=null;
@@ -352,18 +367,25 @@ if(typeof module==='object'&&module.exports){
       await window.PanikoRefreshInventory?.();
       await window.PanikoFinishedProducts?.refresh?.();
     }catch(err){status(err.message,true);}
-    finally{confirmingPrep=false;clearPrepPreview();}
+    finally{confirmingPrep=false;for(const x of enabled)x.disabled=false;clearPrepPreview();}
   });
   window.PanikoDough={selectRecipe(id){
     requestedRecipeId=id;
     return user?refresh():Promise.resolve();
   }};
   formBatch.elements.recipeId.addEventListener('change',()=>{
+    const changed=formFormat.elements.recipeId.value!==formBatch.elements.recipeId.value;
     formFormat.elements.recipeId.value=formBatch.elements.recipeId.value;
     formBase.elements.recipeId.value=formBatch.elements.recipeId.value;
-    syncBaseWeight();syncProductChoices();syncProductMode();renderProductCards();renderBatchRows();
+    syncBaseWeight();syncProductChoices();syncProductMode();
+    if(changed&&formFormat.elements.productMode.value==='edit')loadSelectedFormat();
+    renderProductCards();renderBatchRows();
   });
-  formBatch.addEventListener('input',()=>{savePieceDraft();clearPreview();liveTotals();});
+  formBatch.addEventListener('input',()=>{
+    const hadPreview=lastPreview||$('dough-status').textContent==='Calculando existencias…';
+    savePieceDraft();clearPreview();liveTotals();
+    if(hadPreview)status('Cambiaste las cantidades. Vuelve a revisar el consumo.');
+  });
   $('dough-clear-pieces').addEventListener('click',()=>{
     if(confirmingDough)return;
     for(const input of formBatch.querySelectorAll('.dough-pieces'))input.value='0';
@@ -394,7 +416,7 @@ if(typeof module==='object'&&module.exports){
     }catch(err){if(revision===batchRevision){clearPreview();status(err.message,true);}}
   });
   $('dough-confirm').addEventListener('click',async()=>{
-    if(confirmingDough||!lastPayload||!lastPreview?.stockAvailable)return;
+    if(confirmingDough||confirmingPrep||!lastPayload||!lastPreview?.stockAvailable)return;
     const summary=lastPreview.formats.map(f=>`${f.pieces} × ${f.productName}`).join(', ');
     if(!confirm(`¿Confirmas ${summary}? Se descontarán los ingredientes y complementos y se registrarán los productos terminados.`))return;
     const signature=JSON.stringify(lastPayload);
