@@ -73,3 +73,28 @@ test('PREP-UI-02: selector de preparados excluye materias primas y el directo ex
  assert.match(html,/id="dough-add-extra"[^>]*>\+ Agregar preparación/);
  assert.match(html,/id="dough-add-direct-extra"[^>]*>\+ Agregar ingrediente directo/);
 });
+
+test('PREP-UI-03: crear producto habilita nombre y elimina cualquier selección anterior',()=>{
+ const {syncDoughProductMode}=require('../public/dough.js');
+ const fields={productMode:{value:'new'},productId:{value:'old-product'},productName:{value:'Concha nueva'}};
+ assert.equal(syncDoughProductMode(fields),false);
+ assert.equal(fields.productId.value,'');
+ assert.equal(fields.productId.disabled,true);
+ assert.equal(fields.productId.required,false);
+ assert.equal(fields.productName.disabled,false);
+ assert.equal(fields.productName.required,true);
+ assert.equal(fields.productName.value,'Concha nueva');
+ fields.productMode.value='edit';fields.productId.value='existing';
+ assert.equal(syncDoughProductMode(fields),true);
+ assert.equal(fields.productId.disabled,false);
+ assert.equal(fields.productId.required,true);
+ assert.equal(fields.productName.disabled,true);
+ assert.equal(fields.productName.required,false);
+ fields.productMode.value='new';
+ syncDoughProductMode(fields);
+ assert.equal(fields.productId.value,'');
+ assert.equal(fields.productName.disabled,false);
+ const html=fs.readFileSync(path.join(__dirname,'../public/index.html'),'utf8');
+ assert.match(html,/<option value="new" selected>Crear producto nuevo/);
+ assert.match(html,/<select name="productId" disabled>/);
+});
