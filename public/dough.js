@@ -83,6 +83,7 @@ if(typeof module==='object'&&module.exports){
   }
   for(const b of root.querySelectorAll('[data-dough-panel],[data-dough-go]'))b.addEventListener('click',()=>showPanel(b.dataset.doughPanel||b.dataset.doughGo));
   $('dough-reload').addEventListener('click',()=>{if(!confirmingDough&&!confirmingPrep)void refresh('Existencias actualizadas. Revisa el consumo antes de confirmar.');});
+  for(const b of document.querySelectorAll('[data-scroll-to="dough-production"]'))b.addEventListener('click',()=>{if(user&&!confirmingDough&&!confirmingPrep)void refresh();});
   function savePieceDraft(){
     for(const row of $('dough-batch-formats').children){
       if(row.dataset.productId)pieceDrafts.set(row.dataset.productId,row.querySelector('.dough-pieces').value);
