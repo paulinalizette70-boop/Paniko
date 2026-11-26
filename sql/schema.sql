@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS recipes (
   id CHAR(36) NOT NULL PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
   base_yield INT NOT NULL,
+  yield_unit ENUM('pieza','g','ml') NOT NULL DEFAULT 'pieza',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT ck_recipe_yield CHECK (base_yield > 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -35,6 +36,7 @@ CREATE TABLE IF NOT EXISTS production_batches (
   recipe_id CHAR(36) NOT NULL,
   recipe_name VARCHAR(100) NOT NULL,
   desired_yield INT NOT NULL,
+  yield_unit ENUM('pieza','g','ml') NOT NULL DEFAULT 'pieza',
   estimated_total_cost DECIMAL(16,2) NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_batch_recipe FOREIGN KEY(recipe_id) REFERENCES recipes(id),
@@ -68,4 +70,15 @@ CREATE TABLE IF NOT EXISTS production_batch_items (
   PRIMARY KEY(batch_id,ingredient_id),
   CONSTRAINT fk_bi_batch FOREIGN KEY(batch_id) REFERENCES production_batches(id),
   CONSTRAINT fk_bi_ing FOREIGN KEY(ingredient_id) REFERENCES ingredients(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+-- Previene descuentos duplicados tras doble clic o reintentos con el mismo ID.
+CREATE TABLE IF NOT EXISTS operation_requests (
+  operation_id CHAR(36) NOT NULL PRIMARY KEY,
+  operation_type VARCHAR(50) NOT NULL,
+  payload_hash CHAR(64) NOT NULL,
+  result_json JSON NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX ix_operation_requests_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

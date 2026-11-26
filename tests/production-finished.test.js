@@ -10,7 +10,7 @@ function mockPool(){
   const conn={
     async beginTransaction(){},async commit(){commits++;},async rollback(){rollbacks++;},release(){},
     async execute(sql,params){
-      if(sql.startsWith('SELECT id, name, base_yield FROM recipes'))return [[{id:recipeId,name:'Receta ficticia',base_yield:10}]];
+      if(sql.startsWith('SELECT id, name, base_yield, yield_unit FROM recipes'))return [[{id:recipeId,name:'Receta ficticia',base_yield:10}]];
       if(sql.startsWith('SELECT ingredient_id, quantity FROM recipe_items'))return [[{ingredient_id:ingredientId,quantity:2}]];
       if(sql.startsWith('SELECT id,name,unit,cost_per_unit,stock FROM ingredients WHERE'))return [[{id:ingredientId,name:'Ingrediente inventado',unit:'kg',cost_per_unit:5,stock:rawStock}]];
       if(sql.startsWith('SELECT id,name,stock FROM finished_products WHERE'))return [[{id:productId,name:'Producto ficticio',stock:productStock}]];
