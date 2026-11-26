@@ -55,3 +55,21 @@ test('PREP-UI: crear desde Recetas, preparar costra y no agregar menu lateral',(
  assert.match(dough,/\/api\/dough\/preparations\/produce/);
  assert.doesNotMatch(html,/<button class="nav-link"[^>]+(?:Brioche|Preparaciones)/);
 });
+
+test('PREP-UI-02: selector de preparados excluye materias primas y el directo excluye preparados',()=>{
+ const {doughComplementChoices}=require('../public/dough.js');
+ const ingredients=[
+   {id:'flour',name:'Harina',unit:'kg'},
+   {id:'cream',name:'Queso crema',unit:'g'},
+   {id:'crust',name:'Costra de prueba',unit:'g'},
+   {id:'jam',name:'Mermelada de prueba',unit:'kg'}
+ ];
+ const preparations=[{ingredientId:'crust'},{ingredientId:'jam'}];
+ assert.deepEqual(doughComplementChoices(ingredients,preparations,'prepared').map(x=>x.id),['crust','jam']);
+ assert.deepEqual(doughComplementChoices(ingredients,preparations,'direct').map(x=>x.id),['flour','cream']);
+ assert.deepEqual(doughComplementChoices(ingredients,[],'prepared'),[]);
+ assert.equal(ingredients.length,4);
+ const html=fs.readFileSync(path.join(__dirname,'../public/index.html'),'utf8');
+ assert.match(html,/id="dough-add-extra"[^>]*>\+ Agregar preparación/);
+ assert.match(html,/id="dough-add-direct-extra"[^>]*>\+ Agregar ingrediente directo/);
+});
