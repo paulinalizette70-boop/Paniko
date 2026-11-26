@@ -155,16 +155,43 @@ async function exerciseDough(source,html,assert,execute){
  const doc=new Node();doc.getElementById=$;doc.createElement=t=>new Node(t);
  const formats=[{recipeId:'brioche',productId:'concha',productName:'Concha',active:true,doughGrams:45,extras:[]},{recipeId:'brioche',productId:'bollo',productName:'Bollo',active:true,doughGrams:35,extras:[]}];
  const records={'/api/dough/config':{bases:[{recipeId:'brioche',recipeName:'Brioche',referenceGrams:2000}],formats},'/api/products':formats.map(f=>({id:f.productId,name:f.productName,active:true,operationalRecipeId:'brioche'})),'/api/ingredients':[{id:'crust',name:'Costra',unit:'g'},{id:'cream',name:'Queso crema',unit:'kg'}],'/api/recipes':[{id:'brioche',name:'Brioche',baseYield:2000,yieldUnit:'g'},{id:'crust-recipe',name:'Costra',baseYield:500,yieldUnit:'g'},{id:'jam-recipe',name:'Mermelada de guayaba',baseYield:600,yieldUnit:'g'},{id:'unmeasured',name:'Otra costra',baseYield:1,yieldUnit:'pieza'}],'/api/dough/preparations':[{recipeId:'crust-recipe',ingredientId:'crust',recipeName:'Costra',yieldUnit:'g',unit:'g',baseYield:500,stock:200}]};
- let resolvePreview,posts=[];
+ let resolvePreview,posts=[],jamStock=0,creamStock=0.5,bunStock=0;
  const response=x=>({ok:true,json:async()=>x});
  const fetch=async(url,opt={})=>{
-   if(opt.method==='POST'){posts.push({url,data:JSON.parse(opt.body)});if(url==='/api/dough/preview')return new Promise(resolve=>{resolvePreview=()=>resolve(response({totalPieces:20,doughGrams:900,recipeName:'Brioche',formats:[{productName:'Concha',pieces:20,doughGramsPerPiece:45,doughGrams:900}],consumptions:[],stockAvailable:true}));});}
+   if(opt.method==='POST'){
+     const data=JSON.parse(opt.body);posts.push({url,data});
+     if(url==='/api/dough/preview'){
+       if(data.formats.some(f=>f.productId==='bun')){
+         const n=data.formats.find(f=>f.productId==='bun').pieces,needed=n*15;
+         return response({totalPieces:n,doughGrams:n*50,recipeName:'Brioche',formats:[{productName:'Bun',pieces:n,doughGramsPerPiece:50,doughGrams:n*50}],consumptions:[
+           {ingredientId:'jam',name:'Mermelada de guayaba',required:needed/1000,stock:jamStock/1000,unit:'kg',shortage:Math.max(0,needed-jamStock)/1000,sufficient:jamStock>=needed},
+           {ingredientId:'cream',name:'Queso crema',required:n*0.01,stock:creamStock,unit:'kg',shortage:0,sufficient:true}
+         ],stockAvailable:jamStock>=needed});
+       }
+       return new Promise(resolve=>{resolvePreview=()=>resolve(response({totalPieces:20,doughGrams:900,recipeName:'Brioche',formats:[{productName:'Concha',pieces:20,doughGramsPerPiece:45,doughGrams:900}],consumptions:[],stockAvailable:true}));});
+     }
+     if(url==='/api/dough/preparations/preview')return response({quantity:data.quantity,yieldUnit:'g',recipeName:'Mermelada de guayaba',addedQuantity:data.quantity/1000,outputUnit:'kg',outputName:'Mermelada de guayaba',lines:[],stockAvailable:true});
+     if(url==='/api/dough/preparations/produce'){
+       jamStock+=data.quantity;
+       records['/api/dough/preparations'].find(p=>p.recipeId==='jam-recipe').stock=jamStock/1000;
+       return response({addedQuantity:data.quantity/1000,unit:'kg',ingredientName:'Mermelada de guayaba'});
+     }
+     if(url==='/api/dough/confirm'){
+       const n=data.formats.find(f=>f.productId==='bun').pieces;
+       jamStock-=n*15;creamStock-=n*0.01;bunStock+=n;
+       return response({totalPieces:n,finishedProducts:[{id:'bun'}]});
+     }
+   }
    if(opt.method==='POST'&&url==='/api/dough/preparations'){
      records['/api/ingredients'].push({id:'jam',name:'Preparacion: Mermelada de guayaba',unit:'g',stock:0});
      records['/api/dough/preparations'].push({recipeId:'jam-recipe',ingredientId:'jam',recipeName:'Mermelada de guayaba',yieldUnit:'g',unit:'g',baseYield:600,stock:0});
      return response({recipeId:'jam-recipe',ingredientId:'jam'});
    }
-   if(opt.method==='POST'&&url==='/api/dough/product')return response({id:'bun'});
+   if(opt.method==='POST'&&url==='/api/dough/product'){
+     formats.push({recipeId:'brioche',productId:'bun',productName:'Bun',active:true,doughGrams:50,extras:[{ingredientId:'jam',name:'Mermelada',quantityPerPiece:15,unit:'g'},{ingredientId:'cream',name:'Queso crema',quantityPerPiece:0.01,unit:'kg'}]});
+     records['/api/products'].push({id:'bun',name:'Bun',active:true,operationalRecipeId:'brioche'});
+     return response({id:'bun'});
+   }
    if(!(url in records))throw Error('Ruta inesperada '+url);return response(records[url]);
  };
  const win={};
@@ -221,6 +248,37 @@ async function exerciseDough(source,html,assert,execute){
  assert.equal(saved.doughGrams,50);
  assert.equal(JSON.stringify(saved.extras),JSON.stringify([{ingredientId:'jam',quantity:15,unit:'g'},{ingredientId:'cream',quantity:10,unit:'g'}]));
  assert.equal(posts.filter(p=>p.url.endsWith('/confirm')||p.url.endsWith('/produce')).length,0);
+ // Producción del bun: faltante de 0.2 kg, preparación de 200 g y vuelta al lote.
+ jamStock=100;
+ records['/api/dough/preparations'].find(p=>p.recipeId==='jam-recipe').stock=0.1;
+ await nav.batch.fire('click');
+ qty().value='0';
+ const bunQty=()=>$('dough-batch-formats').children.find(x=>x.dataset.productId==='bun').querySelector('.dough-pieces');
+ bunQty().value='20';await batch.fire('input');
+ await batch.fire('submit');
+ assert.equal($('dough-confirm').disabled,true);
+ const shortcut=$('dough-batch-preview').querySelector('button');
+ assert.equal(shortcut.textContent,'Preparar 200 g faltantes');
+ await shortcut.fire('click');
+ assert.equal($('dough-panel-prep').hidden,false);
+ assert.equal(prep.elements.recipeId.value,'jam-recipe');
+ assert.equal(prep.elements.quantity.value,'200');
+ await prep.fire('submit');
+ assert.equal($('dough-prep-confirm').disabled,false);
+ await $('dough-prep-confirm').fire('click');
+ assert.equal(jamStock,300);
+ assert.equal($('dough-panel-batch').hidden,false);
+ assert.equal(bunQty().value,'20');
+ assert.equal($('dough-confirm').disabled,true);
+ await batch.fire('submit');
+ assert.equal($('dough-confirm').disabled,false);
+ await $('dough-confirm').fire('click');
+ assert.equal(bunStock,20);
+ assert.equal(jamStock,0);
+ assert.equal(creamStock,0.3);
+ assert.equal(bunQty().value,'0');
+ assert.equal($('dough-confirm').disabled,true);
+ assert.equal(posts.filter(p=>p.url==='/api/dough/confirm').length,1);
 }
 
 test('PREP-UI-07: recorrido simulado conserva piezas y descarta vista previa obsoleta',async()=>{
@@ -258,4 +316,15 @@ test('PREP-BUN-01: 20 buns consumen 1000 g masa, 200 g queso y 300 g mermelada',
  const shortage=buildPlan(recipe,2000,formats,[{productId:pid,pieces:20}],ingredients);
  assert.equal(shortage.stockAvailable,false);
  assert.equal(shortage.consumptions.find(x=>x.ingredientId===jam).shortage,200);
+});
+
+test('PREP-UI-09: convierte faltantes de kg a g y de l a ml sin redondear hacia abajo',()=>{
+ const {doughPreparationShortage,doughReadableAmount}=require('../public/dough.js');
+ const prep=[{ingredientId:'jam',recipeId:'recipe',recipeName:'Guayaba',yieldUnit:'g'}];
+ assert.deepEqual(doughPreparationShortage({ingredientId:'jam',shortage:0.2,unit:'kg'},prep),{recipeId:'recipe',recipeName:'Guayaba',quantity:200,yieldUnit:'g'});
+ assert.equal(doughPreparationShortage({ingredientId:'jam',shortage:0.2001,unit:'kg'},prep).quantity,201);
+ assert.equal(doughPreparationShortage({ingredientId:'cream',shortage:0.2,unit:'kg'},prep),null);
+ assert.deepEqual(doughReadableAmount(.01,'kg'),{quantity:10,unit:'g'});
+ assert.deepEqual(doughReadableAmount(.015,'kg'),{quantity:15,unit:'g'});
+ assert.equal(doughPreparationShortage({ingredientId:'jam',shortage:0.25,unit:'l'},[{...prep[0],yieldUnit:'ml'}]).quantity,250);
 });
