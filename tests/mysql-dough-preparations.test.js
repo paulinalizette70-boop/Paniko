@@ -65,7 +65,7 @@ test('DB-PREP-01 MySQL aislado: crear preparacion, producirla y usarla en concha
     assert.equal((await inv.listIngredients()).find(x=>x.id===link.ingredientId).stock,450);
   }finally{await db.end();}
 });
-test('DB-PREP-02 reutiliza la existencia ya registrada de una receta de mermelada', 
+test('DB-PREP-02 reutiliza la existencia ya registrada de una receta de mermelada',
  {skip:!enabled?'Solo MySQL de pruebas con nombre *_test':false},async()=>{
   if(!/_test$/.test(process.env.DB_NAME||''))throw Error('Base no aislada');
   const {poolFromEnv}=require('../src/database');

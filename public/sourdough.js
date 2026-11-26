@@ -21,7 +21,7 @@
    const items=inventoryIngredients.filter(x=>units.includes(x.unit));
    const choices=[['','Elige un ingrediente'],...items.map(x=>[x.id,`${x.name} · ${format(x.stock)} ${x.unit}`])];
    return select(name,choices,chosen||'');
- } 
+ }
  function nextText(starter){
    const status=care.evaluate(starter);
    return status.nextAt===null?'Aún sin próxima revisión':dateText(status.nextAt);
