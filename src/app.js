@@ -142,6 +142,11 @@ function createApp({store, auth = null, products = null, finance = null, sourdou
           if(!preparations)return respond(503,{error:'Subpreparaciones no disponibles'});
           return respond(201,await preparations.register(await bodyAsJson(req)));
         }
+        if(pathname==='/api/dough/preparations/create'&&req.method==='POST'){
+          if(loggedInUser.role!=='admin')return respond(403,{error:'Solo administración puede crear fichas de preparación'});
+          if(!preparations)return respond(503,{error:'Subpreparaciones no disponibles'});
+          return respond(201,await preparations.create(await bodyAsJson(req)));
+        }
         if(pathname==='/api/dough/preparations/preview'&&req.method==='POST'){
           if(!preparations)return respond(503,{error:'Subpreparaciones no disponibles'});
           return respond(200,await preparations.preview(await bodyAsJson(req)));
