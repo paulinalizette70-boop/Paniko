@@ -135,3 +135,27 @@ test('DB-PREP-03 jornada bun: faltante de guayaba, preparación y lote sin doble
     assert.equal((await products.listProducts()).find(p=>p.id===bun.id).stock,20);
   }finally{await db.end();}
 });
+
+test('DB-PREP-04 alta directa de costra guarda ficha y existencia sin consumir materias primas',
+ {skip:!enabled?'Solo MySQL de pruebas con nombre *_test':false},async()=>{
+  if(!/_test$/.test(process.env.DB_NAME||''))throw Error('Base no aislada');
+  const {poolFromEnv}=require('../src/database');
+  const {createMysqlStore}=require('../src/mysql-store');
+  const {createPreparationStore}=require('../src/dough-preparations');
+  const db=poolFromEnv();
+  try{
+    const inv=createMysqlStore(db),prep=createPreparationStore(db),suffix=randomUUID();
+    const sugar=await inv.addIngredient({name:'Azucar nueva '+suffix,unit:'kg',stock:2,costPerUnit:30});
+    const butter=await inv.addIngredient({name:'Mantequilla nueva '+suffix,unit:'g',stock:1000,costPerUnit:.12});
+    const input={name:'Costra nueva '+suffix,baseYield:600,yieldUnit:'g',items:[{ingredientId:sugar.id,quantity:300,unit:'g'},{ingredientId:butter.id,quantity:300,unit:'g'}]};
+    const saved=await prep.create(input);
+    const stock=async id=>(await inv.listIngredients()).find(x=>x.id===id).stock;
+    assert.equal(await stock(sugar.id),2);assert.equal(await stock(butter.id),1000);assert.equal(await stock(saved.ingredientId),0);
+    assert.equal((await inv.listRecipes()).find(r=>r.id===saved.recipeId).baseYield,600);
+    await assert.rejects(()=>prep.create(input),/Ya existe/);
+    assert.equal((await inv.listRecipes()).filter(r=>r.name===input.name).length,1);
+    assert.equal((await prep.preview({recipeId:saved.recipeId,quantity:300})).stockAvailable,true);
+    await prep.produce({recipeId:saved.recipeId,quantity:300,operationId:randomUUID()});
+    assert.equal(await stock(saved.ingredientId),300);assert.equal(await stock(sugar.id),1.85);assert.equal(await stock(butter.id),850);
+  }finally{await db.end();}
+});
