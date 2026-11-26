@@ -7,8 +7,17 @@ function doughComplementChoices(ingredients,preparations,kind){
     .sort((a,b)=>a.name.localeCompare(b.name,'es'))
     .map(i=>({id:i.id,name:i.name+' ('+i.unit+')'}));
 }
+function syncDoughProductMode(fields){
+  const editing=fields.productMode.value==='edit';
+  fields.productId.disabled=!editing;
+  fields.productId.required=editing;
+  fields.productName.disabled=editing;
+  fields.productName.required=!editing;
+  if(!editing)fields.productId.value='';
+  return editing;
+}
 if(typeof module==='object'&&module.exports){
-  module.exports={doughComplementChoices};
+  module.exports={doughComplementChoices,syncDoughProductMode};
 }else (()=>{
   const $=id=>document.getElementById(id), root=$('dough-production');
   if(!root)return;
@@ -28,7 +37,7 @@ if(typeof module==='object'&&module.exports){
     const old=node.value;node.replaceChildren();
     const empty=el('option',placeholder);empty.value='';node.append(empty);
     for(const {id,name} of entries){const option=el('option',name);option.value=id;node.append(option)}
-    if([...node.options].some(x=>x.value===old))node.value=old;
+    node.value=[...node.options].some(x=>x.value===old)?old:'';
   }
   function unitsFor(ingredient){
     if(!ingredient)return [];
@@ -66,7 +75,7 @@ if(typeof module==='object'&&module.exports){
     const bases=config.bases.map(b=>({id:b.recipeId,name:`${b.recipeName} · ${num(b.referenceGrams)} g por receta`}));
     fillSelect(formFormat.elements.recipeId,bases,'Primero configura la masa base');
     fillSelect(formBatch.elements.recipeId,bases,'Selecciona una masa configurada');
-    fillSelect(formFormat.elements.productId,products.filter(p=>p.active).map(p=>({id:p.id,name:p.name})),'Crear nuevo producto desde la receta');
+    fillSelect(formFormat.elements.productId,products.filter(p=>p.active).map(p=>({id:p.id,name:p.name})),'Selecciona el producto que deseas editar');
     syncProductMode();
     renderPreparationForms();
     const selectedBase=config.bases.find(b=>b.recipeId===formBase.elements.recipeId.value);
@@ -123,17 +132,28 @@ if(typeof module==='object'&&module.exports){
     formBase.elements.referenceGrams.value=recipe?.yieldUnit==='g'?String(recipe.baseYield):'';
   });
   function syncProductMode(){
-    const creating=!formFormat.elements.productId.value;
-    const input=formFormat.elements.productName;
-    input.disabled=!creating;input.required=creating;
-    if(!creating)input.value='';
+    const editing=syncDoughProductMode(formFormat.elements);
+    $('dough-existing-product-field').hidden=!editing;
+    $('dough-new-product-field').hidden=editing;
+    $('dough-save-product').textContent=editing?'Guardar cambios del producto':'Crear producto y guardar formato';
+    return editing;
   }
-  formFormat.elements.productId.addEventListener('change',()=>{
-    syncProductMode();
+  function loadSelectedFormat(){
     const f=config.formats.find(x=>x.productId===formFormat.elements.productId.value);
     $('dough-extra-items').replaceChildren();
     if(f){formFormat.elements.recipeId.value=f.recipeId;formFormat.elements.doughGrams.value=String(f.doughGrams);for(const extra of f.extras)addExtra(extra);}
     else formFormat.elements.doughGrams.value='';
+  }
+  formFormat.elements.productMode.addEventListener('change',()=>{
+    formFormat.elements.productId.value='';
+    formFormat.elements.productName.value='';
+    formFormat.elements.doughGrams.value='';
+    $('dough-extra-items').replaceChildren();
+    syncProductMode();
+    (formFormat.elements.productMode.value==='edit'?formFormat.elements.productId:formFormat.elements.productName).focus();
+  });
+  formFormat.elements.productId.addEventListener('change',()=>{
+    if(syncProductMode())loadSelectedFormat();
   });
   $('dough-add-extra').addEventListener('click',()=>addExtra(null,'prepared'));
   $('dough-add-direct-extra').addEventListener('click',()=>addExtra(null,'direct'));
@@ -148,14 +168,21 @@ if(typeof module==='object'&&module.exports){
       const extras=[...$('dough-extra-items').children].map(row=>({ingredientId:row.querySelector('select').value,
         quantity:Number(row.querySelector('input').value),unit:row.querySelectorAll('select')[1].value}));
       const data={recipeId:formFormat.elements.recipeId.value,doughGrams:Number(formFormat.elements.doughGrams.value),extras};
-      if(formFormat.elements.productId.value){
+      const editing=syncProductMode();
+      if(editing){
+        if(!formFormat.elements.productId.value)throw Error('Selecciona el producto que deseas editar.');
         await post('/api/dough/format',{...data,productId:formFormat.elements.productId.value});
       }else{
-        await post('/api/dough/product',{...data,name:formFormat.elements.productName.value.trim()});
+        const name=formFormat.elements.productName.value.trim();
+        if(!name)throw Error('Escribe el nombre del nuevo producto.');
+        await post('/api/dough/product',{...data,name});
         formFormat.elements.productName.value='';
+        formFormat.elements.doughGrams.value='';
+        $('dough-extra-items').replaceChildren();
       }
-      status('Producto y complementos guardados desde la masa base. No se modificó inventario.');
-      $('dough-extra-items').replaceChildren();await refresh();
+      await refresh();
+      if(editing)loadSelectedFormat();
+      status(editing?'Cambios del producto guardados. No se modificó inventario.':'Producto creado desde la masa base. No se modificó inventario.');
     }catch(err){status(err.message,true)}
   });
   const prepLinkForm=$('dough-prep-link-form'),prepBatchForm=$('dough-prep-batch-form');
