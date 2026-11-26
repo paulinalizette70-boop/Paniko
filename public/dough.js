@@ -147,8 +147,7 @@ if(typeof module==='object'&&module.exports){
     if(!known&&!choices.length){
       status(kind==='prepared'?'No hay fichas de preparación. En Recetas, crea una ficha técnica de costra o mermelada con rendimiento en g o ml.':'No hay ingredientes directos disponibles en inventario.',true);
       if(kind==='prepared'){
-        const details=$('dough-prep-link-details');
-        if(details&&!details.hidden){showPanel('prep');details.open=true;details.scrollIntoView({block:'start',behavior:'smooth'});}
+        if(user?.role==='admin')openNewPrep();
       }
       return;
     }
@@ -335,6 +334,7 @@ if(typeof module==='object'&&module.exports){
   });
   $('dough-add-extra').addEventListener('click',()=>addExtra(null,'prepared'));
   $('dough-add-direct-extra').addEventListener('click',()=>addExtra(null,'direct'));
+  $('dough-create-complement').addEventListener('click',()=>openNewPrep());
   formBase.addEventListener('submit',async e=>{
     e.preventDefault();if(savingBase)return;
     savingBase=true;const button=formBase.querySelector('button[type=submit]');button.disabled=true;
